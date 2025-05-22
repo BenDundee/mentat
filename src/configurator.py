@@ -68,6 +68,7 @@ class Configurator:
         self.config_dir = BASE_DIR / "config"
         self.config_files = list(Path(self.config_dir).glob("*.yml"))
         self.data_dir = BASE_DIR / "data" / "processed"
+        self.app_data = BASE_DIR / "data" / "app_data"
         self.data_files = list(Path(self.data_dir).glob("*.json"))
 
         # ALL THE CONFIGS
@@ -98,7 +99,14 @@ class Configurator:
         data_config = Path(f"{self.config_dir}/data.yml")
         assert_present(data_config)
         with open(data_config, "r") as f:
-            return DataConfig(**safe_load(f))
+            data_config = DataConfig(**safe_load(f))
+
+        # Check for absolute/relative path for DB directory
+        # TODO: Move to DataConfig class
+        if not Path(data_config.db_directory).is_absolute():
+            data_config.db_directory = str(self.base_dir / data_config.db_directory)
+
+        return data_config
 
     def __load_agents_yml(self):
         agent_config = Path(f"{self.config_dir}/agents.yml")
@@ -133,6 +141,7 @@ class Configurator:
         )
 
     def __load_persona(self):
+        # TODO: Move to /app_data
         persona_config = Path(f"{self.config_dir}/persona.yml")
         if not persona_config.exists():
             return Persona.get_empty_persona()

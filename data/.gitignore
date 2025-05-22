@@ -1,4 +1,5 @@
 *
 !.gitignore
 !processed
+!app_data
 !data.md
