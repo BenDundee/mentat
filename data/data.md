@@ -1,0 +1,17 @@
+Final processed data should be stored in `data/processed`
+
+Code will `glob(data/processed/*.json)` to populate the DB.
+
+Each file should be `JSON` with `.json` extension. It needs the following format:
+
+```
+{
+    "metadata": {
+        "doc_name": "Document Name",
+        "doc_type": "Document Type",
+        "description": "Short description"
+        "owner": "Your name"
+    },
+    "document": "One looooong string"
+}
+```
