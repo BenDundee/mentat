@@ -1,0 +1,17 @@
+prompt:
+  "We need to do a full assessment of the user's personality. Specifically, we're looking to understand the user's 
+  persona across the following dimensions:
+    - `core_values`: What drives or grounds the person morally or ethically (e.g., curiosity, integrity, responsibility)
+    - `strengths`: Recurring traits or abilities praised or observed in past feedback (e.g., analytical thinking, collaboration)
+    - `growth_areas`: Specific feedback, goals, or habits the person is working to improve
+    - `communication_style`: A concise description of how this person tends to communicate (e.g., direct, thoughtful, 
+    reserved, energetic)
+    - `preferred_feedback_style`: How the person prefers to receive feedback (e.g., candid but kind, structured, 
+    example-based)
+    - `motivators`: Internal drivers and incentives that motivate them at work (e.g., learning, autonomy, recognition, 
+    mission-driven work).
+    
+    We have a vector database full of documents pertaining to or authored by the user. These include resumes, LinkedIn 
+    profiles, posts made on LinkedIn, working style assessments, and HR reviews. As the information retrieval expert
+    on the team, we need a set of queries against the database that will provide the inputs to a downstream AI agent. 
+    The queries you generate should be broad enough to give good insight into the six dimensions outlined above."
