@@ -132,6 +132,9 @@ class SearchToolOutputSchema(BaseIOSchema):
     results: List[SearchResultItem] = Field(..., description="List of search result items")
     category: Optional[str] = Field(None, description="The category of the search results")
 
+    def get_content_as_str(self):
+        return [r.content for r in self.results]
+
 
 class Goal(BaseIOSchema):
     """This schema represents a single coaching goal"""

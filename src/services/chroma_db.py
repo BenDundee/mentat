@@ -201,6 +201,17 @@ class ChromaDBService:
         chunks = [self.decode(x) for x in _yield_chunks()]
         return chunks, [file_json["metadata"]]*len(chunks)
 
+    def refine_search_results(
+            self,
+            search_results: List[SearchResultItem]
+            , query: str
+            , n_results: int
+    ) -> QueryResult:
+        search_results_ids = self.add_search_results(search_results)
+        relevant_search_results = self.query(query_text=query, n_results=n_results, ids=search_results_ids)
+        self.delete_by_ids(search_results_ids)
+        return relevant_search_results
+
 
 if __name__ == "__main__":
     config = Configurator()

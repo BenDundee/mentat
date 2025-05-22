@@ -65,17 +65,11 @@ class Controller:
             )
             search_results = \
                 self.agent_handler.search_tool.run(SearchToolInputSchema(queries=search_agent_output.queries))
-            
-            # TODO: Abstract this out to a function?
-            # add search results to chroma db, get relevant results, then delete search results
-            logger.info("Getting relevant search results...")
-            search_results_ids = self.chroma_db.add_search_results(search_results.results)
-            relevant_search_results = self.chroma_db.query(  # not sure what to do here -- need to figure out
-                query_agent_output.query, 
-                n_results=10,
-                ids=search_results_ids
+            relevant_search_results = self.chroma_db.refine_search_results(
+                search_results=search_results.results
+                , query=query_agent_output.query
+                , n_results=10
             )
-            self.chroma_db.delete_by_ids(search_results_ids)
 
             # Goal agent -- ignore for now, in future consider personal goals in response
 
