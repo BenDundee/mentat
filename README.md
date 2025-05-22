@@ -1,5 +1,7 @@
 # AI Coaching Assistant
 
+> Every hammer has the innate capacity to strike a nail. Every human mind has the innate capacity for greatness. 
+
 An intelligent coaching system that leverages multiple AI agents to provide personalized coaching responses and support personal development.
 
 ## Overview
@@ -42,10 +44,9 @@ pip install -r requirements.txt
 - Update configuration settings in the appropriate config files
 - Ensure ChromaDB is properly set up
 
-3. Run the system:
-```bash
-python src/controller.py
-```
+3. Run the system.
+- `python api.py` in one terminal.
+- `python app.py` in another. Open a browser and navigate to the correct URL.
 
 ## Usage
 
@@ -60,20 +61,33 @@ The system accepts input in the following format:
 
 The system can handle different types of interactions:
 - Coaching requests
-- Journal entries
-- Document uploads
+- [TODO] Journal entries
+- [TODO] Document uploads
 
 ## Project Structure
+
 
 ```
 .
 ├── src/
-│   ├── controller.py      # Main controller class
-│   ├── agents/           # Agent implementations
+│   ├── controller.py     # Main controller class
+│   ├── configurator.py   # All config settings
+│   ├── agents/           # Agent implementations and io types
 │   ├── services/         # Service implementations (e.g., ChromaDB)
-│   └── utils/           # Utility functions and helpers
+│   ├── tools/            # Tools for agents to use (e.g., search)
+│   └── utils/            # Utility functions and helpers
+│
+├── data/                 # Data directory
+│   ├── data.md           # Doc about data
+│   ├── processed/        # Store all personal files here
+│   └── app_data/         # Data generated from the app. 
+│
+├── config/               # Config files
+│
+├── app.py                # Front end app
+├── api.py                # API/back end   
 ├── requirements.txt      # Project dependencies
-└── README.md            # This file
+└── README.md             # This file
 ```
 
 ## Contributing
