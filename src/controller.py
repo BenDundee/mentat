@@ -34,7 +34,8 @@ class Controller:
             logger.info("Updating persona...")
             prompt = PromptHandler("persona-update.prompt").read()["prompt"]
             persona_query = self.agent_handler.query_agent.run(QueryAgentInputSchema(user_input=prompt))
-            persona_query_result = self.chroma_db.query(persona_query.query, where={"owner": "Ben Dundee"})
+            persona_query_result = \
+                self.chroma_db.query(persona_query.query, where={"owner": self.config.user_config.user_name})
             self.config.update_persona(
                 self.agent_handler.persona_agent.run(PersonaAgentInputSchema(query_result=persona_query_result)))
             logger.info(f"Updated persona: {self.config.persona.get_summary()}")

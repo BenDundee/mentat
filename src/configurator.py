@@ -54,6 +54,12 @@ class DataConfig:
     search_engine_num_queries: int = None
 
 
+@dataclass
+class UserConfig:
+    user_name: str = None
+    address_as: str = None
+
+
 def assert_present(filename: Path):
     try:
         assert filename.exists()
@@ -65,38 +71,46 @@ class Configurator:
 
     def __init__(self):
         self.base_dir = BASE_DIR
+
+        # Configs
         self.config_dir = BASE_DIR / "config"
-        self.config_files = list(Path(self.config_dir).glob("*.yml"))
+        self.config_files = list(self.config_dir.glob("*.yml"))
+
+        # User-provided data
         self.data_dir = BASE_DIR / "data" / "processed"
+        self.data_files = list(self.data_dir.glob("*.json"))
+
+        # App data
         self.app_data = BASE_DIR / "data" / "app_data"
-        self.data_files = list(Path(self.data_dir).glob("*.json"))
+        self.app_data_files = list(self.app_data.glob("*.yml"))
 
         # ALL THE CONFIGS
         self.deployment_config = self.configure_deployment()
         self.api_config: APIConfig = APIConfig()
         self.agent_config_map: Dict[str, str] = {}
         self.data_config: DataConfig = DataConfig()
+        self.user_config: UserConfig = UserConfig()
+        self.persona: Persona = Persona()
         self.configured = False
         self.configure()
-
-        # Handle Persona, it may be empty
-        self.persona = self.__load_persona()
 
     def configure(self, override_configuration=False):
         if override_configuration or not self.configured:
             self.api_config = self.__load_api_yml()
             self.agent_config_map = self.__load_agents_yml()
             self.data_config = self.__load_data_yml()
+            self.user_config = self.__load_user_yml()
+            self.persona = self.__load_persona()
             self.configured = True
 
     def __load_api_yml(self):
-        api_config = Path(f"{self.config_dir}/api.yml")
+        api_config = self.config_dir / "api.yml"
         assert_present(api_config)
         with open(api_config, "r") as f:
             return APIConfig(**safe_load(f))
 
     def __load_data_yml(self):
-        data_config = Path(f"{self.config_dir}/data.yml")
+        data_config = self.config_dir / "data.yml"
         assert_present(data_config)
         with open(data_config, "r") as f:
             data_config = DataConfig(**safe_load(f))
@@ -109,7 +123,7 @@ class Configurator:
         return data_config
 
     def __load_agents_yml(self):
-        agent_config = Path(f"{self.config_dir}/agents.yml")
+        agent_config = self.config_dir / "agents.yml"
         assert_present(agent_config)
         with open(agent_config, "r") as f:
             return {a["agent_name"]: a["prompt"] for a in safe_load(f)["agents"]}
@@ -140,9 +154,14 @@ class Configurator:
             app=f"http://{app_cfg.host}:{app_cfg.port}/{app_cfg.endpoint}?debug={app_cfg.debug}"
         )
 
+    def __load_user_yml(self):
+        user_config = self.config_dir / "user.yml"
+        assert_present(user_config)
+        with open(user_config, "r") as f:
+            return UserConfig(**safe_load(f))
+
     def __load_persona(self):
-        # TODO: Move to /app_data
-        persona_config = Path(f"{self.config_dir}/persona.yml")
+        persona_config = self.app_data / "persona.yml"
         if not persona_config.exists():
             return Persona.get_empty_persona()
         else:
@@ -151,7 +170,7 @@ class Configurator:
 
     def update_persona(self, persona: Persona):
         self.persona = persona
-        with open(f"{self.config_dir}/persona.yml", "w") as f:
+        with open(self.app_data / "persona.yml", "w") as f:
             dump(self.persona.get_summary(), f, sort_keys=False, indent=2)
 
 
