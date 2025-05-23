@@ -8,7 +8,7 @@ from src.agents.types import (
 )
 from src.configurator import Configurator
 from src.services.chroma_db import ChromaDBService
-from src.utils import PromptHandler
+from src.flows import update_persona, do_research
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +32,7 @@ class Controller:
         # First: if persona is empty it needs to be generated
         if self.config.persona.is_empty():
             logger.info("Updating persona...")
-            prompt = PromptHandler("persona-update.prompt").read()["prompt"]
-            persona_query = self.agent_handler.query_agent.run(QueryAgentInputSchema(user_input=prompt))
-            persona_query_result = \
-                self.chroma_db.query(persona_query.query, where={"owner": self.config.user_config.user_name})
-            self.config.update_persona(
-                self.agent_handler.persona_agent.run(PersonaAgentInputSchema(query_result=persona_query_result)))
+            update_persona(agent_handler=self.agent_handler, chroma_db=self.chroma_db, config=self.config)
             logger.info(f"Updated persona: {self.config.persona.get_summary()}")
 
         # On to pre-processing!
@@ -50,26 +45,15 @@ class Controller:
         if preprocessing_agent_output.detected_intent in ("coaching_request", "document_upload"):  # HACK for now
             logging.info("Detected coaching request...")
 
-            # Query agent
-            logger.info("Querying document store...")
-            query_agent_output = self.agent_handler.query_agent.run(QueryAgentInputSchema(user_input=last_message))
-            query_result = self.chroma_db.query(
-                query_agent_output.query, n_results=self.config.data_config.db_results_per_query)
-
-            # Search agent
-            logger.info("Searching internet...")
-            search_agent_output = (
-                self.agent_handler.search_agent.run(
-                    SearchAgentInputSchema(user_input=last_message,
-                                           num_queries=self.config.data_config.search_engine_num_queries))
-            )
-            search_results = \
-                self.agent_handler.search_tool.run(SearchToolInputSchema(queries=search_agent_output.queries))
-            relevant_search_results = self.chroma_db.refine_search_results(
-                search_results=search_results.results
-                , query=query_agent_output.query
-                , n_results=10
-            )
+            query_result, relevant_search_results = None, None
+            if preprocessing_agent_output.requires_research:
+                logger.info("Research is required")
+                query_result, search_result = do_research(
+                    agent_handler=self.agent_handler,
+                    chroma_db=self.chroma_db,
+                    config=self.config,
+                    user_input=last_message
+                )
 
             # Goal agent -- ignore for now, in future consider personal goals in response
 
@@ -108,15 +92,12 @@ class Controller:
             response = {"role": "assistant", "content": response_generator_output.response}
             # self.agent_handler.update_memory(response)  # TODO: Figure this out
             return response["content"]
-
         elif preprocessing_agent_output.detected_intent == "journal_entry":
             logging.info("Detected journal entry")
             return "Hello World!"
-
         elif preprocessing_agent_output.detected_intent == "document_upload":
             logging.info("Detected document upload")
             return "Hello World!"
-
         else:
             raise Exception("Unknown intent from preprocessing agent")
 

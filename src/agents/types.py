@@ -89,6 +89,8 @@ class PreprocessingAgentInputSchema(BaseIOSchema):
 class PreprocessingAgentOutputSchema(BaseIOSchema):
     """ Output schema for the PreprocessingAgent """
     normalized_query: str = Field(..., description="The normalized content after preprocessing")
+    requires_research: bool = \
+        Field(..., description="Whether the document requires additional research (internet search and document query")
     detected_intent: Optional[Literal["coaching_request", "journal_entry", "document_upload"]] = \
         Field(..., description="The detected intent of the document: `coaching_request`, `journal_entry`, or `document_upload`")
     document_text: Optional[str] = Field(..., description="The document text after preprocessing")

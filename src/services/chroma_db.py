@@ -14,8 +14,6 @@ from src.agents.types import QueryResult, Chunk, SearchResultItem
 
 logger = logging.getLogger(__name__)
 
-
-
 # https://github.com/openai/openai-python/issues/519
 # https://platform.openai.com/docs/api-reference/embeddings/create
 # The following must be true (API limitation @ OpenAI)
@@ -166,7 +164,6 @@ class ChromaDBService:
                 in zip(results["ids"][0], results["documents"][0], results["metadatas"][0], results["distances"][0])
             ])
 
-
     def delete_collection(self, collection_name: Optional[str] = None) -> None:
         """Delete a collection by name.
 
@@ -202,11 +199,19 @@ class ChromaDBService:
         return chunks, [file_json["metadata"]]*len(chunks)
 
     def refine_search_results(
-            self,
-            search_results: List[SearchResultItem]
-            , query: str
-            , n_results: int
+        self,
+        search_results: List[SearchResultItem]
+        , query: str
+        , n_results: int
     ) -> QueryResult:
+        """ Refine search results by first adding them to the collection and then querying
+        the collection for relevant search results.
+
+        :param search_results:
+        :param query:
+        :param n_results:
+        :return:
+        """
         search_results_ids = self.add_search_results(search_results)
         relevant_search_results = self.query(query_text=query, n_results=n_results, ids=search_results_ids)
         self.delete_by_ids(search_results_ids)
