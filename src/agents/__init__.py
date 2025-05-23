@@ -14,6 +14,8 @@ from src.agents.types import (
 from src.tools import SearchTool, SearchToolConfig
 from src.utils import PromptHandler
 
+from src.agents.agent_factory import AgentFactory
+
 # https://peps.python.org/pep-0563/  lame
 if TYPE_CHECKING:
     import src.configurator as cfg

@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, List
 
-from src.agents import AgentHandler
+from src.agents import AgentHandler, AgentFactory
 from src.agents.types import (
     PreprocessingAgentInputSchema, SearchAgentInputSchema, SearchToolInputSchema, QueryAgentInputSchema, 
     ContextManagerAgentInputSchema, PersonaAgentInputSchema, Goal, ResponseDraftWithFeedback
@@ -24,6 +24,7 @@ class Controller:
 
         logger.info("Initializing agents...")
         self.agent_handler = AgentHandler(self.config)
+        self.agent_factory = AgentFactory(self.config)
 
     def get_response(self, messages: List[Dict]) -> str:
         logger.info(f"Received input, updating memory...")
