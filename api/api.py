@@ -3,7 +3,7 @@ from typing import List, Dict, Any, Optional
 from api.agents import ExecutiveCoachAgent
 import sqlite3
 
-from api.config import ConfigurationManager
+from api.config import Configurator
 from api.types import ChatResponse, ChatRequest
 
 
@@ -13,7 +13,7 @@ app = FastAPI(title="Executive Coach API")
 def create_executive_coach_agent(config_path: Optional[str] = None) -> ExecutiveCoachAgent:
     """Create an ExecutiveCoachAgent with the specified configuration."""
     # Load configuration
-    config = ConfigurationManager.load_config(config_path)
+    config = Configurator.load_config(config_path)
 
     # Extract LLM configuration
     llm_config = config.get("llm", {})

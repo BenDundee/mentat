@@ -4,6 +4,8 @@ from typing import Dict, Any, List, Optional, Union
 from langchain.prompts import PromptTemplate, FewShotPromptTemplate, ChatPromptTemplate
 from langchain.prompts.chat import SystemMessagePromptTemplate, HumanMessagePromptTemplate, AIMessagePromptTemplate
 
+from pathlib import Path
+
 
 class PromptManager:
     """
@@ -11,26 +13,23 @@ class PromptManager:
     Supports different types of prompts and caching for performance.
     """
 
-    def __init__(self, prompts_dir: str = "prompts"):
+    base_dir = Path(__file__).parent.parent.parent
+    prompts_dir = base_dir / "prompts"
+
+    def __init__(self):
         """Initialize the PromptManager with the directory containing prompt YAML files."""
-        self.prompts_dir = prompts_dir
         self.prompts = {}
         self.load_all_prompts()
 
     def load_all_prompts(self) -> None:
         """Load all prompt templates from the prompts directory and its subdirectories."""
-        for root, _, files in os.walk(self.prompts_dir):
-            for file in files:
-                if file.endswith(".yaml"):
-                    file_path = os.path.join(root, file)
-                    self._load_prompts_from_file(file_path)
+        _ = [self.load_prompt_from_file(f) for f in self.prompts_dir.glob("**/*.yaml")]
 
-    def _load_prompts_from_file(self, file_path: str) -> None:
+    def load_prompt_from_file(self, file_path: Path) -> None:
         """Load prompt templates from a single YAML file."""
         try:
             with open(file_path, 'r') as f:
                 prompt_data = yaml.safe_load(f)
-
             for prompt_name, prompt_config in prompt_data.items():
                 self.prompts[prompt_name] = self._create_prompt_template(prompt_config)
         except Exception as e:

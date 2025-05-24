@@ -6,9 +6,8 @@ import sqlite3
 import datetime
 import uuid
 
-# Import your custom tool classes
-from .tools import GoalTrackerTool, JournalManagerTool, ConversationSearchTool
-from .llm_provider import LLMProvider
+from api.agents.tools import GoalTrackerTool, JournalManagerTool, ConversationSearchTool
+from api.services import LLMProvider
 from api.util import PromptManager
 
 
