@@ -1,0 +1,20 @@
+goal_review_workflow:
+  description: "Prompt for the goal review workflow"
+  template: |
+    Based on the following information about the user's goals:
+    
+    {goals_result}
+    
+    And relevant past discussions:
+    {goal_context}
+    
+    Provide a thoughtful review of their goal progress, highlighting:
+    1. Areas of success
+    2. Opportunities for improvement
+    3. Suggested next steps
+    4. Reflective questions to consider
+  input_variables:
+    - goals_result
+    - goal_context
+  llm_settings:
+    temperature: 0.4
