@@ -1,7 +1,6 @@
-# api/processing/agent_graph.py
 from langgraph.graph import StateGraph
 import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 
 class AgentProcessingGraph:

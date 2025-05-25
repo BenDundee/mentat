@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import datetime as dt
 from pydantic import BaseModel, Field
 from typing import List, Literal, Optional
@@ -74,3 +75,14 @@ class Persona(BaseModel):
             preferred_feedback_style="",
             motivators=[]
         )
+
+
+# TODO: use pydntic
+@dataclass
+class IntentPattern:
+    """Represents a pattern for intent detection with associated keywords and description."""
+    name: str
+    keywords: List[str]
+    description: str
+    tool_name: str
+    example_phrases: List[str] = None

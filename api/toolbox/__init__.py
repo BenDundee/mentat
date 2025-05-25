@@ -6,23 +6,17 @@ from .journal_manager import JournalManagerTool
 from .tool_execution_context import ToolExecutionContext
 
 from typing import Dict, List, Tuple, Optional
-from dataclasses import dataclass
 from langchain.tools import BaseTool
 
 from sqlite3 import Connection
 from chromadb import Client as ChromaDB
 
-@dataclass
-class _IntentPattern:
-    """Represents a pattern for intent detection with associated keywords and description."""
-    name: str
-    keywords: List[str]
-    description: str
-    tool_name: str
-    example_phrases: List[str] = None
+
+from api.interfaces import IntentPattern
 
 
-class _ToolRegistry:
+
+class __ToolRegistry:
     """Registry for tools and their associated intents."""
 
     def __init__(self, vector_db, db_connection) -> None:
@@ -36,7 +30,7 @@ class _ToolRegistry:
         """Register a list of tools in the registry."""
         _ = [self.register_tool(tool) for tool in tools]
 
-    def register_intent(self, intent: _IntentPattern) -> None:
+    def register_intent(self, intent: IntentPattern) -> None:
         """Register an intent pattern in the registry."""
         self.intents[intent.name] = intent
 
@@ -71,22 +65,24 @@ class _ToolRegistry:
         return "\n".join(prompt_sections)
 
 
+def get_tool_registry(vector_db: ChromaDB, db_connection: Connection) -> __ToolRegistry:
+    return __ToolRegistry(vector_db, db_connection)
 
-tool_registry = _ToolRegistry()
+
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------  Add tools and intents here ---------------------------------------------------------------------------
 # When adding new tools, register them below
 def configure_tools(
         vector_db: ChromaDB,
         db_connection: Connection
-) -> Tuple[Dict[str, BaseTool], Dict[str, _IntentPattern]]:
+) -> Tuple[Dict[str, BaseTool], Dict[str, IntentPattern]]:
     """Configure tools with vector database, LLM, and database connection.
 
     NOTE TO SELF: LEVERAGE TOOL.name WHEREVER POSSIBLE!
 
     :param vector_db: ChromaDB vector database
     :param db_connection: SQLite database connection
-    :return tools and intents: Tuple[Dict[str, BaseTool], List[_IntentPattern]]
+    :return tools and intents: Tuple[Dict[str, BaseTool], List[IntentPattern]]
     """
     _tools = [
         GoalTrackerTool(vector_db),
@@ -95,19 +91,19 @@ def configure_tools(
     ]
 
     _intents = [
-        _IntentPattern(
+        IntentPattern(
             name="goal_tracking",
             keywords=["goal", "objective", "target", "achieve", "milestone"],
             description="setting, updating, or reviewing professional goals",
             tool_name=GoalTrackerTool.name,
             example_phrases=["I want to set a new goal", "How am I progressing on my goals?"]
-        ), _IntentPattern(
+        ), IntentPattern(
             name="journaling",
             keywords=["journal", "reflect", "write", "thought", "feelings"],
             description="reflective journaling, generating prompts, or reviewing past entries",
             tool_name=JournalManagerTool.name,
             example_phrases=["I'd like to journal about my day", "Give me a reflection prompt"]
-        ), _IntentPattern(
+        ), IntentPattern(
             name="conversation_recall",
             keywords=["remember", "last time", "previously", "you said", "recall"],
             description="recalling relevant previous discussions",

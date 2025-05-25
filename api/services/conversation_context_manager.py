@@ -1,3 +1,9 @@
+from langchain.prompts import ChatPromptTemplate
+from langchain.schema import SystemMessage, HumanMessage
+from langchain_core.output_parsers import StrOutputParser
+
+from typing import List
+
 class ConversationContextManager:
     """Manages conversation context throughout the interaction lifecycle."""
 

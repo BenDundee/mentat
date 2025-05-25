@@ -1,12 +1,8 @@
-from langchain_core.runnables import RunnablePassthrough, RunnableLambda
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.output_parsers import StrOutputParser
 from langchain.agents import AgentExecutor, create_openai_functions_agent, create_react_agent
 from langchain.chains import LLMChain
 from langchain_openai import OpenAIEmbeddings
 from langchain.vectorstores import Chroma
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional
 import sqlite3
 import datetime
 import uuid
@@ -15,13 +11,11 @@ import logging
 from api.agency.writer import WriterAgent
 from api.agency.critic import CriticAgent
 from api.agency.agent_processing_graph import AgentProcessingGraph
-from api.toolbox import (
-    tool_registry,
-    ToolExecutionContext
-)
+from api.toolbox import get_tool_registry
 from api.services import ConversationContextManager, WorkflowOrchestrator
 from api.api_configurator import APIConfigurator
 from api.interfaces import ChatResponse
+
 
 logger = logging.getLogger(__name__)
 
@@ -48,12 +42,17 @@ class ExecutiveCoachAgent:
         self.context_manager = ConversationContextManager(self.llm_provider)
 
         # Create tools registry
-        self.tool_registry = tool_registry(self.vector_db, self.conn)
+        self.tool_registry = get_tool_registry(self.vector_db, self.conn)
 
         # Get specific tools needed for workflow orchestrator
         self.goal_tracker = self.tool_registry.get_tool("goal_tracker")
         self.journal_manager = self.tool_registry.get_tool("journal_manager")
         self.conversation_search = self.tool_registry.get_tool("conversation_search")
+
+        # Agents
+        self.writer_agent = WriterAgent(self.llm_provider)
+        self.critic_agent = CriticAgent(self.llm_provider)
+        self._create_agent()
 
         # Create workflow orchestrator
         self.workflow_orchestrator = WorkflowOrchestrator(
@@ -69,16 +68,6 @@ class ExecutiveCoachAgent:
             "conversation_search": self.conversation_search,
             # ... other dependencies
         })
-
-        # Create executive coach agent with tools
-        self._create_agent()
-
-        # Create writer and critic agents
-        self.writer_agent = WriterAgent(self.llm_provider)
-        self.critic_agent = CriticAgent(self.llm_provider)
-
-        # Create the main agent chain
-        self._create_agent_chain()
 
     def _create_agent(self):
         """Create the main tool-using agent."""
@@ -111,118 +100,6 @@ class ExecutiveCoachAgent:
             verbose=True,
             handle_parsing_errors=True,
             max_iterations=5
-        )
-
-    def _create_agent_chain(self):
-        """Create the complete agent processing chain using LCEL."""
-
-        # Define the input processing function
-        def process_input(inputs: Dict[str, Any]) -> Dict[str, Any]:
-            """Process and enhance the user input."""
-            message = inputs["message"]
-            user_id = inputs.get("user_id", "default_user")
-
-            # Update context with user message
-            self.context_manager.update_with_user_message(message)
-
-            # Ensure user exists
-            self._ensure_user_exists(user_id)
-
-            # Get relevant conversation history
-            relevant_history = self.conversation_search._run(message, user_id)
-
-            # Determine user intent
-            intent_context = self._determine_user_intent(message)
-
-            # Enhance message with context
-            enhanced_message = message
-            if relevant_history:
-                enhanced_message += f"\n\nContext from past conversations:\n{relevant_history}"
-            if intent_context:
-                enhanced_message += f"\n\n{intent_context}"
-
-            return {
-                "enhanced_message": enhanced_message,
-                "user_id": user_id,
-                "original_message": message,
-                "history": inputs.get("history", [])
-            }
-
-        # Define the tool execution function
-        def execute_tools(inputs: Dict[str, Any]) -> Dict[str, Any]:
-            """Execute tools based on the user input."""
-            enhanced_message = inputs["enhanced_message"]
-            user_id = inputs["user_id"]
-
-            # Capture tool outputs
-            tool_outputs = {}
-            with ToolExecutionContext() as tool_context:
-                agent_result = self.agent_executor.invoke({
-                    "input": enhanced_message,
-                    "user_id": user_id
-                })
-                tool_outputs = tool_context.get_tool_outputs()
-
-            # Update context with tool outputs
-            for tool_name, output in tool_outputs.items():
-                self.context_manager.update_with_tool_output(tool_name, output)
-
-            return {
-                **inputs,
-                "tool_outputs": tool_outputs,
-                "agent_result": agent_result.get("output", "")
-            }
-
-        # Define the response generation function
-        def generate_response(inputs: Dict[str, Any]) -> Dict[str, Any]:
-            """Generate a response using writer and critic agents."""
-            message = inputs["original_message"]
-            user_id = inputs["user_id"]
-            tool_outputs = inputs["tool_outputs"]
-            history = inputs.get("history", [])
-
-            # Convert history to messages
-            chat_history = []
-            for h in history:
-                if len(h) == 2:
-                    human_msg, ai_msg = h
-                    chat_history.append(HumanMessage(content=human_msg))
-                    chat_history.append(AIMessage(content=ai_msg))
-
-            # Get writing context
-            writing_context = self.context_manager.get_writing_context()
-
-            # Generate draft with writer agent
-            draft_response = self.writer_agent.run(
-                user_message=message,
-                context=writing_context,
-                tool_outputs=tool_outputs,
-                chat_history=chat_history
-            )
-
-            # Evaluate with critic
-            evaluation = self.critic_agent.evaluate(
-                user_message=message,
-                draft_response=draft_response,
-                context=self.context_manager.get_critic_context()
-            )
-
-            # Use revised response if needed
-            final_response = evaluation.revised_response if evaluation.needs_revision else draft_response
-
-            # Store the interaction
-            self._store_interaction(user_id, message, final_response)
-
-            return {
-                **inputs,
-                "final_response": final_response
-            }
-
-        # Create the chain
-        self.chain = (
-                RunnableLambda(process_input)
-                | RunnableLambda(execute_tools)
-                | RunnableLambda(generate_response)
         )
 
     def init_databases(self):
@@ -285,7 +162,7 @@ class ExecutiveCoachAgent:
         """Process a user message and generate a response."""
         try:
             # Run the chain
-            result = self.chain.invoke({
+            result = self.processing_graph.invoke({
                 "message": message,
                 "history": history,
                 "user_id": user_id
