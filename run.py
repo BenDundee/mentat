@@ -55,7 +55,11 @@ def handle_shutdown(*args):
 
 if __name__ == "__main__":
 
+    import os
     import signal
+
+    # Append project root to sys.path
+    sys.path.append(BASE_DIR.as_posix())
 
     # Register signal handlers for clean shutdown
     signal.signal(signal.SIGINT, handle_shutdown)  # Ctrl+C
@@ -64,13 +68,11 @@ if __name__ == "__main__":
     # List to track running processes for clean shutdown
     running_processes = []
 
-    # Define your commands
-    start_app = f"{PYTHON} -m {APP_LOC}"
-    start_api = f"{PYTHON} -m {API_LOC}"
-
     # Create threads to run each process
-    thread1 = Thread(target=run_process, args=(start_app, "App/UI"))
-    thread2 = Thread(target=run_process, args=(start_api, "API/Server"))
+    RUN_APP = f"{PYTHON} {APP_LOC}"
+    RUN_API = f"{PYTHON} {API_LOC}"
+    thread1 = Thread(target=run_process, args=(RUN_APP, "App/UI"))
+    thread2 = Thread(target=run_process, args=(RUN_API, "API/Server"))
 
     # Start both processes
     thread1.start()

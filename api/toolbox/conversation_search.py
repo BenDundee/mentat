@@ -3,10 +3,12 @@ from pydantic import BaseModel, Field
 from typing import Optional, Type
 from langchain.vectorstores import Chroma
 
+from api.interfaces import VectorDBQuery
+
 
 class ConversationSearchTool(BaseTool):
-    name = "SearchPastConversations"
-    description = "Search for relevant past conversations to provide context for the current discussion."
+    name: str = "SearchPastConversations"
+    description: str = "Search for relevant past conversations to provide context for the current discussion."
     args_schema: Type[BaseModel] = VectorDBQuery
 
     def __init__(self, vector_db):

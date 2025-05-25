@@ -10,7 +10,7 @@ from pathlib import Path
 class PromptManager:
     """
     Manages loading and access to prompt templates from YAML files.
-    Supports different types of prompts and caching for performance.
+    Supports different interfaces of prompts and caching for performance.
     """
 
     base_dir = Path(__file__).parent.parent.parent

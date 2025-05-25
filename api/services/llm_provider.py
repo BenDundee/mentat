@@ -7,6 +7,8 @@ import os
 
 class LLMProvider:
     """
+    TODO: Do I want to get rid of this and control this with the system prompts?
+
     Factory class for providing different LLM instances based on configuration.
     Supports different models for different tasks and caching of instances.
     """
@@ -16,7 +18,7 @@ class LLMProvider:
         Initialize the LLM provider with configuration.
 
         Args:
-            config: Dictionary mapping task types to LLM configurations
+            config: Dictionary mapping task interfaces to LLM configurations
                 Example: {
                     "default": {"model": "ChatOpenAI", "model_name": "gpt-4", "temperature": 0.7},
                     "coding": {"model": "ChatOpenAI", "model_name": "gpt-4", "temperature": 0.2},

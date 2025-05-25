@@ -13,8 +13,8 @@ class JournalInput(BaseModel):
 
 
 class JournalManagerTool(BaseTool):
-    name = "Journal"
-    description = """Manage the user's reflective journal. Use this for:
+    name: str = "Journal"
+    description: str = """Manage the user's reflective journal. Use this for:
     - Creating new entries: "add journal entry about today's meeting"
     - Generating prompts: "give me a journal prompt about leadership"
     - Reviewing past entries: "show my recent journal entries"

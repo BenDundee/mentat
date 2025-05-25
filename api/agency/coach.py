@@ -1,25 +1,26 @@
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain.chains import LLMChain
-from langchain.tools import BaseTool
-from typing import List, Dict, Any, Optional
+from langchain_openai import OpenAIEmbeddings
+from langchain.vectorstores import Chroma
+from typing import List, Optional
 import sqlite3
 import datetime
 import uuid
 
-from api.agents.tools import GoalTrackerTool, JournalManagerTool, ConversationSearchTool
-from api.services import LLMProvider
-from api.util import PromptManager
+from api.toolbox import GoalTrackerTool, JournalManagerTool, ConversationSearchTool, WorkflowTool
+from api.services import WorkflowOrchestrator
+from api.api_configurator import APIConfigurator
 
 
 class ExecutiveCoachAgent:
-    def __init__(self, llm_config: Optional[Dict[str, Dict[str, Any]]] = None, prompts_dir: str = "prompts"):
-        # Initialize prompt manager
-        self.prompt_manager = PromptManager(prompts_dir)
+    def __init__(self, config: APIConfigurator):
+        self.config = config
 
-        # Initialize LLM provider
-        self.llm_provider = LLMProvider(llm_config)
+        # TODO: Get rid of these later
+        self.prompt_manager = config.prompt_manager
+        self.llm_provider = config.llm_provider
 
-        # Initialize databases and tools
+        # Initialize databases and toolbox
         self.init_databases()
         self.init_tools()
 
@@ -44,8 +45,8 @@ class ExecutiveCoachAgent:
         )
 
     def init_tools(self):
-        """Initialize all tools with their dependencies and appropriate LLMs."""
-        # Get specialized LLMs for different tools
+        """Initialize all toolbox with their dependencies and appropriate LLMs."""
+        # Get specialized LLMs for different toolbox
         creative_llm = self.llm_provider.get_llm("creative")  # For journal prompts
         analytical_llm = self.llm_provider.get_llm("analytical")  # For goal analysis
 
@@ -65,81 +66,26 @@ class ExecutiveCoachAgent:
             vector_db=self.vector_db
         )
 
-        # Create workflow orchestrator with access to LLM provider
-        self.workflow_orchestrator = self._create_workflow_orchestrator()
+        # Create workflow manager
+        self.workflow_manager = WorkflowOrchestrator(
+            goal_tracker=self.goal_tracker,
+            journal_manager=self.journal_manager,
+            conversation_search=self.conversation_search,
+            llm_provider=self.llm_provider
+        )
 
-        # Register all tools with the agents
+        # Create a simple tool that accesses the workflow manager
+        self.workflow_tool = WorkflowTool(
+            workflow_manager=self.workflow_manager
+        )
+
+        # Register all toolbox with the agency
         self.tools = [
             self.goal_tracker,
             self.journal_manager,
             self.conversation_search,
             self.workflow_orchestrator
         ]
-
-    def _create_workflow_orchestrator(self):
-        """Create a meta-tool that can orchestrate multi-step workflows."""
-
-        class WorkflowOrchestratorTool(BaseTool):
-            # ... similar to before, but with LLM provider instead of single LLM
-
-            def __init__(self, goal_tracker, journal_manager, conversation_search, llm_provider):
-                super().__init__()
-                self.goal_tracker = goal_tracker
-                self.journal_manager = journal_manager
-                self.conversation_search = conversation_search
-                self.llm_provider = llm_provider
-
-                # Define available workflows
-                self.workflows = {
-                    "goal_review": self._goal_review_workflow,
-                    "reflection_session": self._reflection_workflow,
-                    "planning_session": self._planning_workflow
-                }
-
-            def _goal_review_workflow(self, parameters):
-                """Review goals and suggest next steps."""
-                user_id = parameters.get("user_id", "default_user")
-
-                # Step 1: Get current goals
-                goals_result = self.goal_tracker._run(f"list goals", user_id=user_id)
-
-                # Step 2: Find relevant past conversations about these goals
-                goal_context = self.conversation_search._run(f"goals progress", user_id=user_id)
-
-                # Step 3: Generate personalized reflection using analytical LLM
-                analytical_llm = self.llm_provider.get_llm("analytical")
-
-                prompt = f"""Based on the following information about the user's goals:
-
-                {goals_result}
-
-                And relevant past discussions:
-                {goal_context}
-
-                Provide a thoughtful review of their goal progress, highlighting:
-                1. Areas of success
-                2. Opportunities for improvement
-                3. Suggested next steps
-                4. Reflective questions to consider
-                """
-
-                from langchain.schema import HumanMessage
-                response = analytical_llm([HumanMessage(content=prompt)])
-
-                # Step 4: Suggest a journal prompt as follow-up using creative LLM
-                journal_prompt = self.journal_manager._run(f"create prompt for goal reflection", user_id=user_id)
-
-                return f"{response.content}\n\n{journal_prompt}"
-
-            # ... other workflow methods
-
-        # Create and return the workflow orchestrator with LLM provider
-        return WorkflowOrchestratorTool(
-            goal_tracker=self.goal_tracker,
-            journal_manager=self.journal_manager,
-            conversation_search=self.conversation_search,
-            llm_provider=self.llm_provider
-        )
 
     def init_databases(self):
         """Initialize database connections."""
@@ -148,7 +94,7 @@ class ExecutiveCoachAgent:
         self._init_sql_tables()
 
         # Vector DB for semantic search
-        self.embeddings = OpenAIEmbeddings()
+        self.embeddings = OpenAIEmbeddings(api_key=self.config.llm_client_config.openai_api_key)
         self.vector_db = Chroma(
             collection_name="conversation_history",
             embedding_function=self.embeddings,
@@ -199,7 +145,7 @@ class ExecutiveCoachAgent:
         self.conn.commit()
 
     def run(self, message: str, history: Optional[List[List[str]]] = None, user_id: str = "default_user"):
-        """Run the executive coach agents with the given input."""
+        """Run the executive coach agency with the given input."""
         # Ensure user exists in DB
         self._ensure_user_exists(user_id)
 
@@ -222,10 +168,10 @@ class ExecutiveCoachAgent:
         if intent_context:
             enhanced_message += f"\n\n{intent_context}"
 
-        # Run the agents with user_id in the metadata for tool access
+        # Run the agency with user_id in the metadata for tool access
         response = self.agent_executor.run(
             input=enhanced_message,
-            user_id=user_id  # Pass user_id to all tools
+            user_id=user_id  # Pass user_id to all toolbox
         )
 
         # Store this interaction in vector DB

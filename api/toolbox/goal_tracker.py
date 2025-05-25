@@ -1,6 +1,6 @@
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
-from typing import Optional, Type, Literal
+from typing import Optional, Type, Literal, ClassVar
 import sqlite3
 
 
@@ -12,8 +12,8 @@ class GoalTrackerInput(BaseModel):
 
 
 class GoalTrackerTool(BaseTool):
-    name = "GoalTracker"
-    description = """Track and manage the user's professional goals. Use this for:
+    name: str = "GoalTracker"
+    description: str = """Track and manage the user's professional goals. Use this for:
     - Creating new goals: "add goal to improve presentation skills"
     - Listing goals: "list my goals"
     - Updating goals: "update my presentation skills goal"
