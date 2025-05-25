@@ -4,6 +4,7 @@ from typing import Optional, Type, Literal, ClassVar
 import sqlite3
 
 
+# TODO: move to `interfaces`
 class GoalTrackerInput(BaseModel):
     """Input schema for the GoalTracker tool."""
     query: str = Field(description="The goal-related query or command")
@@ -12,7 +13,7 @@ class GoalTrackerInput(BaseModel):
 
 
 class GoalTrackerTool(BaseTool):
-    name: str = "GoalTracker"
+    name: str = "goal_tracker"
     description: str = """Track and manage the user's professional goals. Use this for:
     - Creating new goals: "add goal to improve presentation skills"
     - Listing goals: "list my goals"

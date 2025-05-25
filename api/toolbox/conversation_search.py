@@ -7,7 +7,7 @@ from api.interfaces import VectorDBQuery
 
 
 class ConversationSearchTool(BaseTool):
-    name: str = "SearchPastConversations"
+    name: str = "conversation_search"
     description: str = "Search for relevant past conversations to provide context for the current discussion."
     args_schema: Type[BaseModel] = VectorDBQuery
 

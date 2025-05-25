@@ -30,12 +30,7 @@ async def chat_endpoint(request: ChatRequest) -> ChatResponse:
     :raises HTTPException: If an internal server error occurs.
     """
     try:
-        response = agent.run(
-            message=request.message,
-            history=request.history,
-            user_id=request.user_id
-        )
-        return ChatResponse(response=response)
+        return agent.run(message=request.message, history=request.history, user_id=request.user_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

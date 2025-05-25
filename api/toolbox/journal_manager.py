@@ -6,6 +6,7 @@ import datetime
 import uuid
 
 
+# TODO: move to interfaces
 class JournalInput(BaseModel):
     """Input schema for the Journal tool."""
     query: str = Field(description="The journal-related query or command")
@@ -13,7 +14,7 @@ class JournalInput(BaseModel):
 
 
 class JournalManagerTool(BaseTool):
-    name: str = "Journal"
+    name: str = "journal_manager"
     description: str = """Manage the user's reflective journal. Use this for:
     - Creating new entries: "add journal entry about today's meeting"
     - Generating prompts: "give me a journal prompt about leadership"
@@ -21,12 +22,11 @@ class JournalManagerTool(BaseTool):
     """
     args_schema: Type[BaseModel] = JournalInput
 
-    def __init__(self, db_connection, vector_db, llm):
+    def __init__(self, db_connection, vector_db):
         """Initialize with database connections and LLM."""
         super().__init__()
         self.conn = db_connection
         self.vector_db = vector_db
-        self.llm = llm  # This could be a specialized creative LLM
 
     def _run(self, query: str, user_id: str = "default_user") -> str:
         """Execute journal-related operations."""
