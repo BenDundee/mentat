@@ -6,7 +6,7 @@ from api.api_configurator import APIConfigurator
 from api.workflows import WorkflowOrchestrator
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s")
 
 app = FastAPI(title="Executive Coach API")
 config = APIConfigurator()
@@ -30,7 +30,8 @@ async def chat_endpoint(request: ChatRequest) -> ChatResponse:
     :raises HTTPException: If an internal server error occurs.
     """
     try:
-        return agent.run(message=request.message, history=request.history, user_id=request.user_id)
+        out = orchestrator.process_message(user_message=request.message, user_id=request.user_id)
+        return ChatResponse(response=out.get("output", ""))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -88,7 +88,7 @@ def handle_simple_response(state: Dict[str, Any], llm_provider: LLMProvider) -> 
 
     try:
         response_data = llm.invoke(prompt_for_llm)
-        output_content = response_data.get("content", "Sorry, I couldn't generate a response.")
+        output_content = response_data.content
     except Exception as e:
         logger.error(f"Error during LLM call in handle_simple_response: {e}")
         output_content = "There was an issue generating a response."

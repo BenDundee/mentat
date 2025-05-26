@@ -26,7 +26,6 @@ class LLMCredentials:
 class ModelKWArgs:
     """Parameters for accessing LLMs."""
     top_p: Optional[float] = None
-    top_k: Optional[int] = None
 
 
 @dataclass
@@ -46,8 +45,7 @@ class LLMParameters:
             "temperature": self.temperature,
             "max_tokens": self.max_tokens,
             "model_kwargs": {
-                "top_p": model_kwargs.top_p,
-                "top_k": model_kwargs.top_k
+                "top_p": model_kwargs.top_p
             }
         }
 
