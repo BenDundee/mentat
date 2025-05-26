@@ -73,24 +73,23 @@ class ExecutiveCoachAgent:
         """Create the main tool-using agent."""
         # Get the main system prompt
         system_prompt_template = self.prompt_manager.get_prompt("executive_coach_system")
+        llm_parameters = self.prompt_manager.get_llm_settings("executive_coach_system")
 
         # Use OpenAI functions agent if available, fallback to React
         try:
             # First try to create an OpenAI functions agent
             self.agent = create_openai_functions_agent(
-                llm=self.llm_provider.get_llm("default",
-                                              **self.prompt_manager.get_llm_settings("executive_coach_system")),
+                llm=self.llm_provider.llm(llm_parameters),
                 tools=self.tool_registry.get_tools(),
                 prompt=system_prompt_template
             )
         except Exception as e:
             logger.info(f"Falling back to React agent: {e}")
-            # Fallback to React agent
+            # Now create the React agent with the modified prompt
             self.agent = create_react_agent(
-                llm=self.llm_provider.get_llm("default",
-                                              **self.prompt_manager.get_llm_settings("executive_coach_system")),
+                llm=self.llm_provider.llm(),
                 tools=self.tool_registry.get_tools(),
-                prompt=system_prompt_template
+                prompt=self.prompt_manager.get_react_prompt("executive_coach_system")
             )
 
         # Create the agent executor

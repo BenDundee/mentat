@@ -52,6 +52,19 @@ class PromptManager:
             raise ValueError(f"Prompt '{prompt_name}' not found")
         return self.prompts[prompt_name].prompt_template
 
+    def get_react_prompt(self, prompt_name: str) -> PromptTemplate:
+        """Shim for fallback Reach agent behavior"""
+        react_prompt_content = (
+            self.prompts[prompt_name].prompt_template.template +
+                "\n\nTools available: {toolbox}\n\nTool Names: {tool_names}\n\n{agent_scratchpad}"
+        )
+        react_prompt_input_variables = \
+            list(set(self.prompts[prompt_name].prompt_template.input_variables + ["toolbox", "tool_names", "agent_scratchpad"]))
+        return PromptTemplate(
+            template=react_prompt_content,
+            input_variables=react_prompt_input_variables
+        )
+
     def get_llm_settings(self, prompt_name: str) -> LLMParameters:
         """Get LLM settings associated with a prompt."""
         if prompt_name not in self.prompts:
@@ -72,7 +85,7 @@ def _create_prompt_template(prompt_name: str, prompt_config: Dict[str, Any]) -> 
     if template_format == "string":
         template = PromptTemplate(
             template=prompt_config["template"],
-            input_variables=prompt_config.get("input_variables", [])
+            input_variables=prompt_config.get("input_variables", []),
         )
 
     elif template_format == "chat":
