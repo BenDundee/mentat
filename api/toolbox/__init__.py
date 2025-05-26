@@ -1,5 +1,3 @@
-from shutil import get_terminal_size
-
 from .conversation_search import ConversationSearchTool
 from .goal_tracker import GoalTrackerTool
 from .journal_manager import JournalManagerTool
@@ -9,17 +7,15 @@ from typing import Dict, List, Tuple, Optional
 from langchain.tools import BaseTool
 
 from sqlite3 import Connection
-from chromadb import Client as ChromaDB
-
+from langchain_chroma import Chroma
 
 from api.interfaces import IntentPattern
-
 
 
 class __ToolRegistry:
     """Registry for tools and their associated intents."""
 
-    def __init__(self, vector_db, db_connection) -> None:
+    def __init__(self, vector_db: Chroma, db_connection: Connection) -> None:
         self.tools, self.intents = configure_tools(vector_db, db_connection)
 
     def register_tool(self, tool: BaseTool) -> None:
@@ -65,7 +61,7 @@ class __ToolRegistry:
         return "\n".join(prompt_sections)
 
 
-def get_tool_registry(vector_db: ChromaDB, db_connection: Connection) -> __ToolRegistry:
+def get_tool_registry(vector_db: Chroma, db_connection: Connection) -> __ToolRegistry:
     return __ToolRegistry(vector_db, db_connection)
 
 
@@ -73,7 +69,7 @@ def get_tool_registry(vector_db: ChromaDB, db_connection: Connection) -> __ToolR
 # --------------  Add tools and intents here ---------------------------------------------------------------------------
 # When adding new tools, register them below
 def configure_tools(
-        vector_db: ChromaDB,
+        vector_db: Chroma,
         db_connection: Connection
 ) -> Tuple[Dict[str, BaseTool], Dict[str, IntentPattern]]:
     """Configure tools with vector database, LLM, and database connection.
