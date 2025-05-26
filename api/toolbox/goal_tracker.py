@@ -21,6 +21,7 @@ class GoalTrackerTool(BaseTool):
     - Checking progress: "check progress on presentation skills goal"
     """
     args_schema: Type[BaseModel] = GoalTrackerInput
+    conn: sqlite3.Connection = None
 
     def __init__(self, db_connection):
         """Initialize with a database connection."""

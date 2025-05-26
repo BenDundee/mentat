@@ -3,7 +3,7 @@ from typing import Dict, Any, List
 import json
 
 
-class WorkflowOrchestrator:
+class WorkflowManager:
     """Manages different workflows using LangGraph with ConversationContextManager integration."""
 
     def __init__(self, goal_tracker, journal_manager, conversation_search, llm_provider, context_manager):

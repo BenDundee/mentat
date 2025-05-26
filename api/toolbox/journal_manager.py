@@ -1,9 +1,8 @@
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
-from typing import Optional, Type
+from typing import Type
 import sqlite3
-import datetime
-import uuid
+from langchain_chroma import Chroma
 
 
 # TODO: move to interfaces
@@ -21,6 +20,8 @@ class JournalManagerTool(BaseTool):
     - Reviewing past entries: "show my recent journal entries"
     """
     args_schema: Type[BaseModel] = JournalInput
+    conn: sqlite3.Connection = None
+    vector_db: Chroma = None
 
     def __init__(self, db_connection, vector_db):
         """Initialize with database connections and LLM."""

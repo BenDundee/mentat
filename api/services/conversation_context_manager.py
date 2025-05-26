@@ -4,11 +4,14 @@ from langchain_core.output_parsers import StrOutputParser
 
 from typing import List
 
+from api.services import LLMProvider
+
+
 class ConversationContextManager:
     """Manages conversation context throughout the interaction lifecycle."""
 
-    def __init__(self, llm_provider):
-        self.llm = llm_provider.get_llm("default")
+    def __init__(self, llm_provider: LLMProvider):
+        self.llm = llm_provider.llm()
         self.current_context = {
             "goals": [],
             "themes": [],

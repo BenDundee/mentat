@@ -20,7 +20,7 @@ class __ToolRegistry:
     """Registry for tools and their associated intents."""
 
     def __init__(self, vector_db, db_connection) -> None:
-        self.tools, self.intents = configure_tools()
+        self.tools, self.intents = configure_tools(vector_db, db_connection)
 
     def register_tool(self, tool: BaseTool) -> None:
         """Register a tool in the registry."""
@@ -85,7 +85,7 @@ def configure_tools(
     :return tools and intents: Tuple[Dict[str, BaseTool], List[IntentPattern]]
     """
     _tools = [
-        GoalTrackerTool(vector_db),
+        GoalTrackerTool(db_connection),
         JournalManagerTool(db_connection, vector_db),
         ConversationSearchTool(vector_db)
     ]

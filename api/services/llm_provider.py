@@ -1,83 +1,58 @@
-from langchain.chat_models import ChatOpenAI, ChatAnthropic
-from langchain.llms import OpenAI, HuggingFaceHub
+from langchain_community.chat_models import ChatOpenAI
+from langchain_community.llms import OpenAI
 from langchain_core.language_models import BaseLanguageModel
-from typing import Dict, Any, Optional, List
-import os
+from typing import Optional
+from pydantic import Field, SecretStr
+
+from api.interfaces import LLMParameters, LLMCredentials
 
 
 class LLMProvider:
-    """
-    TODO: Do I want to get rid of this and control this with the system prompts?
+    def __init__(self, api_keys: LLMCredentials):
+        self.api_keys = api_keys
 
-    Factory class for providing different LLM instances based on configuration.
-    Supports different models for different tasks and caching of instances.
-    """
+    def llm(self, llm_parameters: Optional[LLMParameters] = None) -> BaseLanguageModel:
 
-    def __init__(self, config: Optional[Dict[str, Dict[str, Any]]] = None):
-        """
-        Initialize the LLM provider with configuration.
+        if llm_parameters is None:
+            return ChatOpenRouter(api_key=self.api_keys.openrouter_api_key, **self.get_default_llm_parameters().__dict__)
 
-        Args:
-            config: Dictionary mapping task interfaces to LLM configurations
-                Example: {
-                    "default": {"model": "ChatOpenAI", "model_name": "gpt-4", "temperature": 0.7},
-                    "coding": {"model": "ChatOpenAI", "model_name": "gpt-4", "temperature": 0.2},
-                    "creative": {"model": "ChatAnthropic", "model_name": "claude-2", "temperature": 0.9}
-                }
-        """
-        # Default configuration if none provided
-        self.config = config or {
-            "default": {"model": "ChatOpenAI", "model_name": "gpt-3.5-turbo", "temperature": 0.7}
-        }
-
-        # Cache for LLM instances
-        self._llm_cache: Dict[str, BaseLanguageModel] = {}
-
-    def get_llm(self, task_type: str = "default") -> BaseLanguageModel:
-        """
-        Get an LLM instance for the specified task type.
-
-        Args:
-            task_type: Type of task (e.g., "default", "coding", "creative")
-
-        Returns:
-            LLM instance configured for the specified task
-        """
-        # Return cached instance if available
-        if task_type in self._llm_cache:
-            return self._llm_cache[task_type]
-
-        # Get config for task type, fall back to default if not specified
-        llm_config = self.config.get(task_type, self.config["default"])
-
-        # Create new LLM instance based on config
-        llm = self._create_llm_from_config(llm_config)
-
-        # Cache the instance
-        self._llm_cache[task_type] = llm
-
-        return llm
-
-    def _create_llm_from_config(self, config: Dict[str, Any]) -> BaseLanguageModel:
-        """Create an LLM instance based on configuration."""
-        model_type = config.pop("model")
-
-        # Create instance based on model type
-        if model_type == "ChatOpenAI":
-            return ChatOpenAI(**config)
-        elif model_type == "ChatAnthropic":
-            return ChatAnthropic(**config)
-        elif model_type == "OpenAI":
-            return OpenAI(**config)
-        elif model_type == "HuggingFaceHub":
-            return HuggingFaceHub(**config)
+        client = None
+        key_to_use = None
+        if llm_parameters.model_provider == "openrouter":
+            client = ChatOpenRouter
+            key_to_use = self.api_keys.openrouter_api_key
+        elif llm_parameters.model_provider == "openai_chat":
+            client = ChatOpenAI
+            key_to_use = self.api_keys.openai_api_key
+        elif llm_parameters.model_provider == "openai":
+            client = OpenAI
+            key_to_use = self.api_keys.openai_api_key
         else:
-            raise ValueError(f"Unsupported model type: {model_type}")
+            raise ValueError(f"Unsupported model type: {llm_parameters.model_provider}")
+        return client(api_key=key_to_use, **llm_parameters.__dict__)
 
-    def reload_config(self, config: Dict[str, Dict[str, Any]]) -> None:
-        """
-        Reload the configuration and clear the cache.
-        Useful for runtime configuration changes.
-        """
-        self.config = config
-        self._llm_cache.clear()
+    @staticmethod
+    def get_default_llm_parameters() -> LLMParameters:
+        return LLMParameters(
+            model_provider="openrouter",
+            model="google/gemini-2.0-flash-001",
+            temperature=0.7
+        )
+
+
+class ChatOpenRouter(ChatOpenAI):
+    openai_api_key: Optional[SecretStr] = Field(alias="api_key")
+
+    @property
+    def lc_secrets(self) -> dict[str, str]:
+        return {"openai_api_key": "OPENROUTER_API_KEY"}
+
+    def __init__(self,
+                 openai_api_key: Optional[str] = None,
+                 **kwargs):
+        openai_api_key = openai_api_key
+        super().__init__(
+            base_url="https://openrouter.ai/api/v1",
+            openai_api_key=openai_api_key,
+            **kwargs
+        )

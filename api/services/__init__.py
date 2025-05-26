@@ -1,3 +1,3 @@
 from .llm_provider import LLMProvider
-from .workflow_orchestrator import WorkflowOrchestrator
+from .workflow_manager import WorkflowManager
 from .conversation_context_manager import ConversationContextManager

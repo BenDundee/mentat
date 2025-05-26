@@ -1,7 +1,7 @@
 from langchain.agents import AgentExecutor, create_openai_functions_agent, create_react_agent
 from langchain.chains import LLMChain
 from langchain_openai import OpenAIEmbeddings
-from langchain.vectorstores import Chroma
+from langchain_chroma import Chroma
 from typing import List, Optional
 import sqlite3
 import datetime
@@ -12,7 +12,7 @@ from api.agency.writer import WriterAgent
 from api.agency.critic import CriticAgent
 from api.agency.agent_processing_graph import AgentProcessingGraph
 from api.toolbox import get_tool_registry
-from api.services import ConversationContextManager, WorkflowOrchestrator
+from api.services import ConversationContextManager, WorkflowManager
 from api.api_configurator import APIConfigurator
 from api.interfaces import ChatResponse
 
@@ -55,7 +55,7 @@ class ExecutiveCoachAgent:
         self._create_agent()
 
         # Create workflow orchestrator
-        self.workflow_orchestrator = WorkflowOrchestrator(
+        self.workflow_orchestrator = WorkflowManager(
             goal_tracker=self.goal_tracker,
             journal_manager=self.journal_manager,
             conversation_search=self.conversation_search,

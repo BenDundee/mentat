@@ -1,7 +1,10 @@
 from dataclasses import dataclass
 import datetime as dt
 from pydantic import BaseModel, Field
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Union
+
+from langchain.prompts import PromptTemplate, FewShotPromptTemplate, ChatPromptTemplate
+
 
 class ChatRequest(BaseModel):
     """Input schema for the chat endpoint."""
@@ -77,7 +80,7 @@ class Persona(BaseModel):
         )
 
 
-# TODO: use pydntic
+# TODO: use pydntic?
 @dataclass
 class IntentPattern:
     """Represents a pattern for intent detection with associated keywords and description."""
@@ -85,4 +88,27 @@ class IntentPattern:
     keywords: List[str]
     description: str
     tool_name: str
-    example_phrases: List[str] = None
+    example_phrases: Optional[List[str]]
+
+@dataclass
+class LLMCredentials:
+    """Credentials for accessing LLMs."""
+    openai_api_key: str
+    openrouter_api_key: str
+
+
+@dataclass
+class LLMParameters:
+    model_provider: str
+    model: str
+    temperature: Optional[float] = None
+    top_k: Optional[int] = None
+    top_p: Optional[float] = None
+    max_tokens: Optional[int] = None
+
+
+@dataclass
+class PromptHandler:
+    prompt_name: str
+    prompt_template: Union[PromptTemplate, ChatPromptTemplate, FewShotPromptTemplate]
+    llm_parameters: LLMParameters
