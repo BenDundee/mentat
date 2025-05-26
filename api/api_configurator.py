@@ -3,7 +3,6 @@ from pathlib import Path
 import yaml
 
 from api.interfaces import LLMCredentials
-from api.services.prompt_manager import PromptManager
 from api.services import LLMProvider
 
 
@@ -24,5 +23,4 @@ class APIConfigurator:
             self.llm_client_config = LLMCredentials(**yaml.safe_load(f))
 
         # Other
-        self.prompt_manager = PromptManager()
         self.llm_provider = LLMProvider(self.llm_client_config)

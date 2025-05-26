@@ -1,16 +1,16 @@
 from fastapi import FastAPI, HTTPException, Depends
 import logging
 
-from api.agency import ExecutiveCoachAgent
 from api.interfaces import ChatResponse, ChatRequest
 from api.api_configurator import APIConfigurator
-
+from api.workflows import WorkflowOrchestrator
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 app = FastAPI(title="Executive Coach API")
 config = APIConfigurator()
-agent = ExecutiveCoachAgent(config)
+orchestrator = WorkflowOrchestrator(llm_provider=config.llm_provider)
 
 
 @app.post("/chat", response_model=ChatResponse)
