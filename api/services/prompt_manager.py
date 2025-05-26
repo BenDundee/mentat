@@ -5,7 +5,7 @@ import yaml
 
 from langchain.prompts import PromptTemplate, FewShotPromptTemplate, ChatPromptTemplate
 from langchain.prompts.chat import SystemMessagePromptTemplate, HumanMessagePromptTemplate, AIMessagePromptTemplate
-from api.interfaces import PromptHandler, LLMParameters, ModelAPIParameters
+from api.interfaces import PromptHandler, LLMParameters, ModelKWArgs
 from api.services.llm_provider import LLMProvider
 
 
@@ -128,11 +128,7 @@ def _create_prompt_template(prompt_name: str, prompt_config: Dict[str, Any]) -> 
             logger.warning(
                 "Missing model or model provider in LLM parameters, using default settings, using default LLM settings")
         else:
-            llm_parameters = LLMParameters(
-                model_provider=raw_llm_cfg["model_provider"],
-                model=raw_llm_cfg["model"],
-                model_api_parameters=ModelAPIParameters(**raw_llm_cfg.get("model_api_parameters", {}))
-            )
+            llm_parameters = LLMParameters(**raw_llm_cfg)
 
     return PromptHandler(
         prompt_name=prompt_name,

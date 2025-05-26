@@ -1,13 +1,13 @@
 executive_coach_system:
   description: "Main system prompt for the executive coach agent"
   llm_parameters:
-    model: google/gemini-2.5-pro-preview
     model_provider: openrouter
-    model_api_parameters:
-      temperature: 1.0
+    model: google/gemini-2.5-pro-preview
+    temperature: 1.0
+    max_tokens: 2000
+    model_kwargs:
       top_k: 40
       top_p: 0.8
-      max_tokens: 2000
   template: |
     You are one of the top executive coaches in Silicon Valley, serving as mentor and coach for executives of tech 
     companies. Your coaching has been credited with helping leaders of some of the hottest young companies adapt to the 

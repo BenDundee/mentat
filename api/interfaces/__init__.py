@@ -99,19 +99,33 @@ class LLMCredentials:
 
 
 @dataclass
-class ModelAPIParameters:
+class ModelKWArgs:
     """Parameters for accessing LLMs."""
-    temperature: Optional[float] = None
-    top_k: Optional[int] = None
     top_p: Optional[float] = None
-    max_tokens: Optional[int] = None
+    top_k: Optional[int] = None
 
 
 @dataclass
 class LLMParameters:
     model_provider: str
     model: str
-    model_api_parameters: Optional[ModelAPIParameters] = None
+
+    #---- API params
+    temperature: float = 0.0
+    max_tokens: float = 2000
+    model_kwargs: ModelKWArgs = None
+
+    def get_client_kwargs(self):
+        model_kwargs = self.model_kwargs or ModelKWArgs()
+        return {
+            "model": self.model,
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+            "model_kwargs": {
+                "top_p": model_kwargs.top_p,
+                "top_k": model_kwargs.top_k
+            }
+        }
 
 
 @dataclass
