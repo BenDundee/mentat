@@ -16,8 +16,8 @@ class WorkflowManager:
         # Create workflow graphs
         self.workflows = {
             "goal_review": self._create_goal_review_workflow(),
-            "reflection_session": self._create_reflection_workflow(),
-            "planning_session": self._create_planning_workflow()
+            # "reflection_session": self._create_reflection_workflow(),
+            # "planning_session": self._create_planning_workflow()
         }
 
     def _create_goal_review_workflow(self):
