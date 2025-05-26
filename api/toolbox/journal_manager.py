@@ -29,6 +29,10 @@ class JournalManagerTool(BaseTool):
         self.conn = db_connection
         self.vector_db = vector_db
 
+    @staticmethod
+    def return_name():
+        return "journal_manager"
+
     def _run(self, query: str, user_id: str = "default_user") -> str:
         """Execute journal-related operations."""
         cursor = self.conn.cursor()

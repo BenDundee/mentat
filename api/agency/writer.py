@@ -5,13 +5,16 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_core.output_parsers import StrOutputParser
 from typing import Dict, Any, List, Optional
 
+from api.services import LLMProvider
+
 
 class WriterAgent:
     """Agent responsible for crafting well-structured responses based on tool outputs."""
 
-    def __init__(self, llm_provider):
+    def __init__(self, llm_provider: LLMProvider):
         # Use a model optimized for creative writing
-        self.llm = llm_provider.get_llm("creative", temperature=0.7)
+        # TODO Move prompt to file, add LLM parameters there
+        self.llm = llm_provider.llm()
 
         # Create the prompt template for the writer
         self.prompt = ChatPromptTemplate.from_messages([

@@ -28,6 +28,10 @@ class GoalTrackerTool(BaseTool):
         super().__init__()
         self.conn = db_connection
 
+    @staticmethod
+    def return_name():
+        return "goal_tracker"
+
     def _run(self, query: str, user_id: str = "default_user") -> str:
         """Execute goal-related operations."""
         cursor = self.conn.cursor()

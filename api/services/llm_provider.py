@@ -4,7 +4,7 @@ from langchain_core.language_models import BaseLanguageModel
 from typing import Optional
 from pydantic import Field, SecretStr
 
-from api.interfaces import LLMParameters, LLMCredentials
+from api.interfaces import LLMParameters, LLMCredentials, ModelAPIParameters
 
 
 class LLMProvider:
@@ -36,7 +36,7 @@ class LLMProvider:
         return LLMParameters(
             model_provider="openrouter",
             model="google/gemini-2.0-flash-001",
-            temperature=0.7
+            model_api_parameters=ModelAPIParameters()
         )
 
 

@@ -1,7 +1,12 @@
 from langchain.output_parsers import PydanticOutputParser
+from langchain.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.messages import SystemMessage, HumanMessage
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 import json
+
+from api.services import LLMProvider
 
 
 class CriticEvaluation(BaseModel):
@@ -18,9 +23,10 @@ class CriticEvaluation(BaseModel):
 class CriticAgent:
     """Agent responsible for evaluating and improving responses."""
 
-    def __init__(self, llm_provider):
+    def __init__(self, llm_provider: LLMProvider):
         # Use a model optimized for analytical thinking
-        self.llm = llm_provider.get_llm("analytical", temperature=0.2)
+        # TODO: move to prompt file, get LLMParameters
+        self.llm = llm_provider.llm()
 
         # Create output parser
         self.parser = PydanticOutputParser(pydantic_object=CriticEvaluation)

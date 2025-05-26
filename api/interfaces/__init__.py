@@ -90,6 +90,7 @@ class IntentPattern:
     tool_name: str
     example_phrases: Optional[List[str]]
 
+
 @dataclass
 class LLMCredentials:
     """Credentials for accessing LLMs."""
@@ -98,13 +99,19 @@ class LLMCredentials:
 
 
 @dataclass
-class LLMParameters:
-    model_provider: str
-    model: str
+class ModelAPIParameters:
+    """Parameters for accessing LLMs."""
     temperature: Optional[float] = None
     top_k: Optional[int] = None
     top_p: Optional[float] = None
     max_tokens: Optional[int] = None
+
+
+@dataclass
+class LLMParameters:
+    model_provider: str
+    model: str
+    model_api_parameters: Optional[ModelAPIParameters] = None
 
 
 @dataclass

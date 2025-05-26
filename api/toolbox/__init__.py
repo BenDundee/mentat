@@ -91,19 +91,19 @@ def configure_tools(
             name="goal_tracking",
             keywords=["goal", "objective", "target", "achieve", "milestone"],
             description="setting, updating, or reviewing professional goals",
-            tool_name=GoalTrackerTool.name,
+            tool_name=GoalTrackerTool.return_name(),
             example_phrases=["I want to set a new goal", "How am I progressing on my goals?"]
         ), IntentPattern(
             name="journaling",
             keywords=["journal", "reflect", "write", "thought", "feelings"],
             description="reflective journaling, generating prompts, or reviewing past entries",
-            tool_name=JournalManagerTool.name,
+            tool_name=JournalManagerTool.return_name(),
             example_phrases=["I'd like to journal about my day", "Give me a reflection prompt"]
         ), IntentPattern(
             name="conversation_recall",
             keywords=["remember", "last time", "previously", "you said", "recall"],
             description="recalling relevant previous discussions",
-            tool_name=ConversationSearchTool.name,
+            tool_name=ConversationSearchTool.return_name(),
             example_phrases=["What did we discuss last time?", "Can you recall our conversation about leadership?"]
         )
     ]

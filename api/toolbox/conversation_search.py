@@ -1,6 +1,6 @@
 from langchain.tools import BaseTool
 from pydantic import BaseModel
-from typing import Type, ClassVar
+from typing import Type
 from langchain_chroma import Chroma
 
 from api.interfaces import VectorDBQuery
@@ -16,6 +16,10 @@ class ConversationSearchTool(BaseTool):
         """Initialize with a vector database."""
         super().__init__()
         self.vector_db = vector_db
+
+    @staticmethod
+    def return_name():
+        return "conversation_search"
 
     def _run(self, query: str, user_id: str = "default_user", limit: int = 3) -> str:
         """Search for relevant past conversations."""

@@ -1,10 +1,15 @@
+import logging
 from pathlib import Path
 from typing import Dict, Any, Union
 import yaml
 
 from langchain.prompts import PromptTemplate, FewShotPromptTemplate, ChatPromptTemplate
 from langchain.prompts.chat import SystemMessagePromptTemplate, HumanMessagePromptTemplate, AIMessagePromptTemplate
-from api.interfaces import PromptHandler, LLMParameters
+from api.interfaces import PromptHandler, LLMParameters, ModelAPIParameters
+from api.services.llm_provider import LLMProvider
+
+
+logger = logging.getLogger(__name__)
 
 
 class PromptManager:
@@ -20,10 +25,13 @@ class PromptManager:
         """Initialize the PromptManager with the directory containing prompt YAML files."""
         self.prompts = {}
         self.load_all_prompts()
+        logger.debug(f"Loaded prompts: {self.prompts.keys()}")
 
     def load_all_prompts(self) -> None:
         """Load all prompt templates from the prompts directory and its subdirectories."""
+        logger.info(f"Loading prompts from {self.prompts_dir}")
         _ = [self.load_prompt_from_file(f) for f in self.prompts_dir.glob("**/*.yaml")]
+        logger.info(f"Loaded {len(self.prompts)} prompts")
 
     def load_prompt_from_file(self, file_path: Path) -> None:
         """Load prompt templates from a single YAML file."""
@@ -31,9 +39,12 @@ class PromptManager:
             with open(file_path, 'r') as f:
                 prompt_data = yaml.safe_load(f)
             for prompt_name, prompt_config in prompt_data.items():
-                self.prompts[prompt_name] = _create_prompt_template(prompt_config)
+                self.prompts[prompt_name] = _create_prompt_template(prompt_name, prompt_config)
+                logger.debug(
+                    f"Loaded prompt '{prompt_name}' from {file_path} with LLM parameters: {self.prompts[prompt_name].llm_parameters}"
+                )
         except Exception as e:
-            print(f"Error loading prompts from {file_path}: {e}")
+            logger.warning(f"Error loading prompts, prompts not loaded from {file_path}: {e}")
 
     def get_prompt(self, prompt_name: str) -> Union[PromptTemplate, ChatPromptTemplate, FewShotPromptTemplate]:
         """Get a prompt template by name."""
@@ -54,7 +65,7 @@ class PromptManager:
 
 
 # --------------------------------------Helpers
-def _create_prompt_template(prompt_config: Dict[str, Any]) -> PromptHandler:
+def _create_prompt_template(prompt_name: str, prompt_config: Dict[str, Any]) -> PromptHandler:
     """Create the appropriate prompt template based on configuration."""
     template_format = prompt_config.get("template_format", "string")
     template = None
@@ -96,8 +107,28 @@ def _create_prompt_template(prompt_config: Dict[str, Any]) -> PromptHandler:
     else:
         raise ValueError(f"Unsupported template format: {template_format}")
 
+    # Next get LLM parameters
+    raw_llm_cfg = prompt_config.get("llm_parameters", {})
+    llm_parameters = LLMProvider.get_default_llm_parameters()
+    if raw_llm_cfg:
+        if "model" not in raw_llm_cfg or "model_provider" not in raw_llm_cfg:
+            logger.warning(
+                "Missing model or model provider in LLM parameters, using default settings, using default LLM settings")
+        else:
+            llm_parameters = LLMParameters(
+                model_provider=raw_llm_cfg["model_provider"],
+                model=raw_llm_cfg["model"],
+                model_api_parameters=ModelAPIParameters(**raw_llm_cfg.get("model_api_parameters", {}))
+            )
+
     return PromptHandler(
-        prompt_name=prompt_config["name"],
+        prompt_name=prompt_name,
         prompt_template=template,
-        llm_parameters=LLMParameters(**prompt_config.get("llm_settings", {}))
+        llm_parameters=llm_parameters
     )
+
+
+if __name__ == "__main__":
+    pm = PromptManager()
+    print(pm.get_prompt("executive_coach_system"))
+    print("wait")
