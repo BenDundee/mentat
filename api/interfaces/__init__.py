@@ -2,18 +2,14 @@ from dataclasses import dataclass
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
+from langchain.schema import ChatMessage
+
 
 class ChatRequest(BaseModel):
     """Input schema for the chat endpoint."""
     message: str = Field(..., description="The message to send to the chatbot")
-    history: Optional[List[List[str]]] = None
+    history: Optional[List[ChatMessage]] = None
     user_id: Optional[str] = "default_user"
-
-
-class ChatResponse(BaseModel):
-    response: str
-
-
 
 @dataclass
 class LLMCredentials:
@@ -21,12 +17,10 @@ class LLMCredentials:
     openai_api_key: str
     openrouter_api_key: str
 
-
 @dataclass
 class ModelKWArgs:
     """Parameters for accessing LLMs."""
     top_p: Optional[float] = None
-
 
 @dataclass
 class LLMParameters:
