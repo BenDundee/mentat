@@ -59,7 +59,6 @@ def chat_interface_fn(user_message: str, chat_history: list[gr.ChatMessage] | No
     if chat_history is None:
         chat_history = []
     logger.info(f"User message: {user_message}")
-    logger.info(f"Current chat history: {chat_history}")
     bot_response = call_chat_api(user_message, chat_history)
     logger.info(f"Updated chat history: {chat_history}")
     return bot_response

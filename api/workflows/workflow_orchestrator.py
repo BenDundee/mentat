@@ -1,6 +1,10 @@
 import logging
 from typing import Dict, Any, Callable, Optional
+
+from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
+
 from api.services import LLMProvider
+from api.api_configurator import APIConfigurator
 
 logger = logging.getLogger(__name__)
 
@@ -11,8 +15,9 @@ WorkflowHandler = Callable[[Dict[str, Any], LLMProvider], Dict[str, Any]]
 
 
 class WorkflowOrchestrator:
-    def __init__(self, llm_provider: LLMProvider):
-        self.llm_provider = llm_provider
+    def __init__(self, config: APIConfigurator = APIConfigurator()):
+        self.config = config
+        self.llm_provider = self.config.llm_provider
         self._intent_to_workflow_map: Dict[str, WorkflowHandler] = {}
         self._register_known_workflows()
 
@@ -73,21 +78,35 @@ class WorkflowOrchestrator:
         return final_state
 
 # --- MVP Workflow Implementation: Simple Response ---
-def handle_simple_response(state: Dict[str, Any], llm_provider: LLMProvider) -> Dict[str, Any]:
+def handle_simple_response(state: Dict[str, Any], config: APIConfigurator) -> Dict[str, Any]:
     """
-    MVP workflow: Gets a user message from state and uses the LLM for a simple reply.
+    Enhanced workflow: Uses a proper LangChain prompt template to structure the message
+    before sending it to the LLM.
     """
     user_message = state.get("user_message", "No message provided")
     logger.info(f"Executing 'handle_simple_response' for message: '{user_message[:50]}...'")
+    
+    # Create a chat prompt template with a system message and a human message
+    prompt_template = config.prompt_manager.get_prompt("simple_response").template
 
-    llm = llm_provider.llm()
-
-    # For MVP, the prompt can be simple. It could be the user message directly
-    # or a slightly more instructive prompt.
-    prompt_for_llm = user_message
-
+    prompt_template = ChatPromptTemplate.from_messages([
+        SystemMessagePromptTemplate.from_template(
+            "You are an executive coach named Mentat. Your role is to provide guidance, ask thoughtful questions, "
+            "and help users develop their professional and personal skills. "
+            "Be supportive, insightful, and focused on growth."
+        ),
+        HumanMessagePromptTemplate.from_template("{input}")
+    ])
+    
+    # Format the prompt with the user's message
+    prompt = prompt_template.format_messages(input=user_message)
+    
+    # Get the LLM
+    llm = config.llm_provider.llm()
+    
     try:
-        response_data = llm.invoke(prompt_for_llm)
+        # Send the formatted prompt to the LLM
+        response_data = llm.invoke(prompt)
         output_content = response_data.content
     except Exception as e:
         logger.error(f"Error during LLM call in handle_simple_response: {e}")

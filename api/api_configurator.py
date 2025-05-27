@@ -1,9 +1,8 @@
-from dataclasses import dataclass
 from pathlib import Path
 import yaml
 
 from api.interfaces import LLMCredentials
-from api.services import LLMProvider
+from api.services import LLMProvider, PromptManager
 
 
 BASE_DIR = Path(__file__).parent.parent
@@ -24,3 +23,4 @@ class APIConfigurator:
 
         # Other
         self.llm_provider = LLMProvider(self.llm_client_config)
+        self.prompt_manager = PromptManager()

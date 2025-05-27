@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 app = FastAPI(title="Executive Coach API")
 config = APIConfigurator()
-orchestrator = WorkflowOrchestrator(llm_provider=config.llm_provider)
+orchestrator = WorkflowOrchestrator(config)
 
 @app.post("/chat", response_model=ChatMessage)
 async def chat_endpoint(request: ChatRequest) -> ChatMessage:

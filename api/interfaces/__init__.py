@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from langchain.schema import ChatMessage
+from langchain.prompts import PromptTemplate, FewShotPromptTemplate, ChatPromptTemplate
 
 
 class ChatRequest(BaseModel):
@@ -43,3 +44,8 @@ class LLMParameters:
             }
         }
 
+@dataclass
+class PromptContainer:
+    prompt_name: str
+    prompt_template: Union[PromptTemplate, ChatPromptTemplate, FewShotPromptTemplate]
+    llm_parameters: LLMParameters
