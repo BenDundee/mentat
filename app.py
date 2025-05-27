@@ -6,8 +6,7 @@ import logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s")
 logger = logging.getLogger(__name__)
 
-# Define the URL for your FastAPI backend
-# This should match the host and port where your api.py is running
+# TODO: get from a config file
 API_URL = "http://127.0.0.1:8000/chat"
 
 def call_chat_api(user_message: str, chat_history: list[list[str | None]] | None) -> gr.ChatMessage:
@@ -59,15 +58,9 @@ def chat_interface_fn(user_message: str, chat_history: list[gr.ChatMessage] | No
     """
     if chat_history is None:
         chat_history = []
-
     logger.info(f"User message: {user_message}")
     logger.info(f"Current chat history: {chat_history}")
-
-    # Get the bot's response from the API
-    # The `chat_history` from Gradio is already in the List[List[str]] format
-    # that our API's ChatRequest model expects.
     bot_response = call_chat_api(user_message, chat_history)
-    #chat_history.extend([gr.ChatMessage(content=user_message, role="user"), bot_response])
     logger.info(f"Updated chat history: {chat_history}")
     return bot_response
 
@@ -95,6 +88,4 @@ iface = gr.ChatInterface(
 if __name__ == "__main__":
     logger.info("Starting Gradio application...")
     logger.info(f"Make sure your API server (api.py) is running and accessible at {API_URL}")
-    # To make it accessible on the network, you might use server_name="0.0.0.0"
-    # For development, localhost is usually fine.
     iface.launch()
