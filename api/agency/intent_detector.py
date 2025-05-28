@@ -1,32 +1,37 @@
 import logging
-from typing import Dict, Any, List, Optional
+from pydantic import BaseModel, Field
+from typing import Optional
 
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.tools import Tool
-from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers.openai_functions import PydanticOutputFunctionsParser
+from langchain_core.output_parsers import ChoiceOutputParser
 
-from api.interfaces import Intent, IntentDetectionResponse
+from api.api_configurator import APIConfigurator
+# Import the existing Intent enum
+from api.interfaces import Intent
 
 logger = logging.getLogger(__name__)
 
+class IntentDetectionResponse(BaseModel):
+    """Schema for the intent detection response."""
+    intent: Intent = Field(description="The detected intent of the user's message")
+    confidence: float = Field(description="Confidence score for the detected intent (0-1)")
+    reasoning: str = Field(description="Explanation of why this intent was chosen")
 
 class IntentDetector:
     """
-    A class that uses LangChain's modern agent patterns to detect user intent.
+    A class that uses LangChain's Choice pattern to detect user intent.
     """
     
-    def __init__(self, llm_provider):
+    def __init__(self, config: APIConfigurator):
         """
         Initialize the intent detector.
         
         Args:
             llm_provider: The LLM provider to use for intent detection
         """
-        self.llm_provider = llm_provider
-        self.intents = [i for i in Intent]
-        
-        # Initialize the parser
-        self.parser = JsonOutputParser(pydantic_object=IntentDetectionResponse)
+        self.llm_provider = config.llm_provider
         
         # Create the prompt template
         self.prompt = ChatPromptTemplate.from_messages([
@@ -34,80 +39,40 @@ class IntentDetector:
 Your job is to analyze user messages and determine their primary intent.
 
 Available intents are:
-{intents}
+{intent_descriptions}
 
 Based on the user's message, identify the most appropriate intent category.
-Respond with a JSON object that includes the intent name, your confidence level (0-1),
-and a brief explanation of your reasoning.
-
-Considerations:
-- Focus on the primary purpose of the message, not secondary elements
-- Consider both explicit statements and implicit needs
-- Default to "simple_response" only if no other intent clearly applies
-- Be decisive - choose the best match even if multiple intents seem possible"""),
+Consider both explicit statements and implicit needs.
+Default to "simple_message" only if no other intent clearly applies.
+Be decisive - choose the best match even if multiple intents seem possible."""),
             ("human", "{input}")
         ])
         
-        # Create the detect intent tool
-        self.detect_intent_tool = Tool(
-            name="detect_intent",
-            description="Detects the intent of a user message",
-            func=self._detect_intent_impl
-        )
+        # Set up the classification chain using Choice pattern
+        self._setup_classification_chain()
         
-        # Set up the agent using modern patterns
-        self._setup_agent()
-        
-    def _detect_intent_impl(self, user_message: str) -> Dict[str, Any]:
+    def _setup_classification_chain(self):
         """
-        Implementation of the intent detection logic.
-        
-        Args:
-            user_message: The message from the user
-            
-        Returns:
-            A dictionary with the detected intent information
+        Set up the classification chain using the Choice pattern.
         """
         # Get the LLM from the provider
         llm = self.llm_provider.llm()
         
-        # Create a chain for intent detection using modern pipe syntax
-        intent_chain = self.prompt | llm | self.parser
-        
-        # Execute the chain
-        return intent_chain.invoke({
-            "intents": "\n".join([f"- {intent}" for intent in self.intents]),
-            "input": user_message
-        })
-    
-    def _setup_agent(self):
-        """
-        Set up the agent using modern LangChain patterns.
-        """
-        from langchain.agents import create_react_agent, AgentExecutor
-        
-        # Get the LLM from the provider
-        llm = self.llm_provider.llm()
-        
-        # Define tools the agent can use
-        tools = [self.detect_intent_tool]
-        
-        # Create the agent with create_react_agent (modern pattern)
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are an intent detection agent. Use the tools to analyze user messages."),
-            ("human", "{input}"),
-            ("placeholder", "{agent_scratchpad}")
-        ])
-        
-        # Create the agent
-        agent = create_react_agent(llm, tools, prompt)
-        
-        # Create the agent executor
-        self.agent_executor = AgentExecutor.from_agent_and_tools(
-            agent=agent,
-            tools=tools,
-            verbose=True,
-            handle_parsing_errors=True
+        # Create the classification chain
+        self.classification_chain = (
+            RunnablePassthrough.assign(
+                intent_descriptions=lambda _: Intent.llm_rep()
+            )
+            | self.prompt
+            | llm.bind(
+                functions=[{
+                    "name": "classify_intent",
+                    "description": "Classify the intent of the user message",
+                    "parameters": IntentDetectionResponse.model_json_schema()
+                }],
+                function_call={"name": "classify_intent"}
+            )
+            | PydanticOutputFunctionsParser(pydantic_schema=IntentDetectionResponse)
         )
     
     def detect(self, user_message: str) -> Optional[str]:
@@ -123,38 +88,40 @@ Considerations:
         logger.info(f"Detecting intent for: '{user_message[:50]}...'")
         
         try:
-            # For simplicity in this initial implementation, we'll use the direct implementation
-            # rather than the full agent. As your system grows, you can switch to using the agent
-            # for more complex scenarios.
-            result = self._detect_intent_impl(user_message)
+            # Execute the classification chain
+            result = self.classification_chain.invoke({"input": user_message})
             
             logger.info(f"Detected intent: {result.intent} with confidence {result.confidence}")
             logger.debug(f"Intent reasoning: {result.reasoning}")
             
+            # Return the string value of the intent
             return result.intent
+            
         except Exception as e:
             logger.error(f"Error detecting intent: {e}")
             # Fallback to simple response if there's an error
-            return "simple_response"
+            return Intent.SIMPLE.value
     
     def add_intent(self, intent_name: str):
         """
-        Add a new intent to the list of recognized intents.
+        Add a new intent description to the intent detector.
         
         Args:
             intent_name: The name of the intent to add
         """
-        if intent_name not in self.intents:
-            self.intents.append(intentname)
-            logger.info(f"Added new intent: {intent_name}")
+        # Note: This assumes that the intent has already been added to the Intent enum
+        # We're just adding the description here
+        if intent_name not in self.intent_descriptions:
+            self.intent_descriptions[intent_name] = f"Intent related to {intent_name}"
+            logger.info(f"Added new intent description: {intent_name}")
     
     def remove_intent(self, intent_name: str):
         """
-        Remove an intent from the list of recognized intents.
+        Remove an intent description from the intent detector.
         
         Args:
             intent_name: The name of the intent to remove
         """
-        if intent_name in self.intents:
-            self.intents.remove(intent_name)
-            logger.info(f"Removed intent: {intent_name}")
+        if intent_name in self.intent_descriptions:
+            del self.intent_descriptions[intent_name]
+            logger.info(f"Removed intent description: {intent_name}")

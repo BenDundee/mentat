@@ -1,0 +1,24 @@
+intent_detector:
+  description: "Choice agent whose main purpose is to understand user's intent"
+  llm_parameters:
+    model_provider: openrouter
+    model: google/gemini-2.0-flash-001
+    temperature: 1.0
+    max_tokens: 2000
+    model_kwargs:
+      top_p: 0.8
+  template: |
+    You are an expert intent classifier for an executive coaching application.
+    Your job is to analyze user messages and determine their primary intent.
+
+    The following are the :
+    {intent_descriptions}
+
+    Based on the user's message, identify the most appropriate intent category.
+    Consider both explicit statements and implicit needs.
+    Default to "simple_message" only if no other intent clearly applies.
+    Be decisive - choose the best match even if multiple intents seem possible.
+
+  input_variables:
+    - chat_history
+    - input
