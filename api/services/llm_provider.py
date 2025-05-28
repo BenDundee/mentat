@@ -13,7 +13,7 @@ class LLMProvider:
     def llm(self, llm_parameters: Optional[LLMParameters] = None) -> BaseLanguageModel:
 
         if not llm_parameters:
-            kwargs = self.get_default_llm_parameters().get_client_kwargs()
+            kwargs = self.get_default_llm_parameters().to_dict()
             return ChatOpenRouter(api_key=self.api_keys.openrouter_api_key, **kwargs)
 
         client = None
@@ -29,7 +29,8 @@ class LLMProvider:
             key_to_use = self.api_keys.openai_api_key
         else:
             raise ValueError(f"Unsupported model type: {llm_parameters.model_provider}")
-        return client(api_key=key_to_use, **llm_parameters.get_client_kwargs())
+
+        return client(api_key=key_to_use, **llm_parameters.to_dict())
 
     @staticmethod
     def get_default_llm_parameters() -> LLMParameters:

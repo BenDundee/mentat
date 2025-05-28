@@ -4,7 +4,7 @@ from langchain_core.messages import ChatMessage
 
 from api.interfaces import ChatRequest
 from api.api_configurator import APIConfigurator
-from api.workflows import WorkflowOrchestrator
+from api.workflow_orchestrator import WorkflowOrchestrator
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s")

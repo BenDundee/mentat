@@ -47,11 +47,18 @@ class PromptManager:
         except Exception as e:
             logger.warning(f"Error loading prompts, prompts not loaded from {file_path}: {e}")
 
-    def get_prompt(self, prompt_name: str) -> Union[PromptTemplate, ChatPromptTemplate, FewShotPromptTemplate]:
+    def get_prompt(self, prompt_name: str) -> PromptTemplate:
         """Get a prompt template by name."""
         if prompt_name not in self.prompts:
             raise ValueError(f"Prompt '{prompt_name}' not found")
         return self.prompts[prompt_name].prompt_template
+
+    def get_prompt_container(self, prompt_name: str) -> PromptContainer:
+        return self.prompts[prompt_name]
+
+    def get_prompt_template(self, prompt_name: str) -> PromptTemplate:
+        """Get a prompt template by name."""
+        return self.get_prompt(prompt_name)
 
     def get_react_prompt(self, prompt_name: str) -> PromptTemplate:
         """Shim for fallback Reach agent behavior"""

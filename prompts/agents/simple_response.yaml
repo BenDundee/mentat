@@ -1,5 +1,5 @@
-simple_response:
-  description: "Simple response"
+simple_responder:
+  description: "Simple responder"
   llm_parameters:
     model_provider: openrouter
     model: google/gemini-2.0-flash-001

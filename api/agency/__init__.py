@@ -1,1 +1,8 @@
-from .intent_detector import IntentDetection
+from .intent_detector import IntentDetector
+
+
+from typing import Optional
+from abc import ABC
+class _Agent(ABC):
+    def run(self, user_message: str) -> Optional[str]:
+        pass

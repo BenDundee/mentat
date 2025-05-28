@@ -11,7 +11,7 @@ intent_detector:
     You are an expert intent classifier for an executive coaching application.
     Your job is to analyze user messages and determine their primary intent.
 
-    The following are the :
+    The following are the available intents:
     {intent_descriptions}
 
     Based on the user's message, identify the most appropriate intent category.
@@ -20,5 +20,6 @@ intent_detector:
     Be decisive - choose the best match even if multiple intents seem possible.
 
   input_variables:
+    - intent_descriptions
     - chat_history
     - input
