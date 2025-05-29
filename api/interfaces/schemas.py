@@ -1,6 +1,6 @@
 from enum import Enum
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional, Literal
+from pydantic import BaseModel, Field, ConfigDict, ValidationError
+from typing import List, Optional, Dict
 
 from langchain.schema import ChatMessage
 
@@ -37,8 +37,20 @@ class Intent(Enum):
 class IntentDetectionResponse(BaseModel):
     """Schema for the intent detection response."""
     intent: Intent = Field(description="Detected intent")
-    confidence: float = Field(description="Confidence score for the detected intent (0-1)")
+    confidence: int = Field(description="Confidence score for the detected intent, between 0 and 100")
     reasoning: str = Field(description="Explanation of why this intent was chosen")
+
+    @staticmethod
+    def parser(raw: Dict[str, str]) -> "IntentDetectionResponse":
+        try:
+            assert "intent" in raw and "confidence" in raw and "reasoning" in raw
+        except AssertionError:
+            raise ValidationError("Invalid raw response from LLM: missing required keys")
+        return IntentDetectionResponse(
+            intent=Intent.get_intent(raw["intent"]),
+            confidence=int(raw["confidence"]),
+            reasoning=raw["reasoning"]
+        )
 
 class SimpleResponderResponse(BaseModel):
     """Schema for the simple responder response."""

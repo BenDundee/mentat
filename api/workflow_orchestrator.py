@@ -42,7 +42,7 @@ class WorkflowOrchestrator:
         current_state = {
             "user_message": user_message,
             "user_id": user_id,
-            "detected_intent": intent,
+            "detected_intent": intent.intent,
             "history": []  # Placeholder for future conversation history
         }
 
@@ -52,7 +52,7 @@ class WorkflowOrchestrator:
             return current_state
 
         # 3. Select and Execute Workflow
-        workflow_handler = self._intent_to_workflow_map.get(intent)
+        workflow_handler = self._intent_to_workflow_map.get(intent.intent)
 
         if workflow_handler:
             logger.info(f"Found handler for intent '{intent}'. Executing workflow...")

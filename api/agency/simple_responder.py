@@ -1,9 +1,6 @@
 import logging
-from pydantic import BaseModel, Field
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.output_parsers.openai_functions import PydanticOutputFunctionsParser
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from api.api_configurator import APIConfigurator
@@ -30,7 +27,7 @@ class SimpleResponder(_Agent):
             ("user", "{input}")
         ])
 
-    def run(self, user_message: str) -> SimpleResponderResponse:
+    def run(self, state: Dict[str, Any]) -> SimpleResponderResponse:
         """
         Generate a simple response to the user's message.
         
@@ -50,8 +47,8 @@ class SimpleResponder(_Agent):
             
             # Execute the response chain
             return response_chain.invoke({
-                "input": user_message,
-                "chat_history": []  # Empty for now can be extended to support history
+                "input": state["user_message"],
+                "chat_history": state["chat_history"]  # Empty for now can be extended to support history
             })
             
         except Exception as e:

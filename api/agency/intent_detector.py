@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 from langchain_core.runnables import RunnablePassthrough
-from langchain_core.output_parsers.openai_functions import PydanticOutputFunctionsParser
+from langchain_core.output_parsers import JsonOutputParser
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from api.api_configurator import APIConfigurator
@@ -30,24 +30,12 @@ class IntentDetector(_Agent):
             MessagesPlaceholder(variable_name="chat_history"),
             ("user", "{input}")
         ])
-        
-        # Set up the classification chain using Choice pattern
-        self._setup_classification_chain()
-        
-    def _setup_classification_chain(self):
-        """
-        Set up the classification chain using the Choice pattern.
-        """
-        # Get the LLM from the provider
-        llm = self.llm_provider.llm(self.llm_params)
-        intents = Intent.llm_rep()
-
-        # Create the classification chain
         self.classification_chain = (
-            RunnablePassthrough.assign(intent_descriptions=lambda _: intents)  # Need this? Just use f strin gto sub in prompt template
+            RunnablePassthrough.assign(intent_descriptions=lambda _: Intent.llm_rep())
             | self.prompt
-            | llm
-            | PydanticOutputFunctionsParser(pydantic_schema=IntentDetectionResponse)
+            | self.llm_provider.llm(self.llm_params)
+            | JsonOutputParser()
+            | (lambda x: IntentDetectionResponse.parser(x))
         )
     
     def run(self, user_message: str) -> IntentDetectionResponse:
@@ -72,6 +60,6 @@ class IntentDetector(_Agent):
             logger.error(f"Error detecting intent: {e}")
             return IntentDetectionResponse(
                 intent=Intent.SIMPLE,
-                confidence=0.0,
+                confidence=0,
                 reasoning="I'm sorry, I couldn't understand your message. Please try again."
             )
