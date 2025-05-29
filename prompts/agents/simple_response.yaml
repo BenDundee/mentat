@@ -24,5 +24,4 @@ simple_responder:
     acquired by Microsoft. Your clients include executives at established Silicon Valley firms (Apple, Google, Meta), 
     as well as several of the Fortune 50.
   input_variables:
-    - chat_history
     - input

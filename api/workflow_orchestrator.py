@@ -4,27 +4,25 @@ from typing import Dict, Any, Callable
 from api.api_configurator import APIConfigurator
 from api.interfaces import Intent
 from api.agency.intent_detector import IntentDetector
+from api.agency.simple_responder import SimpleResponder
+from api.agency._agent import _Agent
 
 logger = logging.getLogger(__name__)
-
-# --- Workflow Abstraction (Minimal: A Callable) ---
-# A workflow is a function that takes the current state (including user message)
-# and dependencies (like an LLM provider) and returns an updated state with an output.
-WorkflowHandler = Callable[[Dict[str, Any], APIConfigurator], Dict[str, Any]]
-
 
 class WorkflowOrchestrator:
     def __init__(self, config: APIConfigurator):
         self.config = config
         self.intent_detector = IntentDetector(config)
-        self._intent_to_workflow_map: Dict[Intent, WorkflowHandler] = {}
+        self._intent_to_workflow_map: Dict[Intent, _Agent] = {}
+
+        self._register_known_workflows()
 
     def _register_known_workflows(self):
         """
         Registers the workflows the orchestrator knows about.
         This is where you'll add more workflows in the future.
         """
-        self._intent_to_workflow_map[Intent.SIMPLE] = handle_simple_response
+        self._intent_to_workflow_map[Intent.SIMPLE] = SimpleResponder(self.config)
         # You can add more workflows as they're implemented
         # self.add_workflow("goal_setting", handle_goal_setting)
         # self.add_workflow("feedback", handle_feedback)

@@ -7,16 +7,10 @@ from langchain_core.output_parsers.openai_functions import PydanticOutputFunctio
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from api.api_configurator import APIConfigurator
-from api.interfaces import Intent
-from api.agency import _Agent
+from api.interfaces import Intent, IntentDetectionResponse
+from api.agency._agent import _Agent
 
 logger = logging.getLogger(__name__)
-
-class IntentDetectionResponse(BaseModel):
-    """Schema for the intent detection response."""
-    intent: Intent = Field(description="The detected intent of the user's message")
-    confidence: float = Field(description="Confidence score for the detected intent (0-1)")
-    reasoning: str = Field(description="Explanation of why this intent was chosen")
 
 class IntentDetector(_Agent):
     """
@@ -46,25 +40,17 @@ class IntentDetector(_Agent):
         """
         # Get the LLM from the provider
         llm = self.llm_provider.llm(self.llm_params)
-        
+        intents = Intent.llm_rep()
+
         # Create the classification chain
         self.classification_chain = (
-            RunnablePassthrough.assign(
-                intent_descriptions=lambda _: Intent.llm_rep()
-            )
+            RunnablePassthrough.assign(intent_descriptions=lambda _: intents)  # Need this? Just use f strin gto sub in prompt template
             | self.prompt
-            | llm.bind(
-                functions=[{
-                    "name": "classify_intent",
-                    "description": "Classify the intent of the user message",
-                    "parameters": IntentDetectionResponse.model_json_schema()
-                }],
-                function_call={"name": "classify_intent"}
-            )
+            | llm
             | PydanticOutputFunctionsParser(pydantic_schema=IntentDetectionResponse)
         )
     
-    def run(self, user_message: str) -> Optional[str]:
+    def run(self, user_message: str) -> IntentDetectionResponse:
         """
         Detect the intent of a user message.
         
@@ -77,12 +63,15 @@ class IntentDetector(_Agent):
         logger.info(f"Detecting intent for: '{user_message[:50]}...'")
         try:
             # Execute the classification chain
-            result = self.classification_chain.invoke({"input": user_message})
+            result = self.classification_chain.invoke({"input": user_message, "chat_history": []})
             logger.info(f"Detected intent: {result.intent} with confidence {result.confidence}")
             logger.debug(f"Intent reasoning: {result.reasoning}")
-            return result.intent
+            return result
             
         except Exception as e:
             logger.error(f"Error detecting intent: {e}")
-            # Fallback to simple response if there's an error
-            return Intent.SIMPLE.value
+            return IntentDetectionResponse(
+                intent=Intent.SIMPLE,
+                confidence=0.0,
+                reasoning="I'm sorry, I couldn't understand your message. Please try again."
+            )

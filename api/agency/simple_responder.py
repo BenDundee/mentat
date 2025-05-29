@@ -7,9 +7,11 @@ from langchain_core.output_parsers.openai_functions import PydanticOutputFunctio
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from api.api_configurator import APIConfigurator
-from api.agency import _Agent
+from api.agency._agent import _Agent
+from api.interfaces import SimpleResponderResponse
 
 logger = logging.getLogger(__name__)
+
 
 class SimpleResponder(_Agent):
     """Schema for the intent detection response."""
@@ -28,7 +30,7 @@ class SimpleResponder(_Agent):
             ("user", "{input}")
         ])
 
-    def run(self, user_message: str) -> Optional[str]:
+    def run(self, user_message: str) -> SimpleResponderResponse:
         """
         Generate a simple response to the user's message.
         
@@ -40,27 +42,20 @@ class SimpleResponder(_Agent):
         """
         logger.info(f"Generating simple response for: '{user_message[:50]}...'")
         try:
-            # Get the LLM from the provider
             llm = self.llm_provider.llm(self.llm_params)
-            
-            # Create a simple response chain
             response_chain = (
                 self.prompt 
                 | llm
             )
             
             # Execute the response chain
-            response = response_chain.invoke({
+            return response_chain.invoke({
                 "input": user_message,
-                "chat_history": []  # Empty for now, can be extended to support history
+                "chat_history": []  # Empty for now can be extended to support history
             })
-            
-            # Extract the text from the response
-            response_text = response.content if hasattr(response, 'content') else str(response)
-            
-            logger.info(f"Generated response: '{response_text[:50]}...'")
-            return response_text
             
         except Exception as e:
             logger.error(f"Error generating response: {e}")
-            return "I apologize, but I'm having trouble generating a response right now."
+            return SimpleResponderResponse(
+                response="I apologize, but I'm having trouble generating a response right now."
+            )

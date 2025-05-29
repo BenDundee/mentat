@@ -36,9 +36,12 @@ class Intent(Enum):
 
 class IntentDetectionResponse(BaseModel):
     """Schema for the intent detection response."""
-    model_config = ConfigDict(use_enum_values=True)
     intent: Intent = Field(description="Detected intent")
     confidence: float = Field(description="Confidence score for the detected intent (0-1)")
     reasoning: str = Field(description="Explanation of why this intent was chosen")
+
+class SimpleResponderResponse(BaseModel):
+    """Schema for the simple responder response."""
+    response: str = Field(..., description="The generated response.")
 
 
