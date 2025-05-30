@@ -1,54 +1,67 @@
 # Mentat
 
-An executive coach with a cool name.
+An executive coaching AI assistant built with a modular architecture and powered by modern language models.
 
 > "Every hammer has the innate capacity to strike a nail. Every human mind has the innate capacity for greatness."
 
-## Overview
+## Project Overview
 
-This project provides a Python-based solution for working with ChromaDB, a vector database for AI applications. It helps you store, retrieve, and manage vector embeddings efficiently.
+Mentat is an AI-powered executive coaching system designed to provide personalized guidance, feedback, and support. The system uses a modular architecture with a focus on intent detection and specialized response workflows.
 
-## Features
+## Architecture
 
-- Simple and intuitive API for ChromaDB operations
-- Efficient vector storage and retrieval
-- Support for semantic search capabilities
-- Customizable embedding configurations
+The system follows a modular agent-based architecture:
 
-## Installation
-bash
-# Create a virtual environment
-python -m venv venv
-# Activate the virtual environment
-# On Windows
-venv\Scripts\activate
-# On macOS/Linux
-source venv/bin/activate
-# Install dependencies
-pip install -r requirements.txt
+- **Controller**: Orchestrates the conversation flow, detects user intent, and routes requests to appropriate specialized agents.
+- **Intent Detector**: Analyzes user messages to determine their primary intent.
+- **Conversation State**: Manages and tracks the conversation state throughout interactions.
+- **Specialized Agents**: Handle specific types of interactions (currently includes SimpleResponder).
 
-## Usage
+## Core Components
 
-Basic example of using the ChromaDB interface:
+- `api/`: Main package containing all system logic
+  - `agency/`: Contains all agent implementations
+    - `_agent.py`: Base abstract class for all agents
+    - `intent_detector.py`: Detects user intent from messages
+    - `simple_responder.py`: Handles general conversation
+  - `interfaces/`: Contains data models and schemas
+  - `services/`: External service integrations
+  - `controller.py`: Main workflow orchestrator
+  - `api_configurator.py`: Configuration management
 
-python from chroma_db import ChromaDBClient
-# Initialize the client
-client = ChromaDBClient()
-# Store embeddings
-client.store_embeddings(documents, embeddings)
-# Query similar documents
-results = client.query_similar(query_embedding, n_results=5)
+- `prompts/`: Contains prompt templates for the LLM
+- `configs/`: Configuration files for the system
+- `app.py`: FastAPI web application entry point
+- `run.py`: CLI entry point for the application
 
+## Technology Stack
 
-## Requirements
+- **Python 3.13**: Core programming language
+- **LangChain**: Framework for LLM application development
+- **Pydantic**: Data validation and settings management
+- **FastAPI**: Web API framework (if applicable)
 
-- Python 3.13+
-- Dependencies listed in requirements.txt
+## Development
 
-## License
+This project uses a virtual environment for dependency management. Key dependencies include:
+- click
+- jinja2
+- kubernetes
+- numpy
+- pandas
+- protobuf
+- requests
+- sqlalchemy
+- langchain
 
-[License Type] - See LICENSE file for details
+## Current Status
 
-## Contributing
+The project is under active development with the following features implemented:
+- Basic intent detection system
+- Modular agent architecture
+- Simple conversation handling
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Upcoming features:
+- Enhanced conversation history management
+- Specialized coaching workflows
+- Feedback and goal-setting capabilities
