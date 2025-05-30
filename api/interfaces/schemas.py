@@ -10,9 +10,9 @@ class Intent(Enum):
 
     @staticmethod
     def intent_descriptions():
-        return {
+        return {  # TODO: May need to make these more...robust
             Intent.SIMPLE.value: "General conversation, questions, or statements",
-            Intent.FEEDBACK.value: "Explaining the results of the conversation",
+            Intent.FEEDBACK.value: "A request for feedback or help from the user.",
         }
 
     @staticmethod

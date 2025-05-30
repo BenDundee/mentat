@@ -26,11 +26,6 @@ class Controller:
         This is where you'll add more workflows in the future.
         """
         self._intent_to_workflow_map[Intent.SIMPLE] = SimpleResponder(self.config).run
-        # You can add more workflows as they're implemented
-        # self.add_workflow("goal_setting", handle_goal_setting)
-        # self.add_workflow("feedback", handle_feedback)
-        # self.add_workflow("action_planning", handle_action_planning)
-        # self.add_workflow("reflection", handle_reflection)
 
     def process_message(
         self,

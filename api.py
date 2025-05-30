@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 import logging
 
-from langchain_core.messages import ChatMessage, AIMessage, BaseMessage
+from langchain_core.messages import BaseMessage
 
 from api.interfaces import ChatRequest
 from api.api_configurator import APIConfigurator
@@ -14,21 +14,30 @@ app = FastAPI(title="Executive Coach API")
 config = APIConfigurator()
 controller = Controller(config)
 
-@app.post("/chat", response_model=BaseMessage, summary="Chat endpoint for processing chat requests and producing responses")
+@app.post(
+    "/chat",
+    response_model=BaseMessage,
+    summary="Chat endpoint for processing chat requests and producing responses"
+)
 async def chat_endpoint(request: ChatRequest) -> BaseMessage:
     """
-    Handles the chat endpoint for processing chat requests and producing responses.
-    The endpoint expects a `ChatRequest` object and returns a LangChain `ChatMessage` object.
-    In case of internal errors, an HTTP 500 status code is returned.
+    Chat endpoint for processing user chat requests and generating responses.
 
-    :param request: A `ChatRequest` object containing the message to process,
-        optional chat history, and the user ID.
-    :type request: ChatRequest
+    This asynchronous method interfaces with the processing controller to deal
+    with incoming user messages, maintain user conversation history, and
+    generate appropriate responses. It also manages error handling by returning
+    HTTPExceptions in case of unexpected issues during processing.
 
-    :return: A LangChain `ChatMessage` object containing the generated response.
-    :rtype: ChatMessage
+    Args:
+        request (ChatRequest): Input request containing the user message,
+        conversation history, and user ID.
 
-    :raises HTTPException: If an internal server error occurs.
+    Returns:
+        BaseMessage: The computed response message object.
+
+    Raises:
+        HTTPException: If an error occurs during processing, this exception
+        is raised with a 500 status code and a detailed error message.
     """
     try:
         out = controller.process_message(
