@@ -1,7 +1,11 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, TYPE_CHECKING
 from abc import ABC
-from pydantic import BaseModel
+
+
+#if TYPE_CHECKING:
+from api.interfaces import ConversationState
+
 
 class _Agent(ABC):
-    def run(self, state: Dict[str, Any]) -> BaseModel:
+    def run(self, state: Dict[str, Any]) -> ConversationState:
         pass

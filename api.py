@@ -1,20 +1,21 @@
 from fastapi import FastAPI, HTTPException
 import logging
-from langchain_core.messages import ChatMessage
+
+from langchain_core.messages import ChatMessage, AIMessage, BaseMessage
 
 from api.interfaces import ChatRequest
 from api.api_configurator import APIConfigurator
-from api.workflow_orchestrator import WorkflowOrchestrator
+from api.controller import Controller
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s")
 
 app = FastAPI(title="Executive Coach API")
 config = APIConfigurator()
-orchestrator = WorkflowOrchestrator(config)
+controller = Controller(config)
 
-@app.post("/chat", response_model=ChatMessage)
-async def chat_endpoint(request: ChatRequest) -> ChatMessage:
+@app.post("/chat", response_model=BaseMessage, summary="Chat endpoint for processing chat requests and producing responses")
+async def chat_endpoint(request: ChatRequest) -> BaseMessage:
     """
     Handles the chat endpoint for processing chat requests and producing responses.
     The endpoint expects a `ChatRequest` object and returns a LangChain `ChatMessage` object.
@@ -30,11 +31,12 @@ async def chat_endpoint(request: ChatRequest) -> ChatMessage:
     :raises HTTPException: If an internal server error occurs.
     """
     try:
-        out = orchestrator.process_message(user_message=request.message, user_id=request.user_id)
-        response_text = out.get("output", "")
-        
-        # Create a LangChain ChatMessage
-        return ChatMessage(content=response_text, role="assistant")
+        out = controller.process_message(
+            user_message=request.message,
+            history=request.history,
+            user_id=request.user_id
+        )
+        return out.response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

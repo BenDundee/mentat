@@ -7,7 +7,7 @@ from langchain_core.output_parsers import JsonOutputParser
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from api.api_configurator import APIConfigurator
-from api.interfaces import Intent, IntentDetectionResponse
+from api.interfaces import Intent, IntentDetectionResponse, ConversationState
 from api.agency._agent import _Agent
 
 logger = logging.getLogger(__name__)
@@ -38,28 +38,34 @@ class IntentDetector(_Agent):
             | (lambda x: IntentDetectionResponse.parser(x))
         )
     
-    def run(self, user_message: str) -> IntentDetectionResponse:
+    def run(self, state: ConversationState) -> ConversationState:
         """
-        Detect the intent of a user message.
-        
-        Args:
-            user_message: The message from the user
-            
+        Executes the classification chain to detect user intent from their message and returns
+        the resulting conversation state. If an error occurs during processing, it logs the error and
+        returns a default intent detection response with an appropriate reasoning.
+
+        Arguments:
+            state (ConversationState): The current conversation state object to process.
+
         Returns:
-            The detected intent as a string
+            ConversationState: The updated conversation state after processing.
         """
-        logger.info(f"Detecting intent for: '{user_message[:50]}...'")
         try:
             # Execute the classification chain
-            result = self.classification_chain.invoke({"input": user_message, "chat_history": []})
+            result = self.classification_chain.invoke({"input": state.user_message, "chat_history": state.history})
             logger.info(f"Detected intent: {result.intent} with confidence {result.confidence}")
             logger.debug(f"Intent reasoning: {result.reasoning}")
-            return result
+            state.detected_intent = result.intent
+            state.context["intent_detection_result"] = result
+            return state
             
         except Exception as e:
             logger.error(f"Error detecting intent: {e}")
-            return IntentDetectionResponse(
+            state.errors.append(f"Error detecting intent: {e}")
+            state.detected_intent = Intent.SIMPLE
+            state.context["intent_detection_result"] = IntentDetectionResponse(
                 intent=Intent.SIMPLE,
                 confidence=0,
                 reasoning="I'm sorry, I couldn't understand your message. Please try again."
             )
+            return state

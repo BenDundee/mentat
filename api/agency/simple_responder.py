@@ -5,7 +5,7 @@ from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from api.api_configurator import APIConfigurator
 from api.agency._agent import _Agent
-from api.interfaces import SimpleResponderResponse
+from api.interfaces import SimpleResponderResponse, ChatRequest, ConversationState
 
 logger = logging.getLogger(__name__)
 
@@ -27,32 +27,37 @@ class SimpleResponder(_Agent):
             ("user", "{input}")
         ])
 
-    def run(self, state: Dict[str, Any]) -> SimpleResponderResponse:
+    def run(self, state: ConversationState) -> ConversationState:
         """
-        Generate a simple response to the user's message.
-        
+        Generates a simple response to the user's message based on a provided conversation
+        state. Leverages a language model to produce the response, and can process basic
+        inputs like user messages and chat history. Handles exceptions during the response
+        generation process, providing a fallback error message if needed.
+
         Args:
-            user_message: The message from the user
-            
+            state (ConversationState): The current conversation state, including the
+                "user_message" and optionally "chat_history".
+
         Returns:
-            The generated response as a string
+            ConversationState: The updated state containing the generated response.
         """
-        logger.info(f"Generating simple response for: '{user_message[:50]}...'")
         try:
             llm = self.llm_provider.llm(self.llm_params)
-            response_chain = (
-                self.prompt 
+            response = (
+                self.prompt
                 | llm
-            )
-            
-            # Execute the response chain
-            return response_chain.invoke({
-                "input": state["user_message"],
-                "chat_history": state["chat_history"]  # Empty for now can be extended to support history
+            ).invoke({
+                "input": state.user_message,
+                "chat_history": state.history  # Empty for now can be extended to support history
             })
+            state.response = response
+            state.context["simple_responder_response"] = response
             
         except Exception as e:
             logger.error(f"Error generating response: {e}")
-            return SimpleResponderResponse(
+            state.errors.append(f"Error generating response: {e}")
+            state.context["simple_responder_response"] = SimpleResponderResponse(
                 response="I apologize, but I'm having trouble generating a response right now."
             )
+
+        return state

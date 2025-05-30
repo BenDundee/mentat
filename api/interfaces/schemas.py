@@ -2,14 +2,6 @@ from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict, ValidationError
 from typing import List, Optional, Dict
 
-from langchain.schema import ChatMessage
-
-
-class ChatRequest(BaseModel):
-    """Input schema for the chat endpoint."""
-    message: str = Field(..., description="The message to send to the chatbot")
-    history: Optional[List[ChatMessage]] = None
-    user_id: Optional[str] = "default_user"
 
 class Intent(Enum):
     SIMPLE = "simple_message"
