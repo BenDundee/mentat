@@ -1,6 +1,6 @@
 from enum import Enum
-from pydantic import BaseModel, Field, ConfigDict, ValidationError
-from typing import List, Optional, Dict
+from pydantic import BaseModel, Field, ValidationError
+from typing import Dict
 
 
 class Intent(Enum):

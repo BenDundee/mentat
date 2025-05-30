@@ -1,11 +1,9 @@
 import logging
-from typing import Optional, Any, Dict
-
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from api.api_configurator import APIConfigurator
 from api.agency._agent import _Agent
-from api.interfaces import SimpleResponderResponse, ChatRequest, ConversationState
+from api.interfaces import SimpleResponderResponse, ConversationState
 
 logger = logging.getLogger(__name__)
 

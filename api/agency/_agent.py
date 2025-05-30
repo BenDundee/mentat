@@ -1,8 +1,6 @@
-from typing import Optional, Dict, Any, TYPE_CHECKING
+from typing import Dict, Any
 from abc import ABC
 
-
-#if TYPE_CHECKING:
 from api.interfaces import ConversationState
 
 

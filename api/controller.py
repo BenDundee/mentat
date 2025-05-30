@@ -1,7 +1,7 @@
 import logging
-from typing import Dict, Any, List, Callable, TypeVar
+from typing import Dict, List, Callable, TypeVar
 from langchain.schema import ChatMessage
-from langchain_core.messages import AIMessage, SystemMessage
+from langchain_core.messages import SystemMessage
 
 from api.api_configurator import APIConfigurator
 from api.interfaces import Intent, ConversationState
@@ -16,8 +16,8 @@ class Controller:
     def __init__(self, config: APIConfigurator):
         self.config = config
         self.intent_detector = IntentDetector(config)
-        self._intent_to_workflow_map: Dict[Intent, Callable[[T], T]] = {}
 
+        self._intent_to_workflow_map: Dict[Intent, Callable[[T], T]] = {}
         self._register_known_workflows()
 
     def _register_known_workflows(self):
@@ -45,10 +45,7 @@ class Controller:
             response=None
         )
         state = self.intent_detector.run(state)
-
-        # 3. Select and Execute Workflow
         workflow_handler = self._intent_to_workflow_map.get(state.detected_intent)
-
         if workflow_handler:
             logger.info(f"Found handler for intent '{state.detected_intent}'. Executing workflow...")
             try:

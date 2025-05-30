@@ -1,12 +1,12 @@
 
 import logging
 from pathlib import Path
-from typing import Dict, Any, Union
+from typing import Dict, Any
 import yaml
 
 from langchain.prompts import PromptTemplate, FewShotPromptTemplate, ChatPromptTemplate
 from langchain.prompts.chat import SystemMessagePromptTemplate, HumanMessagePromptTemplate, AIMessagePromptTemplate
-from api.interfaces import PromptContainer, LLMParameters, ModelKWArgs
+from api.interfaces import PromptContainer, LLMParameters
 from api.services.llm_provider import LLMProvider
 
 

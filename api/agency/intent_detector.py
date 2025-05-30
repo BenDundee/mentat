@@ -1,7 +1,4 @@
 import logging
-from pydantic import BaseModel, Field
-from typing import Optional
-
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -57,7 +54,6 @@ class IntentDetector(_Agent):
             logger.debug(f"Intent reasoning: {result.reasoning}")
             state.detected_intent = result.intent
             state.context["intent_detection_result"] = result
-            return state
             
         except Exception as e:
             logger.error(f"Error detecting intent: {e}")
@@ -68,4 +64,5 @@ class IntentDetector(_Agent):
                 confidence=0,
                 reasoning="I'm sorry, I couldn't understand your message. Please try again."
             )
-            return state
+
+        return state
