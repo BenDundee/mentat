@@ -175,8 +175,6 @@ cython_debug/
 .pypirc
 
 # This project
-chroma_db/
 **/.DS_Store
-executive_coach.db
 
 
