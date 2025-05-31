@@ -40,10 +40,9 @@ class SimpleResponder(_Agent):
             ConversationState: The updated state containing the generated response.
         """
         try:
-            llm = self.llm_provider.llm(self.llm_params)
             response = (
                 self.prompt
-                | llm
+                | self.llm_provider.llm(self.llm_params)
             ).invoke({
                 "input": state.user_message,
                 "chat_history": state.history  # Empty for now can be extended to support history

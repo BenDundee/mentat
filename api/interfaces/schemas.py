@@ -5,13 +5,16 @@ from typing import Dict
 
 class Intent(Enum):
     SIMPLE = "simple_message"
+    COACHING_SESSION_REQUEST = "coaching_session_request"
+    COACHING_SESSION_RESPONSE = "coaching_session_response"
     FEEDBACK = "feedback"
-    # Add more intents as needed
 
     @staticmethod
     def intent_descriptions():
         return {  # TODO: May need to make these more...robust
             Intent.SIMPLE.value: "General conversation, questions, or statements",
+            Intent.COACHING_SESSION_REQUEST.value: "A request for a coaching session.",
+            Intent.COACHING_SESSION_RESPONSE.value: "A response during a coaching session",
             Intent.FEEDBACK.value: "A request for feedback or help from the user.",
         }
 

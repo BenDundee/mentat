@@ -1,4 +1,3 @@
-
 import logging
 from pathlib import Path
 from typing import Dict, Any
@@ -7,7 +6,7 @@ import yaml
 from langchain.prompts import PromptTemplate, FewShotPromptTemplate, ChatPromptTemplate
 from langchain.prompts.chat import SystemMessagePromptTemplate, HumanMessagePromptTemplate, AIMessagePromptTemplate
 from api.interfaces import PromptContainer, LLMParameters
-from api.services.llm_provider import LLMProvider
+from api.managers.llm_manager import LLMManager
 
 
 logger = logging.getLogger(__name__)
@@ -130,7 +129,7 @@ def _create_prompt_template(prompt_name: str, prompt_config: Dict[str, Any]) -> 
 
     # Next get LLM parameters
     raw_llm_cfg = prompt_config.get("llm_parameters", {})
-    llm_parameters = LLMProvider.get_default_llm_parameters()
+    llm_parameters = LLMManager.get_default_llm_parameters()
     if raw_llm_cfg:
         if "model" not in raw_llm_cfg or "model_provider" not in raw_llm_cfg:
             logger.warning(

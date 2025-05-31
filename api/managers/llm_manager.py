@@ -6,7 +6,7 @@ from typing import Optional
 from api.interfaces import LLMParameters, LLMCredentials
 
 
-class LLMProvider:
+class LLMManager:
     def __init__(self, api_keys: LLMCredentials):
         self.api_keys = api_keys
 
@@ -16,8 +16,6 @@ class LLMProvider:
             kwargs = self.get_default_llm_parameters().to_dict()
             return ChatOpenRouter(api_key=self.api_keys.openrouter_api_key, **kwargs)
 
-        client = None
-        key_to_use = None
         if llm_parameters.model_provider == "openrouter":
             client = ChatOpenRouter
             key_to_use = self.api_keys.openrouter_api_key
@@ -55,4 +53,3 @@ class ChatOpenRouter(ChatOpenAI):
             openai_api_key=(api_key or openai_api_key),
             **kwargs
         )
-        #self.base_url = "https://openrouter.ai/api/v1"
