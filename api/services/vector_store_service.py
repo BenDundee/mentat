@@ -1,8 +1,7 @@
 # api/services/vector_store_service.py
 import logging
-from typing import List, Dict, Any, Optional, Union, Tuple
+from typing import List, Dict, Any, Optional
 import uuid
-from datetime import datetime
 
 import chromadb
 from langchain_community.vectorstores import Chroma
@@ -305,25 +304,18 @@ class VectorStoreService:
         )
         
         if not root_docs:
-            return None
+            return {}
         
         root_doc = root_docs[0]
-        
-        # Initialize the result with the root
         result = {
             "id": root_id,
             "content": root_doc.page_content,
             "metadata": root_doc.metadata,
             "level": 0
         }
-        
-        # Get all chunks associated with this root document
-        all_docs = self.vector_store.get(
-            where={"hierarchical_path": {"$contains": root_id}}
-        )
-        
-        # Build the hierarchy
+
         levels = {}
+        all_docs = self.vector_store.get(where={"hierarchical_path": {"$contains": root_id}})
         for doc in all_docs:
             level = doc.metadata.get("level", 0)
             if level not in levels:
@@ -364,7 +356,7 @@ class VectorStoreService:
         )
         
         if not chunk_docs:
-            return None
+            return {}
         
         chunk_doc = chunk_docs[0]
         chunk_metadata = chunk_doc.metadata
@@ -416,22 +408,12 @@ class VectorStoreService:
         # Calculate the window range
         start_idx = max(0, chunk_index - window_size)
         end_idx = min(len(sibling_ids), chunk_index + window_size + 1)
-        
         window_ids = sibling_ids[start_idx:end_idx]
-        
-        # Get the window chunks
-        window_docs = self.vector_store.get(
-            ids=window_ids
-        )
-        
-        # Sort window by chunk index
-        window_chunks = sorted(
-            window_docs, 
-            key=lambda x: x.metadata.get("chunk_index", 0)
-        )
+        window_docs = self.vector_store.get(ids=window_ids)
+        window_chunks = sorted(window_docs, key=lambda x: x.metadata.get("chunk_index", 0))
         
         # Assemble the result
-        result = {
+        return {
             "id": chunk_id,
             "content": chunk_doc.page_content,
             "metadata": chunk_metadata,
@@ -448,6 +430,4 @@ class VectorStoreService:
                 } for doc in window_chunks
             ]
         }
-        
-        return result
 

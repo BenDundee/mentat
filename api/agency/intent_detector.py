@@ -19,7 +19,7 @@ class IntentDetector(_Agent):
         
         :param config: The APIConfigurator object containing the LLM provider and prompt manager.
         """
-        self.llm_provider = config.llm_provider
+        self.llm_provider = config.llm_manager
         self.llm_params = config.prompt_manager.get_llm_settings("intent_detector")
         self.prompt_template = config.prompt_manager.get_prompt("intent_detector").template
         self.prompt = ChatPromptTemplate.from_messages([

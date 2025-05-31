@@ -12,7 +12,7 @@ class CoachingSession(_Agent):
     """Schema for the coaching session response."""
     def __init__(self, config: APIConfigurator):
         """ Initialize the CoachingSession with the LLM provider and prompt manager."""
-        self.llm_provider = config.llm_provider
+        self.llm_provider = config.llm_manager
         self.llm_params = config.prompt_manager.get_llm_settings("coaching_session")
         self.prompt_template = config.prompt_manager.get_prompt("coaching_session").template
         self.prompt = ChatPromptTemplate.from_messages([

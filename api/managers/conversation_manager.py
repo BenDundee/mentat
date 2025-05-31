@@ -9,7 +9,7 @@ from api.services.vector_store_service import VectorStoreService
 logger = logging.getLogger(__name__)
 
 
-class ConversationRepository:
+class ConversationManager:
     """Repository for storing and retrieving conversation data using a vector database."""
 
     def __init__(self, persist_directory="./vector_db"):

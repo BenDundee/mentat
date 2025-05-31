@@ -16,7 +16,7 @@ class SimpleResponder(_Agent):
 
         :param config: The APIConfigurator object containing the LLM provider and prompt manager.
         """
-        self.llm_provider = config.llm_provider
+        self.llm_provider = config.llm_manager
         self.llm_params = config.prompt_manager.get_llm_settings("simple_responder")
         self.prompt_template = config.prompt_manager.get_prompt("simple_responder").template
         self.prompt = ChatPromptTemplate.from_messages([
