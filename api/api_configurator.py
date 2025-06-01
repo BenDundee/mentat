@@ -25,7 +25,7 @@ class APIConfigurator:
             openrouter_api_key=os.getenv("OPENROUTER_API_KEY")
         )
 
-        # I AMT THE MANAGER MANAGER!
+        # Manage the managers...
         self.llm_manager = LLMManager(self.llm_client_config)
         self.prompt_manager = PromptManager()
         self.conversation_manager = ConversationManager(self.vector_db_dir)

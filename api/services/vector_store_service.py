@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional
 import uuid
 
 import chromadb
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain.schema import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter, TextSplitter
@@ -29,11 +29,11 @@ class HierarchicalChunk:
         self.level = level
         self.parent_id = parent_id
         self.child_ids = []
-    
+
     def add_child(self, child_id: str):
         """Add a child chunk ID to this chunk."""
         self.child_ids.append(child_id)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for storage."""
         return {
@@ -49,8 +49,8 @@ class HierarchicalChunk:
 
 class VectorStoreService:
     """Service for interacting with ChromaDB vector database with hierarchical chunking support."""
-    
-    def __init__(self, 
+
+    def __init__(self,
                  persist_directory=Path("./vector_db"),
                  collection_name="default",
                  chunk_sizes=(2000, 1000, 500),  # Hierarchical chunk sizes from largest to smallest
@@ -60,10 +60,10 @@ class VectorStoreService:
         self.collection_name = collection_name
         self.chunk_sizes = chunk_sizes
         self.chunk_overlap_ratio = chunk_overlap_ratio
-        
+
         # Initialize embedding function
         self.embedding_function = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
-        
+
         # Initialize text splitters for each level
         self.text_splitters = [
             RecursiveCharacterTextSplitter(
@@ -72,18 +72,18 @@ class VectorStoreService:
                 separators=["\n\n", "\n", ". ", " ", ""]
             ) for size in chunk_sizes
         ]
-        
+
         # Initialize vector store
         self.vector_store = Chroma(
             persist_directory=persist_directory.as_posix(),
             collection_name=collection_name,
             embedding_function=self.embedding_function
         )
-        
+
         # Also create a separate collection for metadata
         self.chroma_client = chromadb.PersistentClient(path=persist_directory.as_posix())
         self.metadata_collection = self.chroma_client.get_or_create_collection(f"{collection_name}_metadata")
-    
+
     def _create_hierarchical_chunks(
             self,
             text: str,
@@ -92,7 +92,7 @@ class VectorStoreService:
     ) -> List[HierarchicalChunk]:
         """Create hierarchical chunks from text."""
         all_chunks = []
-        
+
         # Start with the document as the top level (level 0)
         root_chunk = HierarchicalChunk(
             content=text,
@@ -101,20 +101,20 @@ class VectorStoreService:
             level=0
         )
         all_chunks.append(root_chunk)
-        
+
         # Process each level of chunking
         parent_chunks = [root_chunk]
         for level, splitter in enumerate(self.text_splitters, 1):
             next_level_chunks = []
-            
+
             for parent_chunk in parent_chunks:
                 # Split this parent into children
                 child_texts = splitter.split_text(parent_chunk.content)
-                
+
                 # Skip further splitting if we only get one chunk
                 if len(child_texts) <= 1:
                     continue
-                
+
                 # Create child chunks
                 for i, child_text in enumerate(child_texts):
                     child_id = f"{parent_chunk.id_}_L{level}_C{i}"
@@ -130,21 +130,21 @@ class VectorStoreService:
                         level=level,
                         parent_id=parent_chunk.id_
                     )
-                    
+
                     # Add bi-directional references
                     parent_chunk.add_child(child_id)
                     next_level_chunks.append(child_chunk)
                     all_chunks.append(child_chunk)
-            
+
             # Move to the next level
             parent_chunks = next_level_chunks
-            
+
             # If we have no more parent chunks to process, stop
             if not parent_chunks:
                 break
-        
+
         return all_chunks
-    
+
     def add_text_hierarchical(
         self,
         text: str,
@@ -168,7 +168,7 @@ class VectorStoreService:
             str: The unique identifier for the processed text entry in the vector store.
         """
         base_id = id_ or str(uuid.uuid4())
-        
+
         # Skip hierarchical chunking for short texts
         if len(text) < self.chunk_sizes[0]:
             self.vector_store.add_texts(
@@ -187,10 +187,10 @@ class VectorStoreService:
             texts.append(chunk_dict["content"])
             metadatas.append(chunk_dict["metadata"])
             ids.append(chunk_dict["id"])
-        
+
         # Add all chunks to the vector store
         self.vector_store.add_texts(texts=texts, metadatas=metadatas, ids=ids)
-        
+
         # Store the document hierarchy in the metadata collection
         self.metadata_collection.upsert(
             ids=[base_id],
@@ -202,25 +202,25 @@ class VectorStoreService:
                 "root_id": base_id
             }]
         )
-        
+
         return base_id
-    
-    def search_by_text(self, 
-                      query: str, 
-                      filter_metadata: Optional[Dict[str, Any]] = None, 
+
+    def search_by_text(self,
+                      query: str,
+                      filter_metadata: Optional[Dict[str, Any]] = None,
                       limit: int = 5,
                       fetch_k: int = 20,
                       include_hierarchy: bool = True) -> List[Document]:
         """
         Search for text with hierarchical context expansion.
-        
+
         Args:
             query: The search query
             filter_metadata: Optional metadata filter
             limit: Number of final results to return
             fetch_k: Number of initial results to fetch before processing
             include_hierarchy: Whether to include parent/child context
-            
+
         Returns:
             List of result documents with hierarchical context
         """
@@ -230,30 +230,30 @@ class VectorStoreService:
             k=fetch_k,  # Get more initial results
             filter=filter_metadata
         )
-        
+
         if not docs or not include_hierarchy:
             return docs[:limit]
-        
+
         # Expand results with hierarchical context
         expanded_results = []
         seen_ids = set()
-        
+
         for doc in docs:
             if doc.metadata.get("id") in seen_ids:
                 continue
-                
+
             # Get this document with its context
             result = self._get_with_hierarchical_context(doc)
             expanded_results.append(result)
             seen_ids.add(result["id"])
-            
+
             # Also add any parent documents to seen_ids to avoid duplication
             if "parent" in result:
                 seen_ids.add(result["parent"]["id"])
-        
+
         # Return the top results after expansion
         return expanded_results[:limit]
-    
+
     def _get_with_hierarchical_context(self, doc: Document) -> Dict[str, Any]:
         """Get a document with its hierarchical context (parent and children)."""
         result = {
@@ -262,7 +262,7 @@ class VectorStoreService:
             "metadata": doc.metadata,
             "level": doc.metadata.get("level", 0)
         }
-        
+
         # Get parent if this is not a root document
         parent_id = doc.metadata.get("parent_id")
         if parent_id:
@@ -275,7 +275,7 @@ class VectorStoreService:
                     "content": parent_docs[0].page_content,
                     "level": parent_docs[0].metadata.get("level", 0)
                 }
-        
+
         # Get children if any
         child_ids_str = doc.metadata.get("child_ids", "")
         if child_ids_str:
@@ -289,16 +289,16 @@ class VectorStoreService:
                         "level": child.metadata.get("level", 0)
                     } for child in child_docs
                 ]
-        
+
         return result
-    
+
     def get_full_hierarchy(self, root_id: str) -> Dict[str, Any]:
         """
         Retrieve a complete document hierarchy.
-        
+
         Args:
             root_id: The ID of the root document
-            
+
         Returns:
             Complete hierarchical structure with all levels
         """
@@ -306,10 +306,10 @@ class VectorStoreService:
         root_docs = self.vector_store.get(
             ids=[root_id]
         )
-        
+
         if not root_docs:
             return {}
-        
+
         root_doc = root_docs[0]
         result = {
             "id": root_id,
@@ -324,33 +324,33 @@ class VectorStoreService:
             level = doc.metadata.get("level", 0)
             if level not in levels:
                 levels[level] = []
-            
+
             levels[level].append({
                 "id": doc.metadata.get("id"),
                 "content": doc.page_content,
                 "parent_id": doc.metadata.get("parent_id"),
                 "children": []
             })
-        
+
         # Sort levels from top to bottom
         sorted_levels = sorted(levels.items())
-        
+
         # Add the hierarchy information
         result["hierarchy"] = {
             "levels": sorted_levels,
             "total_levels": len(sorted_levels)
         }
-        
+
         return result
-    
+
     def get_with_context_window(self, chunk_id: str, window_size: int = 1) -> Dict[str, Any]:
         """
         Get a chunk with surrounding context window.
-        
+
         Args:
             chunk_id: The ID of the chunk to retrieve
             window_size: Number of siblings to include on each side
-            
+
         Returns:
             Chunk with its context window
         """
@@ -358,13 +358,13 @@ class VectorStoreService:
         chunk_docs = self.vector_store.get(
             ids=[chunk_id]
         )
-        
+
         if not chunk_docs:
             return {}
-        
+
         chunk_doc = chunk_docs[0]
         chunk_metadata = chunk_doc.metadata
-        
+
         # Get parent to find siblings
         parent_id = chunk_metadata.get("parent_id")
         if not parent_id:
@@ -374,19 +374,19 @@ class VectorStoreService:
                 "content": chunk_doc.page_content,
                 "metadata": chunk_metadata
             }
-        
+
         # Get the parent
         parent_docs = self.vector_store.get(
             ids=[parent_id]
         )
-        
+
         if not parent_docs:
             return {
                 "id": chunk_id,
                 "content": chunk_doc.page_content,
                 "metadata": chunk_metadata
             }
-        
+
         # Get sibling chunks
         child_ids_str = parent_docs[0].metadata.get("child_ids", "")
         if not child_ids_str:
@@ -399,23 +399,23 @@ class VectorStoreService:
                     "content": parent_docs[0].page_content
                 }
             }
-        
+
         # Get all siblings
         sibling_ids = child_ids_str.split(",")
-        
+
         # Find the position of this chunk among siblings
         try:
             chunk_index = sibling_ids.index(chunk_id)
         except ValueError:
             chunk_index = 0
-        
+
         # Calculate the window range
         start_idx = max(0, chunk_index - window_size)
         end_idx = min(len(sibling_ids), chunk_index + window_size + 1)
         window_ids = sibling_ids[start_idx:end_idx]
         window_docs = self.vector_store.get(ids=window_ids)
         window_chunks = sorted(window_docs, key=lambda x: x.metadata.get("chunk_index", 0))
-        
+
         # Assemble the result
         return {
             "id": chunk_id,
@@ -435,3 +435,36 @@ class VectorStoreService:
             ]
         }
 
+
+if __name__ == "__main__":
+    import shutil
+    def test_db():
+        # Initialize vector store
+        test_dir = Path("./test_vector_db")
+        if not test_dir.exists():
+            test_dir.mkdir(parents=True)
+
+        vs = VectorStoreService(persist_directory=test_dir)
+
+        # Create a test file
+        test_file = Path("./test.txt")
+        test_content = "This is a test document.\nIt has multiple lines.\nWe will use it to test our vector store."
+        test_file.write_text(test_content)
+
+        # Add file to vector store
+        doc_id = vs.add_text_hierarchical(
+            text=test_content,
+            metadata={"source": "test.txt", "document_type": "test"}
+        )
+
+        # Get document count
+        docs = vs.vector_store.get()
+        print(f"Added document with ID: {doc_id}")
+        print(f"Total documents in store: {len(docs)}")
+
+        # Cleanup
+        test_file.unlink()
+        shutil.rmtree(test_dir)
+
+
+    test_db()
