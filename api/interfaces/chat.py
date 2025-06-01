@@ -13,7 +13,7 @@ class ChatRequest(BaseModel):
 
 
 class ConversationState(BaseModel):
-    conversation_id: Optional[str] = Field(..., description="Unique identifier for the conversation")
+    conversation_id: Optional[str] = Field(None, description="Unique identifier for the conversation")
     user_message: str = Field(..., description="The current message from the user")
     user_id: str = Field("guest", description="Identifier for the current user")
     detected_intent: Optional[Intent] = Field(None, description="The detected intent from the message")

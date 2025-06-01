@@ -1,5 +1,7 @@
-# api/services/vector_store_service.py
+from dotenv import load_dotenv
 import logging
+import os
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 import uuid
 
@@ -10,6 +12,8 @@ from langchain.schema import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter, TextSplitter
 
 logger = logging.getLogger(__name__)
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+load_dotenv(BASE_DIR / ".env")
 
 class HierarchicalChunk:
     """Represents a hierarchical chunk structure with parent-child relationships."""
@@ -47,7 +51,7 @@ class VectorStoreService:
     """Service for interacting with ChromaDB vector database with hierarchical chunking support."""
     
     def __init__(self, 
-                 persist_directory="./vector_db", 
+                 persist_directory=Path("./vector_db"),
                  collection_name="default",
                  chunk_sizes=(2000, 1000, 500),  # Hierarchical chunk sizes from largest to smallest
                  chunk_overlap_ratio=0.1):
@@ -58,7 +62,7 @@ class VectorStoreService:
         self.chunk_overlap_ratio = chunk_overlap_ratio
         
         # Initialize embedding function
-        self.embedding_function = OpenAIEmbeddings()
+        self.embedding_function = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
         
         # Initialize text splitters for each level
         self.text_splitters = [
@@ -71,13 +75,13 @@ class VectorStoreService:
         
         # Initialize vector store
         self.vector_store = Chroma(
-            persist_directory=persist_directory,
+            persist_directory=persist_directory.as_posix(),
             collection_name=collection_name,
             embedding_function=self.embedding_function
         )
         
         # Also create a separate collection for metadata
-        self.chroma_client = chromadb.PersistentClient(path=persist_directory)
+        self.chroma_client = chromadb.PersistentClient(path=persist_directory.as_posix())
         self.metadata_collection = self.chroma_client.get_or_create_collection(f"{collection_name}_metadata")
     
     def _create_hierarchical_chunks(
