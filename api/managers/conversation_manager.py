@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 from datetime import datetime
 import uuid
 
-from api.interfaces import ConversationState
+from api.interfaces import ConversationState, CoachingSessionState, CoachingStage
 from api.services.vector_store_service import VectorStoreService
 
 logger = logging.getLogger(__name__)
@@ -22,15 +22,12 @@ class ConversationManager:
     def save_conversation(self, state: ConversationState) -> str:
         """Save a conversation exchange with appropriate chunking based on length."""
         # Generate a unique conversation ID if needed
-        conversation_id = state.context.get("conversation_id", str(uuid.uuid4()))
+        if not state.conversation_id:
+            state.conversation_id = str(uuid.uuid4())
 
-        # Get the current timestamp
+        conversation_id = state.conversation_id
         timestamp = datetime.now().isoformat()
-
-        # Prepare the document for the vector store
         document_content = f"User: {state.user_message}\nAssistant: {state.response.content if state.response else ''}"
-
-        # Prepare metadata
         metadata = {
             "user_id": state.user_id,
             "conversation_id": conversation_id,
@@ -39,24 +36,19 @@ class ConversationManager:
             "message_type": "exchange",
             "detected_intent": state.detected_intent.value if state.detected_intent else "unknown"
         }
-
-        # For longer coaching sessions, use hierarchical chunking
-        # For short exchanges, use simple storage without chunking
         if len(document_content) > 2000:  # Use threshold to determine chunking strategy
             exchange_id = self.vector_service.add_text_hierarchical(
                 text=document_content,
                 metadata=metadata,
-                id=f"{conversation_id}_{timestamp}"
+                id_=f"{conversation_id}_{timestamp}"
             )
         else:
             exchange_id = self.vector_service.add_text(
                 text=document_content,
                 metadata=metadata,
-                id=f"{conversation_id}_{timestamp}",
+                id_=f"{conversation_id}_{timestamp}",
                 chunk=False  # Disable chunking for short exchanges
             )
-
-        # Update conversation metadata as before...
 
         return conversation_id
 
@@ -164,3 +156,84 @@ class ConversationManager:
             "most_recent_conversation": conversations[0].get("updated_at") if conversations else None,
             "common_intents": intents
         }
+
+    def save_coaching_session(self, state: CoachingSessionState) -> str:
+        """Save a coaching session state."""
+        session_id = state.session_id or str(uuid.uuid4())
+
+        # Save metadata about the session
+        metadata = {
+            "user_id": state.user_id,
+            "session_id": session_id,
+            "document_type": "coaching_session",
+            "stage": state.stage.value,
+            "goal": state.goal,
+            "is_active": state.is_active,
+            "created_at": datetime.now().isoformat(),
+        }
+
+        # Save session data
+        self.vector_service.add_text(
+            text=f"Goal: {state.goal}\nStage: {state.stage.value}\nInsights: {', '.join(state.insights)}\nAssignments: {', '.join(state.assignments)}",
+            metadata=metadata,
+            id_=session_id,
+            chunk=False
+        )
+
+        # Also save the conversation exchange
+        self.save_conversation(state)
+
+        return session_id
+
+    def get_active_coaching_session(self, user_id: str) -> Optional[CoachingSessionState]:
+        """Retrieve an active coaching session for a user if one exists."""
+        # Query for active coaching sessions
+        sessions = self.vector_service.get_by_metadata({
+            "user_id": user_id,
+            "document_type": "coaching_session",
+            "is_active": True
+        })
+
+        if not sessions:
+            return None
+
+        # Use the most recent session
+        session = sorted(sessions, key=lambda x: x.metadata.get("created_at", ""), reverse=True)[0]
+
+        # Create a CoachingSessionState
+        return CoachingSessionState(
+            user_id=user_id,
+            session_id=session.metadata.get("session_id"),
+            stage=CoachingStage(session.metadata.get("stage")),
+            goal=session.metadata.get("goal"),
+            is_active=session.metadata.get("is_active", True),
+            # We would need to reconstruct other session state here
+        )
+
+    def get_coaching_session(self, session_id: str, user_id: str = None) -> Optional[CoachingSessionState]:
+        """Retrieve a coaching session by its ID, optionally validating the user."""
+        metadata_filter = {
+            "document_type": "coaching_session",
+            "session_id": session_id
+        }
+        
+        if user_id:
+            metadata_filter["user_id"] = user_id  # Add user verification if provided
+        
+        sessions = self.vector_service.get_by_metadata(metadata_filter)
+        
+        if not sessions:
+            return None
+        
+        # Use the most recent session data
+        session = sorted(sessions, key=lambda x: x.metadata.get("created_at", ""), reverse=True)[0]
+        
+        # Reconstruct the session state
+        return CoachingSessionState(
+            user_id=session.metadata.get("user_id"),
+            session_id=session_id,
+            stage=CoachingStage(session.metadata.get("stage")),
+            goal=session.metadata.get("goal"),
+            is_active=session.metadata.get("is_active", True),
+            # Reconstruct other properties as needed
+        )

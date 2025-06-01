@@ -3,7 +3,7 @@ import logging
 
 from langchain_core.messages import BaseMessage
 
-from api.interfaces import ChatRequest
+from api.interfaces import ChatRequest, ChatResponse
 from api.api_configurator import APIConfigurator
 from api.controller import Controller
 
@@ -19,7 +19,7 @@ controller = Controller(config)
     response_model=BaseMessage,
     summary="Chat endpoint for processing chat requests and producing responses"
 )
-async def chat_endpoint(request: ChatRequest) -> BaseMessage:
+async def chat_endpoint(request: ChatRequest) -> ChatResponse: #BaseMessage:
     """
     Chat endpoint for processing user chat requests and generating responses.
 
@@ -40,12 +40,19 @@ async def chat_endpoint(request: ChatRequest) -> BaseMessage:
         is raised with a 500 status code and a detailed error message.
     """
     try:
-        out = controller.process_message(
+        state = controller.process_message(
             user_message=request.message,
-            history=request.history,
-            user_id=request.user_id
+            history=request.history or [],
+            user_id=request.user_id,
+            session_id=request.session_id,
         )
-        return out.response
+        return ChatResponse(
+            message=state.response.content if state.response else "Sorry, I couldn't process your request.",
+            session_id=state.conversation_id or request.session_id,  # Return the session ID for continuity
+            detected_intent=state.detected_intent.value if state.detected_intent else None,
+            success=not state.errors
+        )
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

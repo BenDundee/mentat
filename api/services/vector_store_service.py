@@ -151,7 +151,8 @@ class VectorStoreService:
         metadata: Dict[str, Any],
         id_: Optional[str] = None
     )-> str:
-        """
+        """ Add a text to the vector store in a hierarchical structure for better organization
+
         Adds a text to the vector store in a hierarchical structure for better organization
         of long texts. Short texts are directly added without hierarchical chunking. The
         function also updates the metadata collection to include information about the
@@ -211,8 +212,7 @@ class VectorStoreService:
                       limit: int = 5,
                       fetch_k: int = 20,
                       include_hierarchy: bool = True) -> List[Document]:
-        """
-        Search for text with hierarchical context expansion.
+        """ Search for text with hierarchical context expansion.
 
         Args:
             query: The search query

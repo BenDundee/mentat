@@ -41,7 +41,8 @@ class PromptManager:
             for prompt_name, prompt_config in prompt_data.items():
                 self.prompts[prompt_name] = _create_prompt_template(prompt_name, prompt_config)
                 logger.debug(
-                    f"Loaded prompt '{prompt_name}' from {file_path} with LLM parameters: {self.prompts[prompt_name].llm_parameters}"
+                    f"Loaded prompt '{prompt_name}' from {file_path} with LLM parameters: "
+                    f"{self.prompts[prompt_name].llm_parameters}"
                 )
         except Exception as e:
             logger.warning(f"Error loading prompts, prompts not loaded from {file_path}: {e}")

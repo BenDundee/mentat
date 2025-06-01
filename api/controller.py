@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Callable, TypeVar
+from typing import Dict, List, Callable, TypeVar, Optional
 from langchain.schema import ChatMessage
 from langchain_core.messages import SystemMessage
 
@@ -26,12 +26,15 @@ class Controller:
         This is where you'll add more workflows in the future.
         """
         self._intent_to_workflow_map[Intent.SIMPLE] = SimpleResponder(self.config).run
+        self._intent_to_workflow_map[Intent.COACHING_SESSION_REQUEST] = CoachingSession(self.config).run
+        self._intent_to_workflow_map[Intent.COACHING_SESSION_RESPONSE] = CoachingSession(self.config).run
 
     def process_message(
         self,
         user_message: str,
         history: List[ChatMessage],
-        user_id: str = "guest"
+        user_id: str = "guest",
+        session_id: Optional[str] = None,
     ) -> ConversationState:
         """
         Main entry point to handle a user's message.
@@ -42,7 +45,8 @@ class Controller:
             user_id=user_id,
             history=history,
             detected_intent=None,
-            response=None
+            response=None,
+            conversation_id=session_id,
         )
         state = self.intent_detector.run(state)
         workflow_handler = self._intent_to_workflow_map.get(state.detected_intent)
