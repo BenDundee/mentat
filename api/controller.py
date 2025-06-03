@@ -20,6 +20,8 @@ class Controller:
         self._intent_to_workflow_map: Dict[Intent, Callable[[T], T]] = {}
         self._register_known_workflows()
 
+        # Create/load persona
+
     def _register_known_workflows(self):
         """
         Registers the workflows the orchestrator knows about.
