@@ -16,11 +16,11 @@ class CoachingSession(_Agent):
         self.llm_provider = config.llm_manager
         self.llm_params = config.prompt_manager.get_llm_settings("coaching_session")
         self.prompts = {
-            CoachingStage.INITIATION : config.prompt_manager.get_prompt("coaching_initiation"),
-            CoachingStage.GOAL_SETTING : config.prompt_manager.get_prompt("coaching_goal_setting"),
-            CoachingStage.EXPLORATION : config.prompt_manager.get_prompt("coaching_exploration"),
-            CoachingStage.CONCLUSION : config.prompt_manager.get_prompt("coaching_conclusion"),
-            CoachingStage.ASSIGNMENT : config.prompt_manager.get_prompt("coaching_assignment"),
+            CoachingStage.CONTRACT : config.prompt_manager.get_prompt("coaching_initiation"),
+            CoachingStage.LISTEN : config.prompt_manager.get_prompt("coaching_goal_setting"),
+            CoachingStage.EXPLORE : config.prompt_manager.get_prompt("coaching_exploration"),
+            CoachingStage.ACTION_PLANNING : config.prompt_manager.get_prompt("coaching_conclusion"),
+            CoachingStage.REVIEW : config.prompt_manager.get_prompt("coaching_assignment"),
         }
 
     def run(self, state: ConversationState) -> CoachingSessionState:
