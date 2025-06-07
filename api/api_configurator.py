@@ -3,7 +3,10 @@ from dotenv import load_dotenv
 from pathlib import Path
 
 from api.interfaces import LLMCredentials
-from api.managers import LLMManager, PromptManager, ConversationManager, DocumentManager
+from api.managers import (
+    LLMManager, PromptManager, ConversationManager, DocumentManager,
+    PersonaManager, QeuryManager
+)
 
 
 BASE_DIR = Path(__file__).parent.parent
@@ -17,6 +20,7 @@ class APIConfigurator:
         self.queries_dir = BASE_DIR / "queries"
         self.config_dir = BASE_DIR / "configs"
         self.data_dir = BASE_DIR / "data" / "processed"
+        self.app_data_dir = BASE_DIR / "data" / "app_data"
         self.vector_db_dir = BASE_DIR / "data" / "app_data" / ".vector_db"
 
         # Individual configs:
@@ -28,8 +32,10 @@ class APIConfigurator:
         # Manage the managers...
         self.llm_manager = LLMManager(self.llm_client_config)
         self.prompt_manager = PromptManager()
+        self.query_manager = QueryManager(self.queries_dir)
         self.conversation_manager = ConversationManager(self.vector_db_dir)
         self.document_manager = DocumentManager(self.vector_db_dir, self.data_dir)
+        self.persona_manager = PersonaManager(self.app_data_dir)
 
         self.initialize()
 

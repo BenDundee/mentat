@@ -16,11 +16,11 @@ class CoachingSession(_Agent):
         self.llm_provider = config.llm_manager
         self.llm_params = config.prompt_manager.get_llm_settings("coaching_session")
         self.prompts = {
-            CoachingStage.CONTRACT : config.prompt_manager.get_prompt("coaching_initiation"),
-            CoachingStage.LISTEN : config.prompt_manager.get_prompt("coaching_goal_setting"),
-            CoachingStage.EXPLORE : config.prompt_manager.get_prompt("coaching_exploration"),
-            CoachingStage.ACTION_PLANNING : config.prompt_manager.get_prompt("coaching_conclusion"),
-            CoachingStage.REVIEW : config.prompt_manager.get_prompt("coaching_assignment"),
+            CoachingStage.CONTRACT : config.prompt_manager.get_prompt("coaching_contract"),
+            CoachingStage.LISTEN : config.prompt_manager.get_prompt("coaching_listen"),
+            CoachingStage.EXPLORE : config.prompt_manager.get_prompt("coaching_explore"),
+            CoachingStage.ACTION_PLANNING : config.prompt_manager.get_prompt("coaching_action_planning"),
+            CoachingStage.REVIEW : config.prompt_manager.get_prompt("coaching_review"),
         }
 
     def run(self, state: ConversationState) -> CoachingSessionState:
@@ -53,13 +53,4 @@ class CoachingSession(_Agent):
 
     def _update_stage(self, state: CoachingSessionState) -> CoachingSessionState:
         """Determine if the coaching session should advance to the next stage."""
-        if state.stage == CoachingStage.INITIATION and state.goal:
-            state.stage = CoachingStage.GOAL_SETTING
-        elif state.stage == CoachingStage.GOAL_SETTING and len(state.history) >= 4:
-            state.stage = CoachingStage.EXPLORATION
-        elif state.stage == CoachingStage.EXPLORATION and len(state.history) >= 10:
-            state.stage = CoachingStage.CONCLUSION
-        elif state.stage == CoachingStage.CONCLUSION and state.assignments:
-            state.stage = CoachingStage.ASSIGNMENT
-            state.is_active = False  # End the session when assignments are given
         return state

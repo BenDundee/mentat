@@ -49,20 +49,38 @@ class Intent(Enum):
 
 
 class CoachingStage(Enum):
-    INITIATION = "initiation"
-    GOAL_SETTING = "goal_setting"
-    EXPLORATION = "exploration"
-    CONCLUSION = "conclusion"
-    ASSIGNMENT = "assignment"
+    CONTRACT = "contract"
+    LISTEN = "listen"
+    EXPLORE = "explore"
+    ACTION_PLANNING = "action_planning"
+    REVIEW = "review"
 
     @staticmethod
     def state_descriptions():
         return {
-            CoachingStage.INITIATION.value: "Initial state of the coaching session",
-            CoachingStage.GOAL_SETTING.value: "Setting the goal for the coaching session",
-            CoachingStage.EXPLORATION.value: "Exploring the area of knowledge for the coaching session",
-            CoachingStage.CONCLUSION.value: "Concluding the coaching session",
-            CoachingStage.ASSIGNMENT.value: "Assigning actions or tasks for the coaching session"
+            CoachingStage.CONTRACT: \
+                " - Establish the purpose of the session"
+                " - Confirm long-term goals and user context"
+                " - Clarify expectations for the session.",
+            CoachingStage.LISTEN: \
+                " - Encourage deep reflection and open expression."
+                " - Explore emotions, beliefs, and challenges." 
+                " - Incorporate feedback documents and past sessions.",
+            CoachingStage.EXPLORE: \
+                " - Help uncover patterns, obstacles, and possibilities."
+                " - Link discoveries to long-term objectives."
+                " - Use RAG (retrieval-augmented generation) for relevant context.",
+            CoachingStage.ACTION_PLANNING: \
+                " -  Identify actionable next steps"
+                " -  Use GROW structure:"
+                " -- **Goal**: What do you want to achieve next?"
+                " -- **Reality**: Where are you now?"
+                " -- **Options**: What can you try?"
+                " -- **Will**: What will you commit to?",
+            CoachingStage.REVIEW: \
+                " - Reflect on insights gained during the session."
+                " - Offer journaling or behavioral assignments."
+                " - Reinforce connection to long-term goals.",
         }
 
     @staticmethod

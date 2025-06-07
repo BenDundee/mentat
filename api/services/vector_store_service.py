@@ -11,6 +11,8 @@ from langchain_openai import OpenAIEmbeddings
 from langchain.schema import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter, TextSplitter
 
+from api.util import VectorDBMetadataCollector
+
 logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(BASE_DIR / ".env")
@@ -83,6 +85,13 @@ class VectorStoreService:
         # Also create a separate collection for metadata
         self.chroma_client = chromadb.PersistentClient(path=persist_directory.as_posix())
         self.metadata_collection = self.chroma_client.get_or_create_collection(f"{collection_name}_metadata")
+
+        # For Query agent:
+        self._metadata_collector = VectorDBMetadataCollector(self)
+
+    def llm_summary(self):
+        """ Summary of DB for LLM """
+        return self._metadata_collector.collect_metadata()
 
     def _create_hierarchical_chunks(
             self,

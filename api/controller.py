@@ -5,7 +5,7 @@ from langchain_core.messages import SystemMessage
 
 from api.api_configurator import APIConfigurator
 from api.interfaces import Intent, ConversationState
-from api.agency import IntentDetector, SimpleResponder
+from api.agency import IntentDetector, SimpleResponder, CoachingSession
 
 
 logger = logging.getLogger(__name__)
