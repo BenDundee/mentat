@@ -5,7 +5,7 @@ from langchain_core.messages import SystemMessage
 
 from api.api_configurator import APIConfigurator
 from api.interfaces import Intent, ConversationState
-from api.agency import IntentDetector, SimpleResponder, CoachingSession
+from api.agency import IntentDetector, SimpleResponder, CoachingSession, SemanticQueryAgent
 
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,11 @@ class Controller:
         self._intent_to_workflow_map: Dict[Intent, Callable[[T], T]] = {}
         self._register_known_workflows()
 
-        # Create/load persona
+        # Create Persona if not
+        if self.config.persona_manager.persona.is_empty():
+            raw_query = self.config.query_manager.get_query("create_persona")
+            queries = SemanticQueryAgent(config).run({"input": raw_query})
+            results = self.config
 
     def _register_known_workflows(self):
         """

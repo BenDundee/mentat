@@ -1,16 +1,14 @@
 import os
-from dotenv import load_dotenv
 from pathlib import Path
 
 from api.interfaces import LLMCredentials
 from api.managers import (
     LLMManager, PromptManager, ConversationManager, DocumentManager,
-    PersonaManager, QeuryManager
+    PersonaManager, QueryManager
 )
 
 
 BASE_DIR = Path(__file__).parent.parent
-#load_dotenv(BASE_DIR / ".env")
 
 class APIConfigurator:
 
@@ -23,7 +21,7 @@ class APIConfigurator:
         self.app_data_dir = BASE_DIR / "data" / "app_data"
         self.vector_db_dir = BASE_DIR / "data" / "app_data" / ".vector_db"
 
-        # Individual configs:
+        # Individual configs: define in .env at top level
         self.llm_client_config = LLMCredentials(
             openai_api_key=os.getenv("OPENAI_API_KEY"),
             openrouter_api_key=os.getenv("OPENROUTER_API_KEY")
@@ -40,4 +38,7 @@ class APIConfigurator:
         self.initialize()
 
     def initialize(self):
+
+        # Docs
+        # TODO: Move this to DocumentManager.__init__
         self.document_manager.load_processed()

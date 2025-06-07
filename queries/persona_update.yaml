@@ -11,7 +11,7 @@ query: |
     - `motivators`: Internal drivers and incentives that motivate them at work (e.g., learning, autonomy, recognition, 
     mission-driven work).
     
-    We have a vector database full of documents pertaining to or authored by the user. These include resumes, LinkedIn 
-    profiles, posts made on LinkedIn, working style assessments, and HR reviews. As the information retrieval expert
-    on the team, we need a set of queries against the database that will provide the inputs to a downstream AI agent. 
-    The queries you generate should be broad enough to give good insight into the six dimensions outlined above.
+  We have a vector database full of documents pertaining to or authored by the user. These include resumes, LinkedIn 
+  profiles, posts made on LinkedIn, working style assessments, and HR reviews. As the information retrieval expert
+  on the team, we need a set of queries against the database that will provide the inputs to a downstream AI agent. 
+  The queries you generate should be broad enough to give good insight into the six dimensions outlined above.
