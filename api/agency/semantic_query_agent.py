@@ -97,7 +97,7 @@ class SemanticQueryAgent(_Agent):
                         input_text: str,
                         db_metadata: Dict[str, Any] = None,
                         context: Dict[str, Any] = None) -> Dict[str, Any]:
-        state = {"input": input_text, "context": context or {}, db_metadata or {}}
+        state = {"input": input_text, "context": context or {}, **db_metadata}
 
         return self.run(state)
 

@@ -108,7 +108,7 @@ class ConversationState(BaseModel):
 
 class CoachingSessionState(ConversationState):
     session_id: Optional[str] = Field(None, description="Unique identifier for this coaching session")
-    stage: CoachingStage = Field(CoachingStage.INITIATION, description="Current stage of the coaching session")
+    stage: CoachingStage = Field(CoachingStage.CONTRACT, description="Current stage of the coaching session")
     plan: Optional[str] = Field(None, description="The plan for the current session")
     goal: Optional[str] = Field(None, description="The defined goal for this coaching session")
     insights: List[str] = Field(default_factory=list, description="Key insights discovered during the session")
@@ -133,6 +133,7 @@ class IntentDetectionResponse(BaseModel):
             confidence=int(raw["confidence"]),
             reasoning=raw["reasoning"]
         )
+
 
 class SimpleResponderResponse(BaseModel):
     """Schema for the simple responder response."""

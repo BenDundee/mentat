@@ -1,4 +1,5 @@
 import logging
+
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -13,7 +14,6 @@ class IntentDetector(_Agent):
     """
     A class that uses LangChain's Choice pattern to detect user intent.
     """
-    
     def __init__(self, config: APIConfigurator):
         """ Initialize the IntentDetector with the LLM provider and prompt manager.
         
@@ -39,7 +39,7 @@ class IntentDetector(_Agent):
         """
         Executes the classification chain to detect user intent from their message and returns
         the resulting conversation state. If an error occurs during processing, it logs the error and
-        returns a default intent detection response with an appropriate reasoning.
+        returns a default intent detection response with and appropriate reasoning.
 
         Arguments:
             state (ConversationState): The current conversation state object to process.
@@ -66,3 +66,13 @@ class IntentDetector(_Agent):
             )
 
         return state
+
+if __name__ == "__main__":
+    from api.api_configurator import APIConfigurator
+
+    config = APIConfigurator()
+    intent_detector = IntentDetector(config)
+    state = ConversationState(user_message="Hi, how are you?", history=[])
+    result = intent_detector.run(state)
+
+    assert result.detected_intent == Intent.SIMPLE
