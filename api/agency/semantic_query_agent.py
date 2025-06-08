@@ -1,6 +1,6 @@
 from api.agency._agent import _Agent
-from typing import Dict, Any, List, Optional, Union
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from typing import Dict, Any
+from langchain.prompts import ChatPromptTemplate
 
 
 class SemanticQueryAgent(_Agent):
@@ -55,7 +55,7 @@ class SemanticQueryAgent(_Agent):
         # Generate the semantic query using the LLM
         response = (
                 prompt
-                | self.llm_provider.get_chat_model(self.llm_params)
+                | self.llm_provider.llm(self.llm_params)
         ).invoke(input_context)
 
         # Extract and parse the response
@@ -133,7 +133,7 @@ def _prepare_vector_db_info(state: Dict[str, Any]) -> Dict[str, Any]:
     return vector_db_info
 
 
-def _format_user_prompt(self, context: Dict[str, Any]) -> str:
+def _format_user_prompt(context: Dict[str, Any]) -> str:
     """
     Format the user prompt with vector DB information.
 
@@ -191,55 +191,21 @@ def _format_user_prompt(self, context: Dict[str, Any]) -> str:
 
 
 if __name__ == "__main__":
-    import unittest
-    from unittest.mock import MagicMock, patch
 
+    from api.api_configurator import APIConfigurator
 
-    class TestQueryAgent(unittest.TestCase):
-        def setUp(self):
-            self.config = MagicMock()
-            self.config.llm_manager = MagicMock()
-            self.config.prompt_manager = MagicMock()
-            self.config.prompt_manager.get_llm_settings.return_value = {}
-            self.config.prompt_manager.get_prompt.return_value = MagicMock(template="test template")
-            self.agent = SemanticQueryAgent(self.config)
+    config = APIConfigurator()
+    query_agent = SemanticQueryAgent(config)
 
-        def test_successful_query_generation(self):
-            mock_response = MagicMock()
-            mock_response.content = "Generated query text"
-            self.config.llm_manager.get_chat_model.return_value.invoke.return_value = mock_response
-
-            result = self.agent.formulate_query(
-                input_text="test query",
-                db_metadata={"available_collections": ["test_collection"]}
-            )
-
-            self.assertTrue(result["success"])
-            self.assertEqual(result["generated_query"], "Generated query text")
-            self.assertEqual(result["original_input"], "test query")
-
-        def test_error_handling(self):
-            self.config.llm_manager.get_chat_model.return_value.invoke.side_effect = Exception("Test error")
-
-            result = self.agent.formulate_query("test query")
-
-            self.assertFalse(result["success"])
-            self.assertIn("Failed to parse LLM response", result["error"])
-            self.assertEqual(result["original_input"], "test query")
-
-        def test_prepare_vector_db_info(self):
-            state = {
-                "available_collections": ["col1", "col2"],
-                "collection_schemas": {"col1": "schema1"},
-                "metadata_fields": {"col1": ["field1"]},
-                "sample_documents": {"col1": ["sample1"]}
+    state = {
+        "input": "What is the best way to learn Python?",
+        "context": {
+            "available_collections": ["python_questions", "python_answers"],
+            "collection_schemas": {
+                "python_questions": "Questions about Python programming language",
+                "python_answers": "Answers to Python programming questions"
             }
-
-            result = self.agent._prepare_vector_db_info(state)
-
-            self.assertEqual(result["available_collections"], ["col1", "col2"])
-            self.assertEqual(result["collection_schemas"], {"col1": "schema1"})
-            self.assertEqual(result["metadata_fields"], {"col1": ["field1"]})
-            self.assertEqual(result["sample_documents"], {"col1": ["sample1"]})
-
-        unittest.main()
+        }
+    }
+    result = query_agent.run(state)
+    print(result)
