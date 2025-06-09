@@ -84,7 +84,7 @@ class DocumentManager:
 
             # Store the document
             self._store_document(
-                content=data["content"],
+                content=(data.get("content") or data.get("document")),
                 metadata=data["metadata"],
                 document_id=str(uuid4()),
                 use_hierarchical_chunking=use_hierarchical_chunking

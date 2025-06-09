@@ -1,4 +1,5 @@
 from typing import Dict, Any, List
+from pathlib import Path
 
 class VectorDBMetadataCollector:
     """
@@ -87,3 +88,4 @@ class VectorDBMetadataCollector:
             self.vector_store.collection_name = original_collection
 
         return samples
+

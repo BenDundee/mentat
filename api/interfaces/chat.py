@@ -100,11 +100,14 @@ class ConversationState(BaseModel):
     user_message: str = Field(..., description="The current message from the user")
     user_id: str = Field("guest", description="Identifier for the current user")
     detected_intent: Optional[Intent] = Field(None, description="The detected intent from the message")
-    history: Optional[List[ChatMessage]] = Field(default_factory=list, description="Conversation history")
+    history: Optional[List[BaseMessage]] = Field(default_factory=list, description="Conversation history")
     response: Optional[BaseMessage] = Field(None, description="Generated response to be returned to the user")
     errors: Optional[List[str]] = Field(default_factory=list, description="List of errors encountered during processing")
     context: Dict[str, Any] = Field(default_factory=dict, description="Additional context for the conversation")
 
+    @property
+    def stringify_history(self) -> str:
+        return '\n'.join(message.pretty_print() for message in self.history)
 
 class CoachingSessionState(ConversationState):
     session_id: Optional[str] = Field(None, description="Unique identifier for this coaching session")

@@ -28,6 +28,7 @@ class APIConfigurator:
         )
 
         # Manage the managers...
+        # Refactor these so that there's only a single instance of the vector DB
         self.llm_manager = LLMManager(self.llm_client_config)
         self.prompt_manager = PromptManager()
         self.query_manager = QueryManager(self.queries_dir)

@@ -2,6 +2,11 @@ from api.agency._agent import _Agent
 from typing import Dict, Any
 from langchain.prompts import ChatPromptTemplate
 
+from api.api_configurator import APIConfigurator
+from api.util import VectorDBMetadataCollector
+from api.services import VectorStoreService
+from api.interfaces import ConversationState
+
 
 class SemanticQueryAgent(_Agent):
     """
@@ -11,7 +16,7 @@ class SemanticQueryAgent(_Agent):
     effective semantic search queries that can be executed against vector databases.
     """
 
-    def __init__(self, config):
+    def __init__(self, config: APIConfigurator, n_queries: int = 3):
         """
         Initialize the QueryAgent with LLM and prompt configuration.
 
@@ -21,8 +26,11 @@ class SemanticQueryAgent(_Agent):
         self.llm_provider = config.llm_manager
         self.llm_params = config.prompt_manager.get_llm_settings("query_agent")
         self.prompt = config.prompt_manager.get_prompt("query_agent")
+        self.template = self.prompt.template.partial(n_queries=n_queries)
 
-    def run(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        self.vector_db_location = config.vector_db_dir
+
+    def run(self, state: ConversationState) -> ConversationState:
         """
         Generate semantic search queries based on input context.
 
@@ -32,30 +40,21 @@ class SemanticQueryAgent(_Agent):
         Returns:
             Dictionary containing the generated semantic queries
         """
-        # Extract input from state
-        input_text = state.get("input", "")
-        context = state.get("context", {})
 
         # Extract vector DB metadata if available
-        vector_db_info = _prepare_vector_db_info(state)
-
-        # Build the input context with vector DB information
-        input_context = {
-            "input": input_text,
-            "vector_db_info": vector_db_info,
-            **context
-        }
+        vector_db_metadata = get_vectordb_metadata()
+        self.template = self.template.partial(vector_db_info=_get_md_prompt(vector_db_metadata))
 
         # Build the prompt
         prompt = ChatPromptTemplate.from_messages([
-            ("system", self.prompt.template),
+            ("system", self.template),
             ("user", _format_user_prompt(context=input_context))
         ])
 
         # Generate the semantic query using the LLM
         response = (
-                prompt
-                | self.llm_provider.llm(self.llm_params)
+            prompt
+            | self.llm_provider.llm(self.llm_params)
         ).invoke(input_context)
 
         # Extract and parse the response
@@ -104,87 +103,42 @@ class SemanticQueryAgent(_Agent):
 
 
 # -------------------------- HELPERS
-def _prepare_vector_db_info(state: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Extract and format vector database information to help the LLM.
+def _get_md_prompt() -> str:
+    """ Get vector DB metadata """
+    vector_db = VectorStoreService()
+    vector_db_info = VectorDBMetadataCollector(vector_db).collect_metadata()
 
-    Args:
-        state: State dictionary that may contain vector DB metadata
+    prompt = "Here's information about our vector database that may help you formulate a better query:\n\n"
 
-    Returns:
-        Formatted vector DB information for the LLM
-    """
-    # Extract vector DB metadata if available
-    collections = state.get("available_collections", [])
-    schemas = state.get("collection_schemas", {})
-    sample_documents = state.get("sample_documents", {})
-    metadata_fields = state.get("metadata_fields", {})
+    # Add information about available collections
+    collections = vector_db_info.get("available_collections", [])
+    if collections:
+        prompt += f"  - Available collections: {', '.join(collections)}\n\n"
 
-    vector_db_info = {
-        "available_collections": collections,
-        "collection_schemas": schemas,
-        "metadata_fields": metadata_fields
-    }
+    # Add schema information if available
+    schemas = vector_db_info.get("collection_schemas", {})
+    if schemas:
+        prompt += "  - Collection schemas:\n"
+        for collection, schema in schemas.items():
+            prompt += f"- {collection}: {schema}\n"
+        prompt += "\n"
 
-    # Include sample documents if available but keep it concise
-    if sample_documents:
-        vector_db_info["sample_documents"] = sample_documents
+    # Add metadata fields information
+    metadata_fields = vector_db_info.get("metadata_fields", {})
+    if metadata_fields:
+        prompt += "  - Available metadata fields for filtering:\n"
+        for collection, fields in metadata_fields.items():
+            prompt += f"- {collection}: {', '.join(fields)}\n"
+        prompt += "\n"
 
-    return vector_db_info
-
-
-def _format_user_prompt(context: Dict[str, Any]) -> str:
-    """
-    Format the user prompt with vector DB information.
-
-    Args:
-        context: Dictionary containing input and vector DB information
-
-    Returns:
-        Formatted user prompt string
-    """
-    input_text = context.get("input", "")
-    vector_db_info = context.get("vector_db_info", {})
-
-    # Base prompt with the user's input
-    prompt = f"I need to create a semantic search query for the following: {input_text}\n\n"
-
-    # Add vector DB information if available
-    if vector_db_info:
-        prompt += "Here's information about our vector database that may help you formulate a better query:\n\n"
-
-        # Add information about available collections
-        collections = vector_db_info.get("available_collections", [])
-        if collections:
-            prompt += f"Available collections: {', '.join(collections)}\n\n"
-
-        # Add schema information if available
-        schemas = vector_db_info.get("collection_schemas", {})
-        if schemas:
-            prompt += "Collection schemas:\n"
-            for collection, schema in schemas.items():
-                prompt += f"- {collection}: {schema}\n"
-            prompt += "\n"
-
-        # Add metadata fields information
-        metadata_fields = vector_db_info.get("metadata_fields", {})
-        if metadata_fields:
-            prompt += "Available metadata fields for filtering:\n"
-            for collection, fields in metadata_fields.items():
-                prompt += f"- {collection}: {', '.join(fields)}\n"
-            prompt += "\n"
-
-        # Add sample documents if available (but keep it concise)
-        sample_docs = vector_db_info.get("sample_documents", {})
-        if sample_docs:
-            prompt += "Sample document excerpts (to understand content format):\n"
-            for collection, samples in sample_docs.items():
-                if isinstance(samples, list) and samples:
-                    prompt += f"- {collection} example: {samples[0][:200]}...\n"
-            prompt += "\n"
-
-    # Final instructions
-
+    # Add sample documents if available (but keep it concise)
+    sample_docs = vector_db_info.get("sample_documents", {})
+    if sample_docs:
+        prompt += "  - Sample document excerpts (to understand content format):\n"
+        for collection, samples in sample_docs.items():
+            if isinstance(samples, list) and samples:
+                prompt += f"- {collection} example: {samples[0][:200]}...\n"
+        prompt += "\n"
 
     return prompt
 
@@ -192,10 +146,22 @@ def _format_user_prompt(context: Dict[str, Any]) -> str:
 
 if __name__ == "__main__":
 
-    from api.api_configurator import APIConfigurator
+    from api.interfaces import LLMCredentials
+    from api.managers import LLMManager, PromptManager
+    import os
 
-    config = APIConfigurator()
-    query_agent = SemanticQueryAgent(config)
+    class FakeConfig:
+        def __init__(self, llm_config: LLMCredentials):
+            self.prompt_manager = PromptManager()
+            self.llm_manager = LLMManager(llm_config)
+
+    llm_client_config = LLMCredentials(
+        openai_api_key=os.getenv("OPENAI_API_KEY"),
+        openrouter_api_key=os.getenv("OPENROUTER_API_KEY")
+    )
+
+    cfg = FakeConfig(llm_client_config)
+    query_agent = SemanticQueryAgent(cfg)
 
     state = {
         "input": "What is the best way to learn Python?",

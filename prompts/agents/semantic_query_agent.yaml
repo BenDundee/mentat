@@ -15,11 +15,18 @@ query_agent:
      - Reformulate the question into a semantic search query that will match relevant content
      - Ensure the query captures the core meaning while being general enough to match similar content
   
-    Ensure that your output satisfies the following criteria
-    - Generate a clear, concise semantic search query. Focus on key concepts and entities from the user''s question.
+    Ensure that your output satisfies the following criteria::
+    - Generate several queries, then select the {n_queries} best
+    - Generate clear, concise semantic search queries. Focus on key concepts and entities from the user's question.
     - Avoid overly specific details that might miss relevant matches. Include synonyms or related terms when appropriate.
     - Explain your reasoning for the query formulation.
     - Ensure that all responses are valid JSON
+  
+    In order to help you construct queries, here is some information about the data store you will be querying::
+    
+    {db_info}
 
   input_variables:
-    {input}
+    - input
+    - n_queries
+    - db_info

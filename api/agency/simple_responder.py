@@ -1,5 +1,6 @@
 import logging
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import ChatMessage, HumanMessage, AIMessage
 
 from api.api_configurator import APIConfigurator
 from api.agency._agent import _Agent
@@ -58,3 +59,24 @@ class SimpleResponder(_Agent):
             )
 
         return state
+
+if __name__ == "__main__":
+    from langchain.globals import set_debug
+    from api.api_configurator import APIConfigurator
+
+    set_debug(True)
+    agent = SimpleResponder(APIConfigurator())
+
+    if False:
+        state = ConversationState(user_message="Hi, how are you?", history=[])
+        result = agent.run(state)
+        print(result.response)
+
+    # Next test w/ history
+    if True:
+        state = ConversationState(user_message="Can you define `opex` for me?", history=[
+            HumanMessage(content="Hi, how are you?"),
+            AIMessage(content="I'm doing great, thanks for asking. What can I help you with?"),
+        ])
+        result = agent.run(state)
+        print(result.response)
