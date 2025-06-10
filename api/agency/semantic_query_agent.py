@@ -24,9 +24,8 @@ class SemanticQueryAgent(_Agent):
             config: Configuration containing LLM and prompt settings
         """
         self.llm_provider = config.llm_manager
-        self.llm_params = config.prompt_manager.get_llm_settings("query_agent")
-        self.prompt = config.prompt_manager.get_prompt("query_agent")
-        self.template = self.prompt.template.partial(n_queries=n_queries)
+        self.llm_params = config.prompt_manager.get_llm_settings("semantic_query_agent")
+        self.prompt = config.prompt_manager.get_prompt("semantic_query_agent").partial(n_queries=n_queries)
 
         self.vector_db_location = config.vector_db_dir
 
@@ -40,14 +39,11 @@ class SemanticQueryAgent(_Agent):
         Returns:
             Dictionary containing the generated semantic queries
         """
-
-        # Extract vector DB metadata if available
-        vector_db_metadata = get_vectordb_metadata()
-        self.template = self.template.partial(vector_db_info=_get_md_prompt(vector_db_metadata))
+        self.prompt = self.prompt.partial(db_info=_get_md_info())
 
         # Build the prompt
         prompt = ChatPromptTemplate.from_messages([
-            ("system", self.template),
+            ("system", self.prompt),
             ("user", _format_user_prompt(context=input_context))
         ])
 
@@ -103,7 +99,7 @@ class SemanticQueryAgent(_Agent):
 
 
 # -------------------------- HELPERS
-def _get_md_prompt() -> str:
+def _get_md_info() -> str:
     """ Get vector DB metadata """
     vector_db = VectorStoreService()
     vector_db_info = VectorDBMetadataCollector(vector_db).collect_metadata()
@@ -149,11 +145,13 @@ if __name__ == "__main__":
     from api.interfaces import LLMCredentials
     from api.managers import LLMManager, PromptManager
     import os
+    from pathlib import Path
 
     class FakeConfig:
         def __init__(self, llm_config: LLMCredentials):
             self.prompt_manager = PromptManager()
             self.llm_manager = LLMManager(llm_config)
+            self.vector_db_dir = Path(__file__).parent.parent.parent / "data" / "app_data" / ".vector_db"
 
     llm_client_config = LLMCredentials(
         openai_api_key=os.getenv("OPENAI_API_KEY"),
