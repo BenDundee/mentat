@@ -195,15 +195,18 @@ class VectorStoreService:
         self.vector_store.add_texts(texts=texts, metadatas=metadatas, ids=ids)
 
         # Store the document hierarchy in the metadata collection
+        meta_document_data = {
+            **metadata,
+            "document_type": f"{metadata.get('document_type', 'document')}_hierarchical",
+            "chunk_count": len(ids),
+            "levels": len(self.chunk_sizes),
+            "root_id": base_id
+        }
+        
         self.metadata_collection.upsert(
             ids=[base_id],
-            metadatas=[{
-                **metadata,
-                "document_type": f"{metadata.get('document_type', 'document')}_hierarchical",
-                "chunk_count": len(ids),
-                "levels": len(self.chunk_sizes),
-                "root_id": base_id
-            }]
+            metadatas=[meta_document_data],
+            documents=["Document metadata"]  # Adding the required 'documents' parameter
         )
 
         return base_id

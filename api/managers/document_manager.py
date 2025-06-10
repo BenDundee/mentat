@@ -10,6 +10,8 @@ from api.services.vector_store_service import VectorStoreService
 
 logger = logging.getLogger(__name__)
 
+DATA_DIR = Path(__file__).parent.parent.parent / "data" / "processed"
+
 
 class DocumentManager:
     """
@@ -17,7 +19,7 @@ class DocumentManager:
     documents from a vector database.
     """
 
-    def __init__(self, persist_directory=Path("./vector_db"), data_directory=Path("./data/processed")):
+    def __init__(self, persist_directory=Path("./vector_db"), data_directory=DATA_DIR):
         """
         Initialize the document manager.
 
@@ -47,13 +49,14 @@ class DocumentManager:
         """
         # Load each file
         documents_loaded = 0
-        for file_path in self.data_directory.rglob("*.json"):
+        for file_path in self.data_directory.glob("*.json"):
             try:
                 documents_loaded += \
                     self._load_and_store_document(file_path, use_hierarchical_chunking=use_hierarchical_chunking)
                 logger.info(f"Loaded document: {file_path}")
             except Exception as e:
-                logger.error(f"Error loading document {file_path}: {e}")
+                # logger.error(f"Error loading document {file_path}: {e}")
+                raise e
 
         logger.info(f"Loaded {documents_loaded} documents from {self.data_directory} ")
         return documents_loaded
@@ -69,8 +72,6 @@ class DocumentManager:
         Returns:
             1 if successful, 0 otherwise
         """
-
-        # Load document content based on file type
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 data = sj.load(f)
@@ -93,8 +94,9 @@ class DocumentManager:
             return 1
 
         except Exception as e:
-            logger.error(f"Error processing document {file_path}: {e}")
-            return 0
+            #logger.error(f"Error processing document {file_path}: {e}")
+            #return 0
+            raise e
 
     def _store_document(self,
                         content: str,
@@ -229,4 +231,9 @@ class DocumentManager:
         except Exception as e:
             logger.error(f"Error deleting document {document_id}: {e}")
             return False
+
+if __name__ == "__main__":
+    dm = DocumentManager()
+    load = dm.load_processed()
+    print("wait!")
 
