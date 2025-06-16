@@ -1,0 +1,13 @@
+db_chunk_size: 1000
+db_chunk_overlap: 200
+db_batch_size: 2000
+db_name: multi_agent_coach
+db_max_queries: 5
+db_results_per_query: 5
+search_results_per_query: 5
+search_engine_num_queries: 5
+embedding_model: text-embedding-3-small
+embedding_model_tokenizer: cl100k_base
+distance_metric: cosine
+
+

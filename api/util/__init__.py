@@ -1,1 +1,0 @@
-from .vectordb_metadata_collector import VectorDBMetadataCollector
