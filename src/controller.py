@@ -13,12 +13,13 @@ class Controller:
     def __init__(self, config: Configurator):
         self.config = config
 
-        logger.info("Handlers...")
-        self.agent_handler = AgentHandler(self.config)
+        logger.info("Initializing handlers...")
         self.manager_handler = ManagerHandler(self.config)
+        self.agent_handler = AgentHandler(self.config)
 
-        logger.info("Initializing conversation...")
-        self.conversation_state =ConversationState()
+        logger.info("Setting initial states...")
+        self.agent_handler.initialize_agents(self.manager_handler.prompt_manager)
+        self.conversation_state = ConversationState()
 
     def get_response(self, messages: List[Dict]) -> str:
         logger.info(f"Received input, updating memory...")

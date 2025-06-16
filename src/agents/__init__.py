@@ -7,7 +7,7 @@ import logging
 from typing import Dict, List, Optional, Type, TYPE_CHECKING
 
 from src.tools import SearchTool, SearchToolConfig
-from src.utils import PromptHandler
+from src.managers import PromptManager
 
 from src.types import (
     ConversationState, CoachingSessionState, QueryAgentInputSchema, QueryAgentOutputSchema,
@@ -29,6 +29,7 @@ class AgentHandler(object):
         self.config = config
         self.prompt_dir = config.base_dir / "prompts"
 
+    def initialize_agents(self, prompt_manager: PromptManager):
         logger.info("Initializing agents...")
         self.intent_detection_agent = self.__configure_agent(
             agent_name="intent_detection",
@@ -112,6 +113,7 @@ class AgentHandler(object):
     def __configure_agent(
             self,
             agent_name: str,
+            prompt: str,
             input_schema: Optional[Type[BaseIOSchema]],
             output_schema: Optional[Type[BaseIOSchema]]
     ) -> BaseAgent:
