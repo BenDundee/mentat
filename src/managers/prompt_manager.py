@@ -1,8 +1,7 @@
 import yaml as yml
-import simplejson as sj
 from pathlib import Path
 import logging
-from typing import Literal, Dict, Any
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +15,9 @@ class PromptManager:
         self.prompt_lib = BASE_DIR / "prompts"
         self.prompt_list = list(self.prompt_lib.rglob("**/*.prompt"))
         self._prompts: Dict[str, Any] = {}
-        self.load_prompts()
+        self._load_prompts()
 
-    def load_prompts(self):
+    def _load_prompts(self):
         for prompt_file in self.prompt_list:
             try:
                 with open(prompt_file, "r") as f:

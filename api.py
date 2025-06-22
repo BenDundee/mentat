@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 import logging
 
+from atomic_agents.lib.components.agent_memory import Message
+
 from src.configurator import Configurator
 from src.controller import Controller
 
@@ -17,11 +19,22 @@ controller = Controller(config)
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    input = request.json.get("messages")
+    input = request.json.get("message")
+    history = request.json.get("history")
+    conversation_id = request.json.get("session_id")
     file = request.files.get("file")
 
+    # TODO: move to adapter in `utils` module
+    input_message = Message()
+    input_history = []
+    if history:
+        input_history = [Message(content=h.get("content"), role=h.get("role"), turn_id=i) for (i, h) in enumerate(history)]
+    if input:
+        next_i = (input_history[-1].turn_id+1) if input_history else 0
+        input_message = Message(content=input.get("content"), role=input.get("role"), turn_id=next_i)
+
     # Do something with text and file (e.g., RAG processing)
-    response = controller.get_response(input)
+    response = controller.get_response(input_message, input_history, conversation_id)
     if file:
         response += f" and received file: {file.filename}"
 

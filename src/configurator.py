@@ -67,10 +67,10 @@ class Configurator:
         self.config_dir = BASE_DIR / "config"
         self.config_files = list(Path(self.config_dir).glob("*.yml"))
         self.data_dir = BASE_DIR / "data" / "processed"
-        self.data_files = list(Path(self.data_dir).glob("*.json"))
+        self.data_files = list(Path(self.data_dir).rglob("**/*.json"))
         self.app_data = BASE_DIR / "data" / "app_data"
         self.chroma_db_dir = self.app_data / ".chroma_db"
-        self.document_store_dir = self.app_data / "document_store"
+        self.document_store_dir = self.app_data / ".docstore"
 
         # ALL THE CONFIGS
         self.deployment_config = self.configure_deployment()

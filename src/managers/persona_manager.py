@@ -22,3 +22,9 @@ class PersonaManager:
     def write_persona(self, persona: Persona) -> None:
         with open(self.persona_location, "w") as f:
             sj.dump(persona.model_dump_json(), f, indent=4)
+
+
+if __name__ == "__main__":
+    pm = PersonaManager(Configurator())
+    persona = pm.load_persona()
+    print("wait")

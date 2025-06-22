@@ -1,6 +1,7 @@
 import gradio as gr
 import requests # For making HTTP requests to your API
 import logging
+from typing import List, Optional
 
 # Configure logging for the Gradio app
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s")
@@ -9,7 +10,7 @@ logger = logging.getLogger(__name__)
 # TODO: get from a config file
 API_URL = "http://127.0.0.1:8000/chat"
 
-def call_chat_api(user_message: str, chat_history: list[list[str | None]] | None) -> gr.ChatMessage:
+def call_chat_api(user_message: gr.ChatMessage, chat_history: Optional[List[gr.ChatMessage]]) -> gr.ChatMessage:
     """
     Calls the backend chat API to get a response.
 

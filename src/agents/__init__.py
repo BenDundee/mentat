@@ -47,39 +47,15 @@ class AgentHandler(object):
             input_schema=SearchAgentInputSchema,
             output_schema=SearchAgentOutputSchema)
 
-        # self.goal_tracking_agent = self.__configure_agent("goal_tracking", None, None)
-        # self.reflective_journaling_agent = self.__configure_agent("reflective_journaling", None, None)
-
         self.persona_agent = self.__configure_agent(
             agent_name="persona",
             input_schema=PersonaAgentInputSchema,
             output_schema=Persona)
 
-        self.context_manager_agent = self.__configure_agent(
-            agent_name="context_manager",
-            input_schema=ConversationState,
-            output_schema=ConversationState)
-
-        self.coaching_agent = self.__configure_agent(
-            agent_name="coaching",
-            input_schema=ContextManagerAgentOutputSchema,
-            output_schema=ResponseGeneratorAgentOutputSchema)
-
-        self.feedback_agent = self.__configure_agent(
-            agent_name="feedback",
-            input_schema=ResponseGeneratorAgentOutputSchema,
-            output_schema=FeedbackAgentOutputSchema)
-
         self.agent_map = {
-            "preprocessing": self.preprocessing_agent,
             "query": self.query_agent,
             "search": self.search_agent,
-            #"goal_tracking": self.goal_tracking_agent,
-            #"reflective_journaling": self.reflective_journaling_agent,
             "persona": self.persona_agent,
-            "context_manager": self.context_manager_agent,
-            "coaching": self.coaching_agent,
-            "feedback": self.feedback_agent
         }
 
         logger.info("Initializing tools...")

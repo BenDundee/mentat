@@ -110,6 +110,7 @@ class BaseCollectionManager(ABC):
         """Delete a model by ID."""
         try:
             self.collection.delete(ids=[f"{self.get_document_type()}:{model_id}"])
+            # Delete from store as well?
             return True
         except Exception as e:
             logger.error(f"Error deleting {self.get_document_type()}: {e}")

@@ -18,7 +18,7 @@ class QueryResult(BaseIOSchema):
 
 class QueryAgentInputSchema(BaseIOSchema):
     """ Input schema for the QueryAgent """
-    user_input: str = Field(..., description="Input from a user, for which queries will be constructed")
+    query_prompt: str = Field(..., description="Input from a user, for which queries will be constructed")
 
 
 class QueryAgentOutputSchema(BaseIOSchema):
