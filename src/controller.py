@@ -6,7 +6,8 @@ from atomic_agents.lib.components.agent_memory import Message
 from src.agents import AgentHandler
 from src.configurator import Configurator
 from src.managers import PromptManager
-from src.services.rag_service import RAGService
+from src.services import RAGService, ConversationService
+from src.types import SimpleMessageContentIOSchema
 from src.types.chat import ConversationState
 
 logger = logging.getLogger(__name__)
@@ -17,12 +18,12 @@ class Controller:
     def __init__(self, config: Configurator):
         self.config = config
         self.rag_service = RAGService(config)
+        self.conversation = ConversationService(self.rag_service)
         self.agent_handler = AgentHandler(self.config)
         self.prompt_manager = PromptManager()
 
         logger.info("Setting initial states...")
         self.agent_handler.initialize_agents(self.prompt_manager)
-        self.conversation_state = ConversationState()
         
         logger.info("Controller initialized successfully")
     
@@ -34,21 +35,14 @@ class Controller:
         return (str): The generated response.
         """
         logger.info("Processing user request...")
-        
         try:
-            # First check that the current conversation has the correct ID, if not start a new conversation
-            # -- if no conversaiton ID exists generate one
-
-            # If conversation ID matches, update history
-            
-            # Check if persona needs initialization
-            if self.conversation_state.persona.is_empty():
-                pass
-                # self._update_persona(last_message)
+            self._update_conversation_state(input, history, conversation_id)
+            self._check_persona()
             
             # Generate response using RAG
             # response = self.rag_service.query(last_message)
-            
+
+            response = self.conversation.advance_conversation()
             logger.info("Response generated successfully")
             return "In the time of chimpanzees I was a monkey"
             
@@ -56,6 +50,27 @@ class Controller:
             logger.error(f"Error processing request: {e}")
             return "I apologize, but I encountered an error processing your request."
     
+    def _update_conversation_state(self, input: Message, history: List[Message], conversation_id: Optional[str]):
+        # First check that the current conversation has the correct ID, if not start a new conversation
+        if not self.conversation.state.conversation_id or self.conversation.state.conversation_id != conversation_id:
+            logger.info("Starting new conversation...")
+            self.conversation.state.conversation_id = conversation_id
+            self.conversation.state.history = history
+            self.conversation.state.user_message = input.content
+
+        else:  # If conversation ID matches, update history
+            # TODO: Figure out if this is needed and if so, what to do
+            if set(history) ^ set(self.conversation.state.history):  # symmetric diff
+                logger.error("Conversation history does not match, saving conversation and starting new one...")
+            logger.info("Updating conversation history...")
+            self.conversation.state.history = history
+
+    def _check_persona(self):
+        # Check if persona needs initialization
+        if self.conversation.state.persona.is_empty():
+            pass
+            # self._update_persona(last_message)
+
     def _store_conversation(self, messages: List[Dict]):
         """Store conversation data for future retrieval."""
         conversation_data = {

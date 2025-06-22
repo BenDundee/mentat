@@ -1,5 +1,5 @@
 import datetime as dt
-from typing import Any, Dict, List, Optional, Literal
+from typing import Any, Dict, List, Optional
 
 from pydantic import Field, ValidationError
 from atomic_agents.agents.base_agent import BaseIOSchema
@@ -74,12 +74,10 @@ class ConversationState(BaseIOSchema):
     response: Optional[SimpleMessageContentIOSchema] = Field(None, description="Generated response to be returned to the user")
     errors: Optional[List[str]] = Field(default_factory=list, description="List of errors encountered during processing")
     context: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Additional context for the conversation")
+    conversation_start: str = Field(default_factory=lambda: dt.datetime.now().isoformat(), description="Timestamp for the start of the conversation")
+    conversation_end: Optional[str] = Field(None, description="Timestamp for the end of the conversation")
 
-    def __str__(self):
-        metadata = {
-            "conversation_id": self.conversation_id,
-            "when": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "user_id": self.user_id
-        }
+
+
 
 
