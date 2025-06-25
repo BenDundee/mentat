@@ -11,7 +11,8 @@ from src.managers import PromptManager
 
 from src.types import (
     ConversationState, CoachingSessionState, QueryAgentInputSchema, QueryAgentOutputSchema,
-    SearchAgentInputSchema, SearchAgentOutputSchema, Persona, PersonaAgentInputSchema, SimpleMessageContentIOSchema
+    SearchAgentInputSchema, SearchAgentOutputSchema, Persona, PersonaAgentInputSchema, SimpleMessageContentIOSchema,
+    Intent, AgentPrompt
 )
 
 
@@ -33,34 +34,13 @@ class AgentHandler(object):
         logger.info("Initializing agents...")
         self.intent_detection_agent = self.__configure_agent(
             agent_name="intent_detection",
-            prompt=prompt_manager.get_prompt("intent-detection"),
+            prompt=prompt_manager.get_agent_prompt("intent-detection", intent_descriptions=Intent.llm_rep()),
             input_schema=ConversationState,
             output_schema=ConversationState
         )
 
-        self.query_agent = self.__configure_agent(
-            agent_name="query",
-            prompt=prompt_manager.get_prompt("query-agent"),
-            input_schema=QueryAgentInputSchema,
-            output_schema=QueryAgentOutputSchema)
-
-        self.search_agent = self.__configure_agent(
-            agent_name="search",
-            prompt=prompt_manager.get_prompt("search-agent"),
-            input_schema=SearchAgentInputSchema,
-            output_schema=SearchAgentOutputSchema)
-
-        self.persona_agent = self.__configure_agent(
-            agent_name="persona",
-            prompt=prompt_manager.get_prompt("persona-agent"),
-            input_schema=PersonaAgentInputSchema,
-            output_schema=Persona)
-
         self.agent_map = {
             "intent_detection": self.intent_detection_agent,
-            "query": self.query_agent,
-            "search": self.search_agent,
-            "persona": self.persona_agent,
         }
 
         logger.info("Initializing tools...")
@@ -91,19 +71,19 @@ class AgentHandler(object):
     def __configure_agent(
             self,
             agent_name: str,
-            prompt: str,
+            prompt: AgentPrompt,
             input_schema: Optional[Type[BaseIOSchema]],
             output_schema: Optional[Type[BaseIOSchema]]
     ) -> BaseAgent:
-        prompt_loc = self.config.agent_config_map[agent_name]
+        # TODO: Get from AgentPrompt.llm_params
         return BaseAgent(
             BaseAgentConfig(
                 client=self.config.get_openrouter_client(),
-                model=prompt["model"],
-                system_prompt_generator=SystemPromptGenerator(**prompt["system_prompt"]),
+                model=prompt.llm_parameters.model,
+                model_api_parameters=prompt.llm_parameters.model_api_parameters,
+                system_prompt_generator=SystemPromptGenerator(**prompt.system_prompt.__dict__()),
                 input_schema=input_schema,
-                output_schema=output_schema,
-                model_api_parameters=prompt.get("api_parameters", {})
+                output_schema=output_schema
             )
         )
 
