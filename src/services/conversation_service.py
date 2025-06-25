@@ -1,10 +1,12 @@
 # src/services/conversation_service.py
-from typing import Dict, List, Optional
+import datetime as dt
 from logging import getLogger
-from .rag_service import RAGService
-from src.types import ConversationState, SimpleMessageContentIOSchema
+from typing import Dict, List
+
 from atomic_agents.lib.components.agent_memory import Message
 
+from .rag_service import RAGService
+from src.types import ConversationState, Persona
 
 logger = getLogger(__name__)
 

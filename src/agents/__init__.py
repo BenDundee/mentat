@@ -33,26 +33,31 @@ class AgentHandler(object):
         logger.info("Initializing agents...")
         self.intent_detection_agent = self.__configure_agent(
             agent_name="intent_detection",
+            prompt=prompt_manager.get_prompt("intent-detection"),
             input_schema=ConversationState,
             output_schema=ConversationState
         )
 
         self.query_agent = self.__configure_agent(
             agent_name="query",
+            prompt=prompt_manager.get_prompt("query-agent"),
             input_schema=QueryAgentInputSchema,
             output_schema=QueryAgentOutputSchema)
 
         self.search_agent = self.__configure_agent(
             agent_name="search",
+            prompt=prompt_manager.get_prompt("search-agent"),
             input_schema=SearchAgentInputSchema,
             output_schema=SearchAgentOutputSchema)
 
         self.persona_agent = self.__configure_agent(
             agent_name="persona",
+            prompt=prompt_manager.get_prompt("persona-agent"),
             input_schema=PersonaAgentInputSchema,
             output_schema=Persona)
 
         self.agent_map = {
+            "intent_detection": self.intent_detection_agent,
             "query": self.query_agent,
             "search": self.search_agent,
             "persona": self.persona_agent,
@@ -60,8 +65,8 @@ class AgentHandler(object):
 
         logger.info("Initializing tools...")
         self.search_tool = SearchTool(
-                SearchToolConfig(base_url="google.com", max_results=self.config.data_config.search_results_per_query)
-            )
+            SearchToolConfig(base_url="google.com", max_results=self.config.data_config.search_results_per_query)
+        )
 
         logger.info("Initializing chat memory...")
         self.full_memory = AgentMemory()
@@ -81,10 +86,7 @@ class AgentHandler(object):
 
         # Update memory
         logger.info("Updating relevant agent memories...")
-        self.context_manager_agent.memory = self.full_memory
-        self.persona_agent.memory = self.full_memory
-        self.coaching_agent.memory = self.full_memory  # Think about this one...
-        self.feedback_agent.memory = self.full_memory  # Think about this one...
+        # self.persona_agent.memory = self.full_memory
 
     def __configure_agent(
             self,
@@ -94,7 +96,6 @@ class AgentHandler(object):
             output_schema: Optional[Type[BaseIOSchema]]
     ) -> BaseAgent:
         prompt_loc = self.config.agent_config_map[agent_name]
-        prompt = PromptHandler(prompt_loc).read()
         return BaseAgent(
             BaseAgentConfig(
                 client=self.config.get_openrouter_client(),

@@ -33,9 +33,9 @@ class RAGService:
             OpenAIEmbedding(model=self.config.data_config.embedding_model, api_key=self.config.api_config.openai_key)
 
         # Docstore Setup
-        self.docstore_path = self.config.document_store_dir
-        self.docstore_path.mkdir(exist_ok=True)
-        self.docstore = SimpleDocumentStore.from_persist_dir(str(self.docstore_path))
+        self.docstore_file = self.config.document_store_loc
+        self.docstore_file.touch(exist_ok=True)
+        self.docstore = SimpleDocumentStore()
 
         # Chroma Setup -- To add a new collection, add it to the list below and update self._setup_router()
         self.chroma_client = chromadb.PersistentClient(path=self.config.chroma_db_dir.as_posix())

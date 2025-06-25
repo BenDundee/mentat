@@ -8,8 +8,8 @@ class PersonaManager:
 
     def __init__(self, cfg: Configurator):
         self.config = cfg
-        self.persona: Persona = Persona.get_empty_persona()
         self.persona_location = self.config.app_data / "persona" / "persona.json"
+        self.persona = self.load_persona()
 
     def load_persona(self) -> Persona:
         # Load from file

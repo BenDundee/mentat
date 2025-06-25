@@ -4,53 +4,15 @@ import logging
 from openai import OpenAI
 from pathlib import Path
 from typing import Dict
-from yaml import safe_load, dump
+from yaml import safe_load
 
-from src.types import Persona
+from src.types import APIConfig, DataConfig, DeploymentConfig, ConnectionConfig
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
 BASE_DIR = Path(__file__).parent.parent
-
-
-@dataclass
-class ConnectionConfig:
-    host: str = "localhost"
-    port: int = 8080
-    endpoint: str = None
-    debug: bool = False
-
-
-@dataclass
-class DeploymentConfig:
-    api_cfg: ConnectionConfig = None
-    app_cfg: ConnectionConfig = None
-    api: str = None
-    app: str = None
-
-
-@dataclass
-class APIConfig:
-    openai_key: str = None
-    openrouter_key: str = None
-    openrouter_endpoint: str = None
-
-
-@dataclass
-class DataConfig:
-    db_chunk_size: int = None
-    db_chunk_overlap: int = None
-    db_batch_size: int = None
-    db_name: str = None
-    embedding_model: str = None
-    embedding_model_tokenizer: str = None
-    distance_metric: str = None
-    db_max_queries: int = None
-    db_results_per_query: int = None
-    search_results_per_query: int = None
-    search_engine_num_queries: int = None
 
 
 def assert_present(filename: Path):
@@ -70,7 +32,7 @@ class Configurator:
         self.data_files = list(Path(self.data_dir).rglob("**/*.json"))
         self.app_data = BASE_DIR / "data" / "app_data"
         self.chroma_db_dir = self.app_data / ".chroma_db"
-        self.document_store_dir = self.app_data / ".docstore"
+        self.document_store_loc = self.app_data / ".docstore"
 
         # ALL THE CONFIGS
         self.deployment_config = self.configure_deployment()

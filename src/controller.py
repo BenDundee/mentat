@@ -6,9 +6,9 @@ from atomic_agents.lib.components.agent_memory import Message
 from src.agents import AgentHandler
 from src.configurator import Configurator
 from src.managers import PromptManager
+from src.managers.persona_manager import PersonaManager
+from src.managers.query_manager import QueryManager
 from src.services import RAGService, ConversationService
-from src.types import SimpleMessageContentIOSchema
-from src.types.chat import ConversationState
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,8 @@ class Controller:
         self.conversation = ConversationService(self.rag_service)
         self.agent_handler = AgentHandler(self.config)
         self.prompt_manager = PromptManager()
+        self.persona_manager = PersonaManager(config)
+        self.query_manager = QueryManager()
 
         logger.info("Setting initial states...")
         self.agent_handler.initialize_agents(self.prompt_manager)
@@ -65,12 +67,6 @@ class Controller:
             logger.info("Updating conversation history...")
             self.conversation.state.history = history
 
-    def _check_persona(self):
-        # Check if persona needs initialization
-        if self.conversation.state.persona.is_empty():
-            pass
-            # self._update_persona(last_message)
-
     def _store_conversation(self, messages: List[Dict]):
         """Store conversation data for future retrieval."""
         conversation_data = {
@@ -81,21 +77,22 @@ class Controller:
         }
         self.rag_service.add_conversation(conversation_data)
     
-    def _update_persona(self, user_input: str):
+    def _check_persona(self):
         """Update user persona based on interactions."""
-        logger.info("Updating persona...")
-        
-        # Query for persona-relevant information
-        persona_query = f"What can we learn about the user from: {user_input}"
-        persona_response = self.rag_service.query(persona_query)
-        
-        # Store persona data
-        persona_data = {
-            "content": persona_response,
-            "user_id": "default_user",
-            "metadata": {"source": "conversation_analysis"}
-        }
-        self.rag_service.add_persona_data(persona_data)
-        
-        # Update conversation state
-        self.conversation_state.persona.update(persona_response)
+        if self.conversation.state.persona.is_empty():
+            logger.info("Updating persona...")
+
+            # Query for persona-relevant information
+            persona_query = self.query_manager.get_query("persona_update")
+            persona_response = self.rag_service.query(persona_query)
+
+            # Store persona data
+            persona_data = {
+                "content": persona_response,
+                "user_id": "default_user",
+                "metadata": {"source": "conversation_analysis"}
+            }
+            self.rag_service.add_persona_data(persona_data)
+
+            # Update conversation state
+            self.conversation_state.persona.update(persona_response)
