@@ -10,6 +10,7 @@ from src.managers.persona_manager import PersonaManager
 from src.managers.query_manager import QueryManager
 from src.services import RAGService, ConversationService
 
+
 logger = logging.getLogger(__name__)
 
 class Controller:
@@ -39,7 +40,8 @@ class Controller:
         logger.info("Processing user request...")
         try:
             self._update_conversation_state(input, history, conversation_id)
-            self._check_persona()
+            if self.conversation.state.persona.is_empty():
+                self._update_persona()
             
             # Generate response using RAG
             # response = self.rag_service.query(last_message)
@@ -77,22 +79,13 @@ class Controller:
         }
         self.rag_service.add_conversation(conversation_data)
     
-    def _check_persona(self):
+    def _update_persona(self):
         """Update user persona based on interactions."""
-        if self.conversation.state.persona.is_empty():
-            logger.info("Updating persona...")
-
-            # Query for persona-relevant information
-            persona_query = self.query_manager.get_query("persona_update")
-            persona_response = self.rag_service.query(persona_query)
-
-            # Store persona data
-            persona_data = {
-                "content": persona_response,
-                "user_id": "default_user",
-                "metadata": {"source": "conversation_analysis"}
-            }
-            self.rag_service.add_persona_data(persona_data)
-
-            # Update conversation state
-            self.conversation_state.persona.update(persona_response)
+        logger.info("Updating persona...")
+        self.agent_handler.persona_agent.get_context_provider("persona_context").clear()
+        persona_query = self.query_manager.get_query("persona_update")
+        result = self.rag_service.query(persona_query)
+        self.agent_handler.persona_agent.get_context_provider("persona_context").query_result = result
+        persona = self.agent_handler.persona_agent.run()
+        self.conversation.state.persona.update(persona)
+        self.rag_service.add_persona_data(persona)

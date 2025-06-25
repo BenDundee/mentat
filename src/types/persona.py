@@ -1,13 +1,10 @@
 from atomic_agents.agents.base_agent import BaseIOSchema
-from typing import List
+from typing import List, Optional
 from pydantic import Field
 
+from atomic_agents.lib.components.system_prompt_generator import SystemPromptContextProviderBase
+
 from src.types.query import QueryResult
-
-
-class PersonaAgentInputSchema(BaseIOSchema):
-    """Input schema for the PersonaAgent"""
-    query_result: QueryResult = Field(..., description="A list of query results to use for context generation")
 
 
 class Persona(BaseIOSchema):
@@ -45,3 +42,16 @@ class Persona(BaseIOSchema):
             preferred_feedback_style="",
             motivators=[]
         )
+
+
+class PersonaContextProvider(SystemPromptContextProviderBase):
+
+    def __init__(self, title="Persona Context Provider"):
+        super().__init__(title)
+        self.query_result: Optional[QueryResult] = None
+
+    def clear(self):
+        self.query_result = None
+
+    def get_info(self) -> str:
+        raise NotImplementedError("build me pls.")

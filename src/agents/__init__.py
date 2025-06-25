@@ -10,11 +10,8 @@ from src.tools import SearchTool, SearchToolConfig
 from src.managers import PromptManager
 
 from src.types import (
-    ConversationState, CoachingSessionState, QueryAgentInputSchema, QueryAgentOutputSchema,
-    SearchAgentInputSchema, SearchAgentOutputSchema, Persona, PersonaAgentInputSchema, SimpleMessageContentIOSchema,
-    Intent, AgentPrompt
+    ConversationState, Persona, SimpleMessageContentIOSchema, Intent, AgentPrompt, PersonaContextProvider
 )
-
 
 # https://peps.python.org/pep-0563/  lame
 if TYPE_CHECKING:
@@ -33,14 +30,18 @@ class AgentHandler(object):
     def initialize_agents(self, prompt_manager: PromptManager):
         logger.info("Initializing agents...")
         self.intent_detection_agent = self.__configure_agent(
-            agent_name="intent_detection",
             prompt=prompt_manager.get_agent_prompt("intent-detection", intent_descriptions=Intent.llm_rep()),
             input_schema=ConversationState,
             output_schema=ConversationState
         )
+        self.persona_agent = self.__configure_agent(
+            prompt=prompt_manager.get_agent_prompt("persona-agent"),
+            output_schema=Persona
+        )
 
         self.agent_map = {
             "intent_detection": self.intent_detection_agent,
+            "persona": self.persona_agent,
         }
 
         logger.info("Initializing tools...")
@@ -50,6 +51,10 @@ class AgentHandler(object):
 
         logger.info("Initializing chat memory...")
         self.full_memory = AgentMemory()
+
+        logger.info("Registering context providers...")
+        persona_context = PersonaContextProvider(title="persona_context")
+        self.persona_agent.register_context_provider("persona_context", persona_context)
 
     def update_memory(self, msgs: List[Dict]):
         # Get history and update. I think there's a better way to do this?
@@ -70,12 +75,11 @@ class AgentHandler(object):
 
     def __configure_agent(
             self,
-            agent_name: str,
             prompt: AgentPrompt,
             input_schema: Optional[Type[BaseIOSchema]],
             output_schema: Optional[Type[BaseIOSchema]]
     ) -> BaseAgent:
-        # TODO: Get from AgentPrompt.llm_params
+        # TODO: Get `client` from AgentPrompt.llm_params
         return BaseAgent(
             BaseAgentConfig(
                 client=self.config.get_openrouter_client(),
