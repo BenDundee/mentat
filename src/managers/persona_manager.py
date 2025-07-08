@@ -1,5 +1,5 @@
 from src.configurator import Configurator
-from src.types import Persona
+from src.interfaces import Persona
 
 import simplejson as sj
 

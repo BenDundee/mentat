@@ -1,9 +1,9 @@
 import yaml as yml
 from pathlib import Path
 import logging
-from typing import Dict, Any
+from typing import Dict, Optional
 
-from src.types import AgentPrompt
+from src.interfaces import AgentPrompt
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class PromptManager:
         # TODO: Remove query manager
         pass
 
-    def get_agent_prompt(self, prompt_name: str, **vars: Dict[str, str]) -> AgentPrompt:
+    def get_agent_prompt(self, prompt_name: str, **input_vars: Optional[Dict[str, str]]) -> AgentPrompt:
 
         prompt = self._agent_prompts.get(prompt_name)
         if not prompt:
@@ -47,16 +47,17 @@ class PromptManager:
             return AgentPrompt()
 
         # check that all input variables are present
-        for var in prompt.input_variables:
-            if var not in vars:
-                logger.warning(f"Prompt {prompt_name} is missing input variable {var}")
+        if prompt.input_variables:
+            for var in prompt.input_variables:
+                if var not in input_vars:
+                    logger.warning(f"Prompt {prompt_name} is missing input variable {var}")
 
-        prompt.format(**vars)
+        prompt.format(**input_vars)
         return prompt
 
 
 if __name__ == "__main__":
-    from src.types import Intent
+    from src.interfaces import Intent
 
     pm = PromptManager()
     prompt = pm.get_agent_prompt("intent-detection", intent_descriptions=Intent.llm_rep())

@@ -7,7 +7,7 @@ model_api_parameters:
 system_prompt:
   background:
     - "You are an AI preprocessor that receives user input and returns a JSON object."
-    - "Each key must strictly conform to the types and allowed values below:"
+    - "Each key must strictly conform to the interfaces and allowed values below:"
     - "  - `normalized_query`: string or null"
     - "  - `detected_intent`: one of [`coaching_query`, `journal_entry`, `document_upload`, null]"
     - "  - `document_text`: string or null"

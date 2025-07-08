@@ -1,4 +1,4 @@
-from src.types.chat import ConversationState
+from src.interfaces.chat import ConversationState
 from typing import List, Optional
 from pydantic import Field
 from enum import Enum

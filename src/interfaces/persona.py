@@ -4,7 +4,7 @@ from pydantic import Field
 
 from atomic_agents.lib.components.system_prompt_generator import SystemPromptContextProviderBase
 
-from src.types.query import QueryResult
+from src.interfaces.query import QueryResult
 
 
 class Persona(BaseIOSchema):

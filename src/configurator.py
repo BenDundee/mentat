@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict
 from yaml import safe_load
 
-from src.types import APIConfig, DataConfig, DeploymentConfig, ConnectionConfig
+from src.interfaces import APIConfig, DataConfig, DeploymentConfig, ConnectionConfig
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

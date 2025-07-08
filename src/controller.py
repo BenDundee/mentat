@@ -5,6 +5,7 @@ from atomic_agents.lib.components.agent_memory import Message
 
 from src.agents import AgentHandler
 from src.configurator import Configurator
+from src.interfaces import SimpleMessageContentIOSchema
 from src.managers import PromptManager
 from src.managers.persona_manager import PersonaManager
 from src.managers.query_manager import QueryManager
@@ -30,7 +31,7 @@ class Controller:
         
         logger.info("Controller initialized successfully")
     
-    def get_response(self, input: Message, history: List[Message], conversation_id: Optional[str]) -> str:
+    def get_response(self, input: Message, history: Optional[List[Message]], conversation_id: Optional[str]) -> str:
         """Process user messages and generate responses.
 
         input (Message): The latest user message.
@@ -77,15 +78,37 @@ class Controller:
             "user_id": "default_user",  # Make this dynamic as needed
             "context": {}
         }
-        self.rag_service.add_conversation(conversation_data)
+        #self.rag_service.add_conversation(conversation_data)
     
     def _update_persona(self):
         """Update user persona based on interactions."""
         logger.info("Updating persona...")
         self.agent_handler.persona_agent.get_context_provider("persona_context").clear()
+
+        logger.debug("Generating queries...")
         persona_query = self.query_manager.get_query("persona_update")
-        result = self.rag_service.query(persona_query)
+        self.agent_handler.query_agent.get_context_provider("query_context").query_prompt = persona_query
+        query = self.agent_handler.query_agent.run().query
+        self.agent_handler.query_agent.get_context_provider("query_context").clear()
+
+        logger.debug("Running RAG...")
+        result = self.rag_service.query_all_collections_combined(query)
         self.agent_handler.persona_agent.get_context_provider("persona_context").query_result = result
         persona = self.agent_handler.persona_agent.run()
+
+        logger.debug("Updating persona...")
         self.conversation.state.persona.update(persona)
         self.rag_service.add_persona_data(persona)
+
+
+if __name__ == "__main__":
+
+    from src.configurator import Configurator
+    from src.utils import get_message
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s")
+
+    controller = Controller(Configurator())
+    msg = get_message(role="user", message="Hello")
+    output = controller.get_response(msg, [], "test")
+    print("wait")

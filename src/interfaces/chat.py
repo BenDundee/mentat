@@ -5,7 +5,7 @@ from pydantic import Field, ValidationError
 from atomic_agents.agents.base_agent import BaseIOSchema
 from atomic_agents.lib.components.agent_memory import AgentMemory, Message
 
-from src.types.persona import Persona
+from src.interfaces.persona import Persona
 
 from enum import Enum
 

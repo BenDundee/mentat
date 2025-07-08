@@ -1,0 +1,17 @@
+name: query
+description: Agent to construct queries against the vector DB
+llm_parameters:
+  model_provider: openrouter
+  model: google/gemini-2.0-flash-001
+  model_api_parameters:
+    temperature: 0.0
+    top_k: 40
+    top_p: 0.8
+    max_tokens: 2000
+system_prompt:
+  background:
+    - "asdf"
+  steps:
+    - "asdf"
+  output_instructions:
+    - "asdf"

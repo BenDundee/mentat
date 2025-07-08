@@ -1,5 +1,5 @@
 from atomic_agents.lib.components.agent_memory import Message
-from src.types.chat import SimpleMessageContentIOSchema
+from src.interfaces.chat import SimpleMessageContentIOSchema
 
 
 def get_message(role: str, message: str):

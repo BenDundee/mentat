@@ -9,8 +9,9 @@ from typing import Dict, List, Optional, Type, TYPE_CHECKING
 from src.tools import SearchTool, SearchToolConfig
 from src.managers import PromptManager
 
-from src.types import (
-    ConversationState, Persona, SimpleMessageContentIOSchema, Intent, AgentPrompt, PersonaContextProvider
+from src.interfaces import (
+    ConversationState, Persona, SimpleMessageContentIOSchema, Intent, AgentPrompt, PersonaContextProvider,
+    QueryAgentInputSchema, QueryAgentOutputSchema
 )
 
 # https://peps.python.org/pep-0563/  lame
@@ -34,13 +35,20 @@ class AgentHandler(object):
             input_schema=ConversationState,
             output_schema=ConversationState
         )
+        self.query_agent = self.__configure_agent(
+            prompt=prompt_manager.get_agent_prompt("query-agent"),
+            input_schema=QueryAgentInputSchema,
+            output_schema=QueryAgentOutputSchema
+        )
         self.persona_agent = self.__configure_agent(
             prompt=prompt_manager.get_agent_prompt("persona-agent"),
+            input_schema=None,
             output_schema=Persona
         )
 
         self.agent_map = {
             "intent_detection": self.intent_detection_agent,
+            "query": self.query_agent,
             "persona": self.persona_agent,
         }
 
@@ -85,7 +93,7 @@ class AgentHandler(object):
                 client=self.config.get_openrouter_client(),
                 model=prompt.llm_parameters.model,
                 model_api_parameters=prompt.llm_parameters.model_api_parameters,
-                system_prompt_generator=SystemPromptGenerator(**prompt.system_prompt.__dict__()),
+                system_prompt_generator=SystemPromptGenerator(**prompt.system_prompt.__dict__),
                 input_schema=input_schema,
                 output_schema=output_schema
             )
@@ -104,5 +112,8 @@ class AgentHandler(object):
 
 if __name__ == "__main__":
     from src.configurator import Configurator
+    from src.managers import PromptManager
+
     agent_handler = AgentHandler(Configurator())
+    agent_handler.initialize_agents(PromptManager())
     print("wait")

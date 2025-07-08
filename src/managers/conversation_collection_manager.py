@@ -2,7 +2,7 @@ from typing import Type, Dict, Any, List
 import logging
 
 from src.managers.base_collection_manager import BaseCollectionManager
-from src.types.chat import ConversationState
+from src.interfaces.chat import ConversationState
 
 
 logger = logging.getLogger(__name__)
@@ -93,9 +93,9 @@ class ConversationCollectionManager(BaseCollectionManager):
 
 if __name__ == "__main__":
     from src.configurator import Configurator
-    from src.types.chat import ConversationState, SimpleMessageContentIOSchema
+    from src.interfaces.chat import ConversationState, SimpleMessageContentIOSchema
     from src.utils import get_message
-    from src.types import Intent
+    from src.interfaces import Intent
 
     conversation_manager = ConversationCollectionManager(Configurator())
     conversation = ConversationState(

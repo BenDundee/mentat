@@ -1,8 +1,7 @@
-# src/services/rag_service.py
 import chromadb
 import logging
 import simplejson as sj
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Tuple
 
 from llama_index.core import VectorStoreIndex, Document, Settings
 from llama_index.core.query_engine import RouterQueryEngine
@@ -15,7 +14,7 @@ from llama_index.core.storage.docstore import SimpleDocumentStore
 from llama_index.core.storage import StorageContext
 
 from src.configurator import Configurator
-from src.types.chat import ConversationState
+from src.interfaces.chat import ConversationState
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +52,7 @@ class RAGService:
             ) for c in self.collections
         }
         self.semantic_splitter = \
-            SemanticSplitterNodeParser(embed_model=Settings.embed_model,breakpoint_percentile_threshold=95)
+            SemanticSplitterNodeParser(embed_model=Settings.embed_model, breakpoint_percentile_threshold=95)
         self.query_engine = self._setup_router()
 
         # Load initial documents if needed
@@ -113,8 +112,9 @@ class RAGService:
                 [], storage_context=self.storage_contexts[collection_name]
             )
 
+        # Fix: Use insert_nodes() for TextNode objects instead of insert()
         for node in nodes:
-            self.indices[collection_name].insert(node)
+            self.indices[collection_name].insert_nodes([node])
             doc_ids.append(node.node_id)
             
         return doc_ids
@@ -137,19 +137,100 @@ class RAGService:
             logger.error(f"Error executing query: {e}")
             return "I apologize, but I encountered an error processing your request."
 
+    def query_all_collections(self, query_text: str, similarity_top_k: int = 5) -> Dict[str, str]:
+        """
+        Execute a query across all collections and return results from each.
+        
+        Args:
+            query_text: The query to execute
+            similarity_top_k: Number of top results to return per collection
+            
+        Returns:
+            Dictionary mapping collection names to their query results
+        """
+        results = {}
+        
+        for collection_name in self.collections:
+            try:
+                query_engine = self.indices[collection_name].as_query_engine(similarity_top_k=similarity_top_k)
+                response = query_engine.query(query_text)
+                results[collection_name] = str(response)
+                logger.info(f"Query executed successfully on collection: {collection_name}")
+            except Exception as e:
+                logger.error(f"Error executing query on collection {collection_name}: {e}")
+                results[collection_name] = f"Error querying {collection_name}: {str(e)}"
+        
+        return results
+
+    def query_all_collections_combined(self, query_text: str, similarity_top_k: int = 5) -> str:
+        """
+        Execute a query across all collections and return a combined result.
+        
+        Args:
+            query_text: The query to execute
+            similarity_top_k: Number of top results to return per collection
+            
+        Returns:
+            Combined results from all collections as a single string
+        """
+        all_results = self.query_all_collections(query_text, similarity_top_k)
+        
+        # Combine results into a single response
+        combined_response = []
+        for collection_name, result in all_results.items():
+            if result and not result.startswith("Error"):
+                combined_response.append(f"=== Results from {collection_name} ===\n{result}")
+        
+        return "\n\n".join(combined_response) if combined_response else "No relevant results found across all collections."
+
+    def get_collection_results_with_scores(self, query_text: str, similarity_top_k: int = 5) -> Dict[str, List[Tuple[str, float]]]:
+        """
+        Execute a query across all collections and return results with similarity scores.
+        
+        Args:
+            query_text: The query to execute
+            similarity_top_k: Number of top results to return per collection
+            
+        Returns:
+            Dictionary mapping collection names to lists of (content, score) tuples
+        """
+        results = {}
+        
+        for collection_name in self.collections:
+            try:
+                # Get the retriever instead of query engine to access scores
+                retriever = self.indices[collection_name].as_retriever(similarity_top_k=similarity_top_k)
+                retrieved_nodes = retriever.retrieve(query_text)
+                
+                collection_results = []
+                for node in retrieved_nodes:
+                    content = node.node.text
+                    score = node.score if hasattr(node, 'score') else 0.0
+                    collection_results.append((content, score))
+                
+                results[collection_name] = collection_results
+                logger.info(f"Retrieved {len(collection_results)} results from collection: {collection_name}")
+                
+            except Exception as e:
+                logger.error(f"Error retrieving from collection {collection_name}: {e}")
+                results[collection_name] = []
+        
+        return results
+
     def add_conversation(self, conversation: ConversationState):
         """Add a conversation to the conversations index."""
-        text_content = self._conversation_to_text(conversation_data)
-        doc = Document(
-            text=text_content,
-            metadata={
-                "type": "conversation",
-                "user_id": conversation_data.get("user_id", "unknown"),
-                "conversation_id": conversation_data.get("conversation_id", ""),
-                **conversation_data.get("context", {})
-            }
-        )
-        self.indices["conversations"].insert(doc)
+        #text_content = self._conversation_to_text(conversation_data)
+        #doc = Document(
+        #    text=text_content,
+        #    metadata={
+        #        "type": "conversation",
+        #        "user_id": conversation_data.get("user_id", "unknown"),
+        #        "conversation_id": conversation_data.get("conversation_id", ""),
+        #        **conversation_data.get("context", {})
+        #    }
+        #)
+        #self.indices["conversations"].insert(doc)
+        pass
 
     def add_persona_data(self, persona_data: Dict):
         """Add persona information to the persona index."""
@@ -181,6 +262,9 @@ class RAGService:
         return "\n".join(parts)
 
 if __name__ == "__main__":
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s")
+
     # Initialize configuration and RAG service
     config = Configurator()
     rag_service = RAGService(config)
@@ -213,6 +297,10 @@ if __name__ == "__main__":
     # Query across all collections
     query_result = rag_service.query("What do we know about AI?")
     print(f"Query result: {query_result}")
+
+    # NEW: Query all collections for persona update
+    all_results = rag_service.query_all_collections_combined("What do we know about AI?")
+    print(f"All collections result: {all_results}")
 
     # Retrieve the full document
     retrieved_doc = rag_service.get_full_document(doc_id)

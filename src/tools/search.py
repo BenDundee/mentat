@@ -8,7 +8,7 @@ import requests
 
 from atomic_agents.lib.base.base_tool import BaseTool, BaseToolConfig
 
-from src.types import SearchResultItem, SearchToolInputSchema, SearchToolOutputSchema
+from src.interfaces import SearchResultItem, SearchToolInputSchema, SearchToolOutputSchema
 
 # Lock for thread-safe operations if needed
 lock = threading.Lock()

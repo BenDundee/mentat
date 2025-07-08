@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Any
 
 
 @dataclass
@@ -14,7 +14,7 @@ class ModelAPIParameters:
 class LLMParams:
     model_provider: str
     model: str
-    model_api_parameters: ModelAPIParameters
+    model_api_parameters: Dict[str, Any]
 
 
 @dataclass
@@ -39,10 +39,10 @@ class AgentPrompt:
         
         if isinstance(self.llm_parameters, dict):
             # Handle nested ModelAPIParameters conversion
-            if isinstance(self.llm_parameters.get('model_api_parameters'), dict):
-                self.llm_parameters['model_api_parameters'] = ModelAPIParameters(
-                    **self.llm_parameters['model_api_parameters']
-                )
+            #if isinstance(self.llm_parameters.get('model_api_parameters'), dict):
+            #    self.llm_parameters['model_api_parameters'] = ModelAPIParameters(
+            #        **self.llm_parameters['model_api_parameters']
+            #    )
             self.llm_parameters = LLMParams(**self.llm_parameters)
 
     def format(self, **kwargs: Dict[str, str]):

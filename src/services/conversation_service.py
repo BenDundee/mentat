@@ -6,7 +6,7 @@ from typing import Dict, List
 from atomic_agents.lib.components.agent_memory import Message
 
 from .rag_service import RAGService
-from src.types import ConversationState, Persona
+from src.interfaces import ConversationState, Persona
 
 logger = getLogger(__name__)
 
