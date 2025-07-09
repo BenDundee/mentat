@@ -88,7 +88,8 @@ class Controller:
         logger.debug("Generating queries...")
         persona_query = self.query_manager.get_query("persona_update")
         self.agent_handler.query_agent.get_context_provider("query_context").query_prompt = persona_query
-        query = self.agent_handler.query_agent.run().query
+        queries = self.agent_handler.query_agent.run().queries
+        query = ', '.join(queries)
         self.agent_handler.query_agent.get_context_provider("query_context").clear()
 
         logger.debug("Running RAG...")
@@ -96,7 +97,7 @@ class Controller:
         self.agent_handler.persona_agent.get_context_provider("persona_context").query_result = result
         persona = self.agent_handler.persona_agent.run()
 
-        logger.debug("Updating persona...")
+        logger.debug("Updating internals...")
         self.conversation.state.persona.update(persona)
         self.rag_service.add_persona_data(persona)
 

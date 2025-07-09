@@ -26,7 +26,7 @@ class QueryAgentInputSchema(BaseIOSchema):
 class QueryAgentOutputSchema(BaseIOSchema):
     """Output schema for the query agent."""
     reasoning: str = Field(..., description="The reasoning process leading up to the final query")
-    query: str = Field(..., description="The semantic search query to use for retrieving relevant chunks")
+    queries: List[str] = Field(..., description="Semantic search queries to use for retrieving relevant chunks")
 
 
 class QueryAgentContextProvider(SystemPromptContextProviderBase):

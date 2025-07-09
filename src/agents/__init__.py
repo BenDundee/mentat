@@ -11,7 +11,7 @@ from src.managers import PromptManager
 
 from src.interfaces import (
     ConversationState, Persona, SimpleMessageContentIOSchema, Intent, AgentPrompt, PersonaContextProvider,
-    QueryAgentInputSchema, QueryAgentOutputSchema
+    QueryAgentInputSchema, QueryAgentOutputSchema, QueryAgentContextProvider
 )
 
 # https://peps.python.org/pep-0563/  lame
@@ -63,6 +63,8 @@ class AgentHandler(object):
         logger.info("Registering context providers...")
         persona_context = PersonaContextProvider(title="persona_context")
         self.persona_agent.register_context_provider("persona_context", persona_context)
+        query_context = QueryAgentContextProvider(title="query_context")
+        self.query_agent.register_context_provider("query_context", query_context)
 
     def update_memory(self, msgs: List[Dict]):
         # Get history and update. I think there's a better way to do this?

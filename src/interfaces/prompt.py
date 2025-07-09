@@ -48,10 +48,11 @@ class AgentPrompt:
     def format(self, **kwargs: Dict[str, str]):
         if self.system_prompt is None:
             return
-            
-        old = self.system_prompt
-        self.system_prompt = SystemPrompt(
-            background=[d.format(**kwargs) for d in old.background],
-            steps=[s.format(**kwargs) for s in old.steps],
-            output_instructions=[o.format(**kwargs) for o in old.output_instructions]
-        )
+
+        if self.input_variables:
+            old = self.system_prompt
+            self.system_prompt = SystemPrompt(
+                background=[d.format(**kwargs) for d in old.background],
+                steps=[s.format(**kwargs) for s in old.steps],
+                output_instructions=[o.format(**kwargs) for o in old.output_instructions]
+            )
