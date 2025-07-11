@@ -7,7 +7,6 @@ import logging
 from typing import Dict, List, Optional, Type, TYPE_CHECKING
 
 from src.tools import SearchTool, SearchToolConfig
-from src.managers import PromptManager
 
 from src.interfaces import (
     ConversationState, Persona, SimpleMessageContentIOSchema, Intent, AgentPrompt, PersonaContextProvider,
