@@ -1,12 +1,13 @@
 # src/services/conversation_service.py
 import datetime as dt
 from logging import getLogger
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from atomic_agents.lib.components.agent_memory import Message
 
 from .rag_service import RAGService
 from src.interfaces import ConversationState, Persona
+from src.utils.helpers import get_message
 
 logger = getLogger(__name__)
 
@@ -14,25 +15,36 @@ logger = getLogger(__name__)
 class ConversationService:
     """Service for conversation-specific operations."""
     
-    def __init__(self, rag_service: RAGService):
+    def __init__(self, rag_service: RAGService, state: Optional[ConversationState] = None):
         self.rag_service = rag_service
-        self.state = self.get_new_conversation()
-        
-    def advance_conversation(self) -> str:
-        bot_response = self.state.response
+        self.state = state or self.get_new_conversation()
 
+    def initiate_turn(self, input: Message, history: Optional[List[Message]]=None, conversation_id: Optional[str]=None):
+        if not self.state.conversation_id or self.state.conversation_id != conversation_id:
+            logger.info("Starting new conversation...")
+            self.state.conversation_id = conversation_id
+            self.state.history = history
+            self.state.user_message = input
+
+        else:  # If conversation ID matches, update history
+            # TODO: Figure out if this is needed and if so, what to do
+            if set(history) ^ set(self.state.history):  # symmetric diff
+                logger.error("Conversation history does not match, saving conversation and starting new one...")
+            logger.info("Updating conversation history...")
+            self.state.history = history
+        
+    def advance_conversation(self, response: str):
+        self.state.set_response(response, turn_id=self.state.user_message.turn_id)
         if not self.state.user_message or not self.state.response:
             logger.warning("Conversation not advanced because user message or response is empty.")
             raise Exception("Conversation not advanced because user message or response is empty.")
-        turn = len(self.state.history)
-        self.state.history.append(Message(role= "user", content=self.state.user_message, turn_id=turn))
-        self.state.history.append(Message(role="assistant", content=self.state.response, turn_id=(turn+1)))
+        tid = f"{len(self.state.history)}"
+        self.state.history.append(self.state.user_message)
+        self.state.history.append(self.state.response)
 
         # Reset user message and response
         self.state.user_message = None
         self.state.response = None
-
-        return bot_response
 
     def find_by_intent(self, intent: str, user_id: str = None) -> List[Dict]:
         """Find conversations by intent."""

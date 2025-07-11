@@ -31,7 +31,7 @@ class Controller:
         
         logger.info("Controller initialized successfully")
     
-    def get_response(self, input: Message, history: Optional[List[Message]], conversation_id: Optional[str]) -> str:
+    def get_response(self, input: Message, history: Optional[List[Message]], conversation_id: Optional[str]) -> Message:
         """Process user messages and generate responses.
 
         input (Message): The latest user message.
@@ -40,35 +40,21 @@ class Controller:
         """
         logger.info("Processing user request...")
         try:
-            self._update_conversation_state(input, history, conversation_id)
+            self.conversation.initiate_turn(input, history, conversation_id)
             if self.conversation.state.persona.is_empty():
                 self._update_persona()
-            
-            # Generate response using RAG
-            # response = self.rag_service.query(last_message)
 
-            response = self.conversation.advance_conversation()
+            self.conversation.advance_conversation(response="In the time of chimpanzees I was a monkey")
             logger.info("Response generated successfully")
-            return "In the time of chimpanzees I was a monkey"
+            return self.conversation.state.response
             
         except Exception as e:
             logger.error(f"Error processing request: {e}")
-            return "I apologize, but I encountered an error processing your request."
-    
-    def _update_conversation_state(self, input: Message, history: List[Message], conversation_id: Optional[str]):
-        # First check that the current conversation has the correct ID, if not start a new conversation
-        if not self.conversation.state.conversation_id or self.conversation.state.conversation_id != conversation_id:
-            logger.info("Starting new conversation...")
-            self.conversation.state.conversation_id = conversation_id
-            self.conversation.state.history = history
-            self.conversation.state.user_message = input.content
-
-        else:  # If conversation ID matches, update history
-            # TODO: Figure out if this is needed and if so, what to do
-            if set(history) ^ set(self.conversation.state.history):  # symmetric diff
-                logger.error("Conversation history does not match, saving conversation and starting new one...")
-            logger.info("Updating conversation history...")
-            self.conversation.state.history = history
+            return get_message(
+                role="assistant",
+                message="I apologize, but I encountered an error processing your request.",
+                turn_id=input.turn_id
+            )
 
     def _store_conversation(self, messages: List[Dict]):
         """Store conversation data for future retrieval."""
@@ -93,12 +79,12 @@ class Controller:
         self.agent_handler.query_agent.get_context_provider("query_context").clear()
 
         logger.debug("Running RAG...")
-        result = self.rag_service.query_all_collections_combined(query)
-        self.agent_handler.persona_agent.get_context_provider("persona_context").query_result = result
+        query_result = self.rag_service.query_all_collections_combined(query)
+        self.agent_handler.persona_agent.get_context_provider("persona_context").query_result = query_result
         persona = self.agent_handler.persona_agent.run()
 
         logger.debug("Updating internals...")
-        self.conversation.state.persona.update(persona)
+        self.conversation.state.persona = persona
         self.rag_service.add_persona_data(persona)
 
 
@@ -107,7 +93,7 @@ if __name__ == "__main__":
     from src.configurator import Configurator
     from src.utils import get_message
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s")
+    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s")
 
     controller = Controller(Configurator())
     msg = get_message(role="user", message="Hello")

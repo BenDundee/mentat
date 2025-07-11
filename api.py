@@ -28,9 +28,9 @@ def chat():
     input_message = Message()
     input_history = []
     if history:
-        input_history = [Message(content=h.get("content"), role=h.get("role"), turn_id=i) for (i, h) in enumerate(history)]
+        input_history = [Message(content=h.get("content"), role=h.get("role"), turn_id=f"{i}") for (i, h) in enumerate(history)]
     if input:
-        next_i = len(input_history)
+        next_i = f"{len(input_history)}"
         input_message = Message(content=input.get("content"), role=input.get("role"), turn_id=next_i)
 
     # Do something with text and file (e.g., RAG processing)

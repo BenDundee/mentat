@@ -36,12 +36,12 @@ class AgentHandler(object):
             output_schema=ConversationState
         )
         self.query_agent = self.__configure_agent(
-            prompt=prompt_manager.get_agent_prompt("query-agent"),
+            prompt=prompt_manager.get_agent_prompt("query"),
             input_schema=QueryAgentInputSchema,
             output_schema=QueryAgentOutputSchema
         )
         self.persona_agent = self.__configure_agent(
-            prompt=prompt_manager.get_agent_prompt("persona-agent"),
+            prompt=prompt_manager.get_agent_prompt("persona"),
             input_schema=None,
             output_schema=Persona
         )

@@ -9,12 +9,13 @@ from llama_index.core.tools import QueryEngineTool
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openrouter import OpenRouter
-from llama_index.core.node_parser import SemanticSplitterNodeParser
+from llama_index.core.node_parser import HierarchicalNodeParser, SimpleNodeParser
 from llama_index.core.storage.docstore import SimpleDocumentStore
 from llama_index.core.storage import StorageContext
 
 from src.configurator import Configurator
 from src.interfaces.chat import ConversationState
+from src.interfaces.persona import Persona
 
 
 logger = logging.getLogger(__name__)
@@ -39,20 +40,49 @@ class RAGService:
         # Chroma Setup -- To add a new collection, add it to the list below and update self._setup_router()
         self.chroma_client = chromadb.PersistentClient(path=self.config.chroma_db_dir.as_posix())
         self.collections = ["conversations", "documents", "persona"]
-        self.indices = {
-            c: VectorStoreIndex.from_vector_store(
-                ChromaVectorStore(
-                    chroma_collection=self.chroma_client.get_or_create_collection(c)
+        
+        # Create embedding function with proper dimensions for text-embedding-3-large
+        embedding_function = chromadb.utils.embedding_functions.OpenAIEmbeddingFunction(
+            api_key=self.config.api_config.openai_key,
+            model_name=Settings.embed_model.model_name,
+        )
+        
+        # Recreate collections with proper embedding function to ensure dimension consistency
+        self.indices = {}
+        self.storage_contexts = {}
+        
+        for collection_name in self.collections:
+            try:
+                # Try to delete existing collection to avoid dimension mismatch
+                try:
+                    self.chroma_client.delete_collection(collection_name)
+                    logger.info(f"Deleted existing collection: {collection_name}")
+                except:
+                    pass  # Collection might not exist
+                
+                # Create new collection with proper embedding function
+                chroma_collection = self.chroma_client.create_collection(
+                    name=collection_name,
+                    embedding_function=embedding_function
                 )
-            )  for c in self.collections
-        }
-        self.storage_contexts = {
-            c: ChromaVectorStore(
-                chroma_collection=self.chroma_client.get_or_create_collection(c)
-            ) for c in self.collections
-        }
-        self.semantic_splitter = \
-            SemanticSplitterNodeParser(embed_model=Settings.embed_model, breakpoint_percentile_threshold=95)
+                
+                # Create ChromaVectorStore and VectorStoreIndex
+                vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
+                self.storage_contexts[collection_name] = vector_store
+                self.indices[collection_name] = VectorStoreIndex.from_vector_store(vector_store)
+                
+                logger.info(f"Created collection: {collection_name}")
+                
+            except Exception as e:
+                logger.error(f"Error creating collection {collection_name}: {e}")
+                raise
+        
+        #self.splitter = SimpleNodeParser.from_defaults(
+        #    chunk_size=256,
+        #    chunk_overlap=50
+        #)
+        self.splitter = HierarchicalNodeParser.from_defaults(chunk_sizes=[1024, 512, 128])
+
         self.query_engine = self._setup_router()
 
         # Load initial documents if needed
@@ -103,16 +133,25 @@ class RAGService:
         doc = Document(text=content, metadata=metadata)
 
         # Use semantic chunking for more intelligent splits
-        nodes = self.semantic_splitter.get_nodes_from_documents([doc])
+        nodes = self.splitter.get_nodes_from_documents([doc])
         
         # Add all chunks to the index
         doc_ids = []
         if collection_name not in self.indices:
-            self.indices[collection_name] = VectorStoreIndex.from_documents(
-                [], storage_context=self.storage_contexts[collection_name]
+            # Create new collection if it doesn't exist
+            embedding_function = chromadb.utils.embedding_functions.OpenAIEmbeddingFunction(
+                api_key=self.config.api_config.openai_key,
+                model_name=self.config.data_config.embedding_model
             )
+            chroma_collection = self.chroma_client.create_collection(
+                name=collection_name,
+                embedding_function=embedding_function
+            )
+            vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
+            self.storage_contexts[collection_name] = vector_store
+            self.indices[collection_name] = VectorStoreIndex.from_vector_store(vector_store)
 
-        # Fix: Use insert_nodes() for TextNode objects instead of insert()
+        # Use insert_nodes() for TextNode objects instead of insert()
         for node in nodes:
             self.indices[collection_name].insert_nodes([node])
             doc_ids.append(node.node_id)
@@ -219,27 +258,16 @@ class RAGService:
 
     def add_conversation(self, conversation: ConversationState):
         """Add a conversation to the conversations index."""
-        #text_content = self._conversation_to_text(conversation_data)
-        #doc = Document(
-        #    text=text_content,
-        #    metadata={
-        #        "type": "conversation",
-        #        "user_id": conversation_data.get("user_id", "unknown"),
-        #        "conversation_id": conversation_data.get("conversation_id", ""),
-        #        **conversation_data.get("context", {})
-        #    }
-        #)
-        #self.indices["conversations"].insert(doc)
         pass
 
-    def add_persona_data(self, persona_data: Dict):
+    def add_persona_data(self, persona_data: Persona, user_id: Optional[str] = None):
         """Add persona information to the persona index."""
         doc = Document(
-            text=persona_data.get("content", ""),
+            text=persona_data.__str__(),
             metadata={
                 "type": "persona",
-                "user_id": persona_data.get("user_id", "unknown"),
-                **persona_data.get("metadata", {})
+                "user_id": user_id or "unknown",
+                "metadata": ""
             }
         )
         self.indices["persona"].insert(doc)

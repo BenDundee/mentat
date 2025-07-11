@@ -1,10 +1,9 @@
 from atomic_agents.agents.base_agent import BaseIOSchema
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import Field
+import simplejson as sj
 
 from atomic_agents.lib.components.system_prompt_generator import SystemPromptContextProviderBase
-
-from src.interfaces.query import QueryResult
 
 
 class Persona(BaseIOSchema):
@@ -16,7 +15,7 @@ class Persona(BaseIOSchema):
     preferred_feedback_style: str = Field(..., description="The preferred feedback style of the persona")
     motivators: List[str] = Field(..., description="The list of motivators of the persona")
 
-    def get_summary(self):
+    def get_summary(self) -> Dict[str, Any]:
         return {
             "core_values": self.core_values,
             "strengths": self.strengths,
@@ -25,6 +24,9 @@ class Persona(BaseIOSchema):
             "preferred_feedback_style": self.preferred_feedback_style,
             "motivators": self.motivators
         }
+
+    def __str__(self):
+        return sj.dumps(self.get_summary(), indent=4)
 
     def __eq__(self, other):
         return self.get_summary() == other.get_summary()
@@ -48,10 +50,10 @@ class PersonaContextProvider(SystemPromptContextProviderBase):
 
     def __init__(self, title="Persona Context Provider"):
         super().__init__(title)
-        self.query_result: Optional[QueryResult] = None
+        self.query_result: Optional[str] = None
 
     def clear(self):
         self.query_result = None
 
     def get_info(self) -> str:
-        raise NotImplementedError("build me pls.")
+        return self.query_result

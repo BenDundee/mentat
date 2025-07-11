@@ -5,7 +5,6 @@ from typing import Dict, List, Optional, Any
 @dataclass
 class ModelAPIParameters:
     temperature: float
-    top_k: int
     top_p: float
     max_tokens: int
 

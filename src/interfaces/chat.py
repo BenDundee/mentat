@@ -66,16 +66,19 @@ class IntentDetectionResponse(BaseIOSchema):
 class ConversationState(BaseIOSchema):
     """Schema for the conversation state."""
     conversation_id: Optional[str] = Field(None, description="Unique identifier for the conversation")
-    user_message: Optional[SimpleMessageContentIOSchema] = Field(..., description="The current message from the user")
+    user_message: Optional[Message] = Field(..., description="The current message from the user")
     history: Optional[List[Message]] = Field(..., description="The conversation history")
     user_id: Optional[str] = Field("guest", description="Identifier for the current user")
     detected_intent: Optional[Intent] = Field(None, description="The detected intent from the message")
     persona: Optional[Persona] = Field(..., description="The persona for the current user")
-    response: Optional[SimpleMessageContentIOSchema] = Field(None, description="Generated response to be returned to the user")
+    response: Optional[Message] = Field(None, description="Generated response to be returned to the user")
     errors: Optional[List[str]] = Field(default_factory=list, description="List of errors encountered during processing")
     context: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Additional context for the conversation")
     conversation_start: str = Field(default_factory=lambda: dt.datetime.now().isoformat(), description="Timestamp for the start of the conversation")
     conversation_end: Optional[str] = Field(None, description="Timestamp for the end of the conversation")
+
+    def set_response(self, response: str, turn_id: str):
+        self.response = Message(content=SimpleMessageContentIOSchema(content=response), role="assistant", turn_id=turn_id)
 
 
 

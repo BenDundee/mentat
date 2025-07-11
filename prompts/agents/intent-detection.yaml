@@ -5,7 +5,6 @@ llm_parameters:
   model: google/gemini-2.0-flash-001
   model_api_parameters:
     temperature: 1.0
-    top_k: 40
     top_p: 0.8
     max_tokens: 2000
 system_prompt:

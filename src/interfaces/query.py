@@ -13,9 +13,10 @@ class Chunk(BaseIOSchema):
     id: str = Field(..., description="The ID of the chunk")
 
 
-class QueryResult(BaseIOSchema):
-    """This schema represents the result of a query"""
-    results: List[Chunk] = Field(..., description="A list of chunks returned by the query")
+#class QueryResult(BaseIOSchema):
+#    """This schema represents the result of a query"""
+#    # results: List[Chunk] = Field(..., description="A list of chunks returned by the query")
+#    results: str = Field(..., description="A string representation of the results")
 
 
 class QueryAgentInputSchema(BaseIOSchema):

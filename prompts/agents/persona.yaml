@@ -1,11 +1,10 @@
-name: intent_detector
-description: Choice agent whose main purpose is to understand user's intent
+name: persona
+description: Agent whose main purpose is to evaluate the users persona
 llm_parameters:
   model_provider: openrouter
   model: google/gemini-2.0-flash-001
   model_api_parameters:
     temperature: 1.0
-    top_k: 40
     top_p: 0.8
     max_tokens: 2000
 system_prompt:
@@ -32,8 +31,9 @@ system_prompt:
 
   steps:
     - "Analyze the documents provided"
-    - "For each of the categories (`core_values`, `strengths`, `growth_areas`, `motivators`), choose no more than 
-    five short descriptors that summarize the user's personality. Return the summary as a list of strings."
+    - "For each of the categories (`core_values`, `strengths`, `growth_areas`, `communication_style`, 
+    `preferred_feedback_style`, and `motivators`), choose no more than five short descriptors that summarize the user's 
+    personality. Return the summary as a list of strings."
     - "For `communication_style` and `preferred_feedback_style`, choose a single descriptor or a short phrase that can
     help generate responses. Return these as single strings."
 
