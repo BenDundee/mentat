@@ -31,7 +31,7 @@ class Controller:
         try:
             self.conversation.initiate_turn(input, history, conversation_id)
             if self.conversation.state.persona.is_empty():
-                self.agent_flows.update_persona()
+                self.conversation.state.persona = self.agent_flows.update_persona()
 
             self.conversation.advance_conversation(response="In the time of chimpanzees I was a monkey")
             logger.info("Response generated successfully")

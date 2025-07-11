@@ -1,3 +1,5 @@
+import logging
+
 from src.agents import AgentHandler
 from src.configurator import Configurator
 from src.interfaces import Persona
@@ -6,8 +8,6 @@ from src.managers.persona_manager import PersonaManager
 from src.managers.query_manager import QueryManager
 from src.services import RAGService
 
-
-import logging
 
 logger = logging.getLogger(__name__)
 
