@@ -5,6 +5,7 @@ from atomic_agents.lib.components.agent_memory import Message
 
 from src.configurator import Configurator
 from src.controller import Controller
+from src.utils import get_message
 
 
 app = Flask(__name__)
@@ -19,21 +20,22 @@ controller = Controller(config)
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    input = request.json.get("message")
+    input_message = request.json.get("message")
     history = request.json.get("history")
-    conversation_id = request.json.get("session_id")
     file = request.files.get("file")
 
-    # TODO: move to adapter in `utils` module
-    input_message = Message()
+    # TODO: consider managing "turn_id" in `ConversationService`
     input_history = []
     if history:
-        input_history = [Message(content=h.get("content"), role=h.get("role"), turn_id=f"{i}") for (i, h) in enumerate(history)]
-    if input:
+        input_history = [
+            get_message(role=h.get("role"), message=h.get("content"), turn_id=f"{i}") for (i, h) in enumerate(history)
+        ]
+    if input_message:
         next_i = f"{len(input_history)}"
-        input_message = Message(content=input.get("content"), role=input.get("role"), turn_id=next_i)
+        input_message = get_message(message=input_message.get("content"), role=input_message.get("role"), turn_id=next_i)
 
     # Do something with text and file (e.g., RAG processing)
+    conversation_id = request.json.get("session_id")  # TODO: Manage conversation ID in a better way.
     response = controller.get_response(input_message, input_history, conversation_id)
     if file:
         response += f" and received file: {file.filename}"
