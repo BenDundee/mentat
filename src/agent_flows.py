@@ -1,13 +1,17 @@
 import logging
 
+from atomic_agents.lib.components.agent_memory import Message
+
 from src.agents import AgentHandler
 from src.configurator import Configurator
 from src.interfaces import Persona
+from src.interfaces import Intent, ConversationState
 from src.managers.prompt_manager import PromptManager
 from src.managers.persona_manager import PersonaManager
 from src.managers.query_manager import QueryManager
 from src.services import RAGService
-from src.interfaces import Intent, ConversationState
+from src.utils import get_message
+
 
 
 logger = logging.getLogger(__name__)
@@ -47,9 +51,15 @@ class AgentFlows:
         return persona
 
     def determine_intent(self, conversation: ConversationState) -> Intent:
-        self.agent_handler.intent_detection_agent.get_context_provider("intent_context").previous_intent = conversation.detected_intent
+        self.agent_handler.intent_detection_agent.get_context_provider("intent_context").previous_intent = \
+            conversation.detected_intent
         intent_response = self.agent_handler.intent_detection_agent.run(conversation)
         return intent_response.intent
+
+    def generate_simple_response(self, conversation: ConversationState) -> Message:
+        response = self.agent_handler.coach_agent.run(conversation)
+        tid = f"{len(conversation.history)+1}"
+        return get_message(role="assistant", message=response, turn_id=tid)
 
 
 if __name__ == "__main__":
@@ -60,8 +70,6 @@ if __name__ == "__main__":
     config = Configurator()
     rag_service = RAGService(config)
     am = AgentFlows(config, rag_service)
-    conversation = ConversationState(
-        user_message=get_message(role="user", message="Hello"),
-    )
+    conversation = ConversationState(user_message=get_message(role="user", message="Hello"))
     intent = am.determine_intent(conversation)
     print("wait")

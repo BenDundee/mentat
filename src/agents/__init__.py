@@ -9,9 +9,13 @@ from typing import Dict, List, Optional, Type, TYPE_CHECKING
 from src.tools import SearchTool, SearchToolConfig
 
 from src.interfaces import (
-    ConversationState, Persona, SimpleMessageContentIOSchema, Intent, IntentContextProvider, IntentDetectionResponse,
-    AgentPrompt, PersonaContextProvider, QueryAgentInputSchema, QueryAgentOutputSchema, QueryAgentContextProvider
+    ConversationState, Persona, SimpleMessageContentIOSchema, Intent, IntentDetectionResponse,
+    AgentPrompt, QueryAgentInputSchema, QueryAgentOutputSchema, CoachResponse
 )
+
+from .intent_context import IntentContextProvider
+from .persona_context import PersonaContextProvider
+from .query_context import QueryContextProvider
 
 # https://peps.python.org/pep-0563/  lame
 if TYPE_CHECKING:
@@ -44,6 +48,11 @@ class AgentHandler(object):
             input_schema=None,
             output_schema=Persona
         )
+        self.coach_agent = self.__configure_agent(
+            prompt=prompt_manager.get_agent_prompt("coach"),
+            input_schema=ConversationState,
+            output_schema=CoachResponse
+        )
 
         self.agent_map = {
             "intent_detection": self.intent_detection_agent,
@@ -63,7 +72,7 @@ class AgentHandler(object):
         persona_context = PersonaContextProvider(title="persona_context")
         self.persona_agent.register_context_provider("persona_context", persona_context)
 
-        query_context = QueryAgentContextProvider(title="query_context")
+        query_context = QueryContextProvider(title="query_context")
         self.query_agent.register_context_provider("query_context", query_context)
 
         intent_context = IntentContextProvider(title="intent_context")

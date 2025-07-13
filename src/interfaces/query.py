@@ -29,15 +29,3 @@ class QueryAgentOutputSchema(BaseIOSchema):
     queries: List[str] = Field(..., description="Semantic search queries to use for retrieving relevant chunks")
 
 
-class QueryAgentContextProvider(SystemPromptContextProviderBase):
-    """Context provider for the query agent."""
-
-    def __init__(self, title="query_context"):
-        super().__init__(title)
-        self.query_prompt = ""
-
-    def clear(self):
-        self.query_prompt = ""
-
-    def get_info(self) -> str:
-        return f"Use the following directive to construct the queries:\n\n{self.query_prompt}"

@@ -5,6 +5,7 @@ from atomic_agents.lib.components.agent_memory import Message
 
 from src.agent_flows import AgentFlows
 from src.configurator import Configurator
+from src.interfaces import Intent
 from src.services import RAGService, ConversationService
 
 
@@ -38,9 +39,30 @@ class Controller:
             logger.info("Detecting intent of incoming message...")
             self.conversation.state.detected_intent = self.agent_flows.determine_intent(self.conversation.state)
 
-            self.conversation.advance_conversation(response="In the time of chimpanzees I was a monkey")
+            # Simple response: Invokes agent directly
+            if self.conversation.state.detected_intent == Intent.SIMPLE:
+                self.conversation.state.response = self.agent_flows.generate_simple_response(self.conversation.state)
+
+            # Coaching session: Initiation
+            elif self.conversation.state.detected_intent == Intent.COACHING_SESSION_REQUEST:
+                # Coaching Session Management Agent -> CoachingAgent
+                pass
+
+            # Coaching session: Continuation
+            elif self.conversation.state.detected_intent == Intent.COACHING_SESSION_RESPONSE:
+                # Coaching Session Management Agent -> CoachingAgent
+                pass
+
+            elif self.conversation.state.detected_intent == Intent.FEEDBACK:
+                # Critical Feedback Agent -> Coaching Agent
+                pass
+
+            else:
+                self.conversation.state.response = \
+                    get_message("assistant", "In the time of chimpanzees I was a monkey.", input.turn_id)
+
             logger.info("Response generated successfully")
-            return self.conversation.state.response
+            return self.conversation.advance_conversation()
             
         except Exception as e:
             logger.error(f"Error processing request: {e}")

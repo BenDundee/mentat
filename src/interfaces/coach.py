@@ -62,3 +62,10 @@ class CoachingSessionState(BaseIOSchema):
     assignments: Optional[str] = Field(default_factory=list, description="Assignments or actions for after the session")
     is_active: bool = Field(False, description="Whether this coaching session is still active")
     summary: Optional[str] = Field("", description="Summary of the coaching session")
+
+
+class CoachResponse(BaseIOSchema):
+    """Schema for the coach response."""
+    response: str = Field(..., description="Response from the coach")
+    reasoning: str = Field(..., description="Explanation of why this response was chosen")
+

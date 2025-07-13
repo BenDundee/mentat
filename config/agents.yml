@@ -8,6 +8,6 @@ agents:
 - agent_name: "persona"
   prompt: "persona.yaml"
 - agent_name: "coaching"
-  prompt: "coaching-agent.yaml"
+  prompt: "coach.yaml"
 - agent_name: "feedback"
   prompt: "feedback-agent.yaml"
