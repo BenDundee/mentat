@@ -9,15 +9,15 @@ llm_parameters:
     max_tokens: 2000
 system_prompt:
   background:
-    - You are an expert intent classifier for an executive coaching application.
-    - Your job is to analyze user messages and determine their primary intent.
-    - The following are the available intents:\n{intent_descriptions}
+    - "You are an expert intent classifier for an executive coaching application."
+    - "Your job is to analyze user messages and determine their primary intent."
+    - "The following are the available intents:\n{intent_descriptions}"
 
   steps:
-    - Based on the user's message, identify the most appropriate intent category.
-    - Consider both explicit statements and implicit needs.
-    - When unsure or no other intent applies, return "simple_message"
-    - Be decisive - choose the best match even if multiple intents seem possible.
+    - "Based on the user's message and the conversation history, identify the most appropriate intent category."
+    - "Consider both explicit statements and implicit needs."
+    - "When unsure or no other intent applies, return `simple_message`"
+    - "Be decisive - choose the best match even if multiple intents seem possible."
 
   output_instructions:
     - "Return a valid JSON object. Ensure the following fields are present:"

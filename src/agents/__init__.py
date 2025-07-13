@@ -9,8 +9,8 @@ from typing import Dict, List, Optional, Type, TYPE_CHECKING
 from src.tools import SearchTool, SearchToolConfig
 
 from src.interfaces import (
-    ConversationState, Persona, SimpleMessageContentIOSchema, Intent, AgentPrompt, PersonaContextProvider,
-    QueryAgentInputSchema, QueryAgentOutputSchema, QueryAgentContextProvider
+    ConversationState, Persona, SimpleMessageContentIOSchema, Intent, IntentContextProvider, IntentDetectionResponse,
+    AgentPrompt, PersonaContextProvider, QueryAgentInputSchema, QueryAgentOutputSchema, QueryAgentContextProvider
 )
 
 # https://peps.python.org/pep-0563/  lame
@@ -32,7 +32,7 @@ class AgentHandler(object):
         self.intent_detection_agent = self.__configure_agent(
             prompt=prompt_manager.get_agent_prompt("intent-detection", intent_descriptions=Intent.llm_rep()),
             input_schema=ConversationState,
-            output_schema=ConversationState
+            output_schema=IntentDetectionResponse
         )
         self.query_agent = self.__configure_agent(
             prompt=prompt_manager.get_agent_prompt("query"),
@@ -62,8 +62,13 @@ class AgentHandler(object):
         logger.info("Registering context providers...")
         persona_context = PersonaContextProvider(title="persona_context")
         self.persona_agent.register_context_provider("persona_context", persona_context)
+
         query_context = QueryAgentContextProvider(title="query_context")
         self.query_agent.register_context_provider("query_context", query_context)
+
+        intent_context = IntentContextProvider(title="intent_context")
+        self.intent_detection_agent.register_context_provider("intent_context", intent_context)
+
 
     def update_memory(self, msgs: List[Dict]):
         # Get history and update. I think there's a better way to do this?

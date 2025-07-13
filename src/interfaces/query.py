@@ -4,7 +4,6 @@ from atomic_agents.agents.base_agent import BaseIOSchema
 from atomic_agents.lib.components.system_prompt_generator import SystemPromptContextProviderBase
 
 
-
 class Chunk(BaseIOSchema):
     """This schema represents a single chunk of context"""
     text: str = Field(..., description="The text of the chunk")
@@ -33,7 +32,7 @@ class QueryAgentOutputSchema(BaseIOSchema):
 class QueryAgentContextProvider(SystemPromptContextProviderBase):
     """Context provider for the query agent."""
 
-    def __init__(self, title="Query Context Provider"):
+    def __init__(self, title="query_context"):
         super().__init__(title)
         self.query_prompt = ""
 

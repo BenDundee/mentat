@@ -4,8 +4,10 @@ from typing import Any, Dict, List, Optional
 from pydantic import Field, ValidationError
 from atomic_agents.agents.base_agent import BaseIOSchema
 from atomic_agents.lib.components.agent_memory import AgentMemory, Message
+from atomic_agents.lib.components.system_prompt_generator import SystemPromptContextProviderBase
 
-from src.interfaces.persona import Persona
+from .persona import Persona
+from .coach import CoachingSessionState
 
 from enum import Enum
 
@@ -63,17 +65,35 @@ class IntentDetectionResponse(BaseIOSchema):
         )
 
 
+class IntentContextProvider(SystemPromptContextProviderBase):
+
+    def __init__(self, title="intent_context"):
+        super().__init__(title)
+        self.previous_intent = None
+
+    def clear(self):
+        self.previous_intent = None
+
+    def get_info(self) -> str:
+        if self.previous_intent:
+            return f"The last identified intent was: {self.previous_intent}"
+        else:
+            return ("There is no information about the intent of the last message. This may be because this is the "
+                    "first message in a conversation.")
+
+
 class ConversationState(BaseIOSchema):
     """Schema for the conversation state."""
     conversation_id: Optional[str] = Field(None, description="Unique identifier for the conversation")
-    user_message: Optional[Message] = Field(..., description="The current message from the user")
-    history: Optional[List[Message]] = Field(..., description="The conversation history")
+    user_message: Optional[Message] = Field(None, description="The current message from the user")
+    history: Optional[List[Message]] = Field(None, description="The conversation history")
     user_id: Optional[str] = Field("guest", description="Identifier for the current user")
     detected_intent: Optional[Intent] = Field(None, description="The detected intent from the message")
-    persona: Optional[Persona] = Field(..., description="The persona for the current user")
+    persona: Optional[Persona] = Field(None, description="The persona for the current user")
     response: Optional[Message] = Field(None, description="Generated response to be returned to the user")
     errors: Optional[List[str]] = Field(default_factory=list, description="List of errors encountered during processing")
     context: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Additional context for the conversation")
+    coaching_session: Optional[CoachingSessionState] = Field(None, description="Details of the current coaching session")
     conversation_start: str = Field(default_factory=lambda: dt.datetime.now().isoformat(), description="Timestamp for the start of the conversation")
     conversation_end: Optional[str] = Field(None, description="Timestamp for the end of the conversation")
 

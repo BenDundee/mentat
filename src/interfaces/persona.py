@@ -48,7 +48,7 @@ class Persona(BaseIOSchema):
 
 class PersonaContextProvider(SystemPromptContextProviderBase):
 
-    def __init__(self, title="Persona Context Provider"):
+    def __init__(self, title="persona_context"):
         super().__init__(title)
         self.query_result: Optional[str] = None
 

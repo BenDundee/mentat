@@ -31,7 +31,12 @@ class Controller:
         try:
             self.conversation.initiate_turn(input, history, conversation_id)
             if self.conversation.state.persona.is_empty():
+                logger.info("Updating persona...")
                 self.conversation.state.persona = self.agent_flows.update_persona()
+
+            # Determine intent
+            logger.info("Detecting intent of incoming message...")
+            self.conversation.state.detected_intent = self.agent_flows.determine_intent(self.conversation.state)
 
             self.conversation.advance_conversation(response="In the time of chimpanzees I was a monkey")
             logger.info("Response generated successfully")

@@ -7,6 +7,7 @@ from src.managers.prompt_manager import PromptManager
 from src.managers.persona_manager import PersonaManager
 from src.managers.query_manager import QueryManager
 from src.services import RAGService
+from src.interfaces import Intent, ConversationState
 
 
 logger = logging.getLogger(__name__)
@@ -44,3 +45,23 @@ class AgentFlows:
         self.rag_service.add_persona_data(persona)
 
         return persona
+
+    def determine_intent(self, conversation: ConversationState) -> Intent:
+        self.agent_handler.intent_detection_agent.get_context_provider("intent_context").previous_intent = conversation.detected_intent
+        intent_response = self.agent_handler.intent_detection_agent.run(conversation)
+        return intent_response.intent
+
+
+if __name__ == "__main__":
+    from src.utils import get_message
+
+    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s")
+
+    config = Configurator()
+    rag_service = RAGService(config)
+    am = AgentFlows(config, rag_service)
+    conversation = ConversationState(
+        user_message=get_message(role="user", message="Hello"),
+    )
+    intent = am.determine_intent(conversation)
+    print("wait")

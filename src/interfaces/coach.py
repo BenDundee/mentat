@@ -1,7 +1,8 @@
-from src.interfaces.chat import ConversationState
 from typing import List, Optional
 from pydantic import Field
 from enum import Enum
+
+from atomic_agents.agents.base_agent import BaseIOSchema
 
 
 class CoachingStage(Enum):
@@ -51,7 +52,7 @@ class CoachingStage(Enum):
         return '\n'.join([f"- {state}: {desc}" for state, desc in CoachingStage.state_descriptions().items()])
 
 
-class CoachingSessionState(ConversationState):
+class CoachingSessionState(BaseIOSchema):
     """Schema for the coaching session state."""
     session_id: Optional[str] = Field(None, description="Unique identifier for this coaching session")
     stage: Optional[CoachingStage] = Field(CoachingStage.CONTRACT, description="Current stage of the coaching session")
