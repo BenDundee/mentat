@@ -24,7 +24,7 @@ def chat():
     history = request.json.get("history")
     file = request.files.get("file")
 
-    # TODO: consider managing "turn_id" in `ConversationService`
+    # TODO: consider managing `turn_id` in `ConversationService`
     input_history = []
     if history:
         input_history = [

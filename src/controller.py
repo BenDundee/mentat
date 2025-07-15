@@ -5,7 +5,7 @@ from atomic_agents.lib.components.agent_memory import Message
 
 from src.agent_flows import AgentFlows
 from src.configurator import Configurator
-from src.interfaces import Intent
+from src.interfaces import Intent, CoachingSessionState
 from src.services import RAGService, ConversationService
 
 
@@ -46,7 +46,18 @@ class Controller:
             # Coaching session: Initiation
             elif self.conversation.state.detected_intent == Intent.COACHING_SESSION_REQUEST:
                 # Coaching Session Management Agent -> CoachingAgent
-                pass
+                self.conversation.state.coaching_session = CoachingSessionState.get_new_session("12345")
+
+
+
+
+
+
+
+
+
+
+
 
             # Coaching session: Continuation
             elif self.conversation.state.detected_intent == Intent.COACHING_SESSION_RESPONSE:

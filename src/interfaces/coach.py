@@ -1,6 +1,7 @@
 from typing import List, Optional
 from pydantic import Field
 from enum import Enum
+from datetime import datetime as dt
 
 from atomic_agents.agents.base_agent import BaseIOSchema
 
@@ -15,26 +16,26 @@ class CoachingStage(Enum):
     @staticmethod
     def state_descriptions():
         return {
-            CoachingStage.CONTRACT: \
+            CoachingStage.CONTRACT:
                 " - Establish the purpose of the session"
                 " - Confirm long-term goals and user context"
                 " - Clarify expectations for the session.",
-            CoachingStage.LISTEN: \
+            CoachingStage.LISTEN:
                 " - Encourage deep reflection and open expression."
                 " - Explore emotions, beliefs, and challenges." 
                 " - Incorporate feedback documents and past sessions.",
-            CoachingStage.EXPLORE: \
+            CoachingStage.EXPLORE:
                 " - Help uncover patterns, obstacles, and possibilities."
                 " - Link discoveries to long-term objectives."
                 " - Use RAG (retrieval-augmented generation) for relevant context.",
-            CoachingStage.ACTION_PLANNING: \
+            CoachingStage.ACTION_PLANNING:
                 " -  Identify actionable next steps"
                 " -  Use GROW structure:"
                 " -- **Goal**: What do you want to achieve next?"
                 " -- **Reality**: Where are you now?"
                 " -- **Options**: What can you try?"
                 " -- **Will**: What will you commit to?",
-            CoachingStage.REVIEW: \
+            CoachingStage.REVIEW:
                 " - Reflect on insights gained during the session."
                 " - Offer journaling or behavioral assignments."
                 " - Reinforce connection to long-term goals.",
@@ -52,20 +53,49 @@ class CoachingStage(Enum):
         return '\n'.join([f"- {state}: {desc}" for state, desc in CoachingStage.state_descriptions().items()])
 
 
-class CoachingSessionState(BaseIOSchema):
-    """Schema for the coaching session state."""
-    session_id: Optional[str] = Field(None, description="Unique identifier for this coaching session")
-    stage: Optional[CoachingStage] = Field(CoachingStage.CONTRACT, description="Current stage of the coaching session")
-    plan: Optional[str] = Field(None, description="The plan for the current session")
-    goal: Optional[str] = Field(None, description="The defined goal for this coaching session")
-    insights: Optional[List[str]] = Field(default_factory=list, description="Key insights discovered during the session")
-    assignments: Optional[str] = Field(default_factory=list, description="Assignments or actions for after the session")
-    is_active: bool = Field(False, description="Whether this coaching session is still active")
-    summary: Optional[str] = Field("", description="Summary of the coaching session")
-
-
 class CoachResponse(BaseIOSchema):
     """Schema for the coach response."""
     response: str = Field(..., description="Response from the coach")
     reasoning: str = Field(..., description="Explanation of why this response was chosen")
+
+
+class Assignment(BaseIOSchema):
+    title: str
+    description: Optional[str] = None
+    due_date: Optional[str] = None  # ISO format
+
+
+class Goal(BaseIOSchema):
+    title: str = Field(..., description="The title of the goal")
+    description: str = Field(None, description="The description of the goal")
+    due_date: dt.date = Field(None, description="The due date for this goal")
+
+
+class CoachingSessionState(BaseIOSchema):
+    """Schema for the coaching session state."""
+    session_id: Optional[str] = Field(None, description="Unique identifier for this coaching session")
+    stage: Optional[CoachingStage] = Field(CoachingStage.CONTRACT, description="Current stage of the coaching session")
+    session_plan: Optional[str] = Field(None, description="The plan for the current session")
+    session_goal: Optional[str] = Field(None, description="The defined goal for this coaching session")
+    long_term_goal_ref: Optional[List[Goal]] = Field(None, description="The reference to the long-term goal")
+    action_plan: Optional[str] = Field(None, description="The action plan for the session")
+    insights: Optional[List[str]] = Field(default_factory=list, description="Key insights discovered during the session")
+    assignments: Optional[str] = Field(default_factory=list, description="Assignments or actions for after the session")
+    is_active: bool = Field(False, description="Whether this coaching session is still active")
+    summary: Optional[str] = Field("", description="Summary of the coaching session")
+    session_completion_reason: Optional[str] = Field(None, description="Reason for session completion")
+
+
+    @staticmethod
+    def get_new_session(session_id: str) -> "CoachingSessionState":
+        return CoachingSessionState(
+            session_id=session_id,
+            stage=CoachingStage.CONTRACT,
+            session_plan="",
+            session_goal="",
+            insights=[],
+            assignments="",
+            is_active=False,
+            summary=""
+        )
 

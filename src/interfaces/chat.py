@@ -7,7 +7,7 @@ from atomic_agents.lib.components.agent_memory import AgentMemory, Message
 from atomic_agents.lib.components.system_prompt_generator import SystemPromptContextProviderBase
 
 from .persona import Persona
-from .coach import CoachingSessionState
+from .coach import CoachingSessionState, CoachingStage
 
 from enum import Enum
 
@@ -27,11 +27,19 @@ class Intent(Enum):
 
     @staticmethod
     def intent_descriptions():
-        return {  # TODO: May need to make these more...robust
-            Intent.SIMPLE.value: "General conversation, questions, or statements",
-            Intent.COACHING_SESSION_REQUEST.value: "A request for a coaching session.",
-            Intent.COACHING_SESSION_RESPONSE.value: "A response during a coaching session",
-            Intent.FEEDBACK.value: "A request for feedback or help from the user.",
+        return {
+            Intent.SIMPLE.value: "General conversation, questions, or statements.",
+            Intent.COACHING_SESSION_REQUEST.value:
+                "A request for a coaching session, it may be either explicitly requested or implied by the conversaion. "
+                "For example, a request for feedback about a specific work situation could transition into an ad hoc "
+                "coaching session. ***Be proactive about finding opportunities for a coaching session.***",
+            Intent.COACHING_SESSION_RESPONSE.value:
+                "A response during a coaching session. Note that there must be an active coaching session for this "
+                "intent to be valid.",
+            Intent.FEEDBACK.value:
+                "A request for feedback or help from the user. This may include things like a request for thoughts "
+                "about whether a particular job posting aligns with long term goals, help drafting a resume/cover "
+                "letter, or advice about a specific work situation.",
         }
 
     @staticmethod
@@ -65,9 +73,6 @@ class IntentDetectionResponse(BaseIOSchema):
         )
 
 
-
-
-
 class ConversationState(BaseIOSchema):
     """Schema for the conversation state."""
     conversation_id: Optional[str] = Field(None, description="Unique identifier for the conversation")
@@ -84,7 +89,24 @@ class ConversationState(BaseIOSchema):
     conversation_end: Optional[str] = Field(None, description="Timestamp for the end of the conversation")
 
 
+# class TurnState(BaseIOSchema):
+#    user_message: Optional[Message] = Field(None, description="The current message from the user")
+#    coaching_stage: Optional[CoachingStage] = Field(None, description="Current stage of the coaching session")
+#    actions: Optional[List[str]] = Field(default_factory=list, description="List of actions to preform")
+#    confidence: Optional[int] = Field(None, description="Confidence score for the detected intent, between 0 and 100")
 
 
-
+# Update conversation state code above
+# Refactor the code to pass full history, don't separate user_message, history, and response fields
+# history should be a list of TurnState objects
+#
+#class ConversationState_(BaseIOSchema):
+#    conversation_id: Optional[str] = None
+#    user_id: str = "guest"
+#    persona: Optional["Persona"] = None
+#    coaching_session: Optional[CoachingSessionState] = None
+#    history: List[TurnState] = Field(default_factory=list)
+#    conversation_start: str = Field(default_factory=lambda: dt.datetime.now().isoformat())
+#    conversation_end: Optional[str] = None
+#    injected_context_sources: List[str] = Field(default_factory=list)
 
