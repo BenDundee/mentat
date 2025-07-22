@@ -1,4 +1,5 @@
-query: |
+query_summary: "A query to help define the users persona, based on their personal document collections"
+query_prompt: |
   We need to do a full assessment of the user's personality. Specifically, we're looking to understand the user's 
   persona across the following dimensions:
     - `core_values`: What drives or grounds the person morally or ethically (e.g., curiosity, integrity, responsibility)

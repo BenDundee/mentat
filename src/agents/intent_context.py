@@ -1,18 +1,21 @@
+from typing import List, Optional
 from atomic_agents.lib.components.system_prompt_generator import SystemPromptContextProviderBase
+from src.interfaces import TurnState
 
 
 class IntentContextProvider(SystemPromptContextProviderBase):
 
     def __init__(self, title="intent_context"):
         super().__init__(title)
-        self.previous_intent = None
+        self.turn_history: Optional[List[TurnState]] = None
 
     def clear(self):
-        self.previous_intent = None
+        self.turn_history = None
 
     def get_info(self) -> str:
-        if self.previous_intent:
-            return f"The last identified intent was: {self.previous_intent}"
+        if self.turn_history:
+            as_str = "\n-----------------\n".join(t.model_dump_json(indent=4) for t in self.turn_history)
+            return f"This is a short summary of the conversation so far:\n{as_str}"
         else:
-            return ("There is no information about the intent of the last message. This may be because this is the "
-                    "first message in a conversation.")
+            return ("There is no information about the previous messages. This may be because this is the first message "
+                    "in a conversation.")

@@ -1,7 +1,9 @@
 from pathlib import Path
 import logging
-from typing import Dict, Any
+import simplejson as sj
 from yaml import safe_load
+
+from src.interfaces import QueryPrompt
 
 logger = logging.getLogger(__name__)
 
@@ -19,11 +21,21 @@ class QueryManager:
             try:
                 with open(q, "r") as f:
                     raw = safe_load(f)
-                self.queries[q.stem] = raw.get("query")
-                if self.queries[q.stem] is None:
-                    raise KeyError(f"Query {q.stem} has no query")
+                self.queries[q.stem] = QueryPrompt(**raw)
             except Exception as e:
                 logger.warning(f"Encountered exception while loading query in {q}: {e}")
 
     def get_query(self, query_name: str) -> str:
         return self.queries.get(query_name)
+
+    def generate_query_summary(self) -> str:
+        summary = "The following queries are available: \n"
+        for q in self.queries:
+            summary += f"  - `{q}`: {self.queries[q].query_summary}\n"
+        return summary
+
+
+if __name__ == "__main__":
+    qm = QueryManager()
+    summary = qm.generate_query_summary()
+    print(summary)

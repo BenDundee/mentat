@@ -1,6 +1,5 @@
 import logging
-
-from atomic_agents.lib.components.agent_memory import Message
+from typing import Tuple
 
 from src.agents import AgentHandler
 from src.configurator import Configurator
@@ -10,8 +9,6 @@ from src.managers.prompt_manager import PromptManager
 from src.managers.persona_manager import PersonaManager
 from src.managers.query_manager import QueryManager
 from src.services import RAGService
-from src.utils import get_message
-
 
 
 logger = logging.getLogger(__name__)
@@ -50,16 +47,18 @@ class AgentFlows:
 
         return persona
 
-    def determine_intent(self, conversation: ConversationState) -> Intent:
-        self.agent_handler.intent_detection_agent.get_context_provider("intent_context").previous_intent = \
-            conversation.detected_intent
-        intent_response = self.agent_handler.intent_detection_agent.run(conversation)
-        return intent_response.intent
+    def determine_intent(self, conversation: ConversationState) -> Tuple[Intent, int]:
+        #self.agent_handler.intent_detection_agent.get_context_provider("intent_context").previous_intent = \
+        #    conversation.detected_intent
+        self.agent_handler.intent_detection_agent.get_context_provider("intent_context").turn_history = \
+            conversation.history[-5:]  # TODO: config?
+        intent_response, confidence = self.agent_handler.intent_detection_agent.run(conversation)
+        return intent_response.intent, confidence
 
-    def generate_simple_response(self, conversation: ConversationState) -> Message:
+    def generate_simple_response(self, conversation: ConversationState) -> str:
         response = self.agent_handler.coach_agent.run(conversation)
         tid = f"{len(conversation.history)+1}"
-        return get_message(role="assistant", message=response, turn_id=tid)
+        return response.response
 
 
 if __name__ == "__main__":

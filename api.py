@@ -21,24 +21,22 @@ controller = Controller(config)
 @app.route("/chat", methods=["POST"])
 def chat():
     input_message = request.json.get("message")
-    history = request.json.get("history")
-    file = request.files.get("file")
 
-    # TODO: consider managing `turn_id` in `ConversationService`
+
+    # TODO: conversation management (incl. history) should be handled somewhere else, this should be a thin layer
+    history = request.json.get("history")
     input_history = []
-    if history:
-        input_history = [
-            get_message(role=h.get("role"), message=h.get("content"), turn_id=f"{i}") for (i, h) in enumerate(history)
-        ]
-    if input_message:
-        next_i = f"{len(input_history)}"
-        input_message = get_message(message=input_message.get("content"), role=input_message.get("role"), turn_id=next_i)
+    #if history:
+    #    input_history = [
+    #        get_message(role=h.get("role"), message=h.get("content"), turn_id=f"{i}") for (i, h) in enumerate(history)
+    #    ]
+    #if input_message:
+    #    next_i = f"{len(input_history)}"
+    #    input_message = get_message(message=input_message.get("content"), role=input_message.get("role"), turn_id=next_i)
 
     # Do something with text and file (e.g., RAG processing)
     conversation_id = request.json.get("session_id")  # TODO: Manage conversation ID in a better way.
-    response = controller.get_response(input_message, input_history, conversation_id)
-    if file:
-        response += f" and received file: {file.filename}"
+    response = controller.get_response(input_message, conversation_id)
 
     return jsonify({"response": response})
 

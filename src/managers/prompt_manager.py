@@ -5,6 +5,7 @@ from typing import Dict, Optional
 
 from src.interfaces import AgentPrompt
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -55,10 +56,27 @@ class PromptManager:
         prompt.format(**input_vars)
         return prompt
 
+    def check_system_prompt(self, prompt_name: str, **input_vars: Optional[Dict[str, str]]) -> str:
+        from atomic_agents.lib.components.system_prompt_generator import SystemPromptGenerator
+        ap = self.get_agent_prompt(prompt_name, **input_vars)
+        sp = SystemPromptGenerator(
+            background=ap.system_prompt.background,
+            steps=ap.system_prompt.steps,
+            output_instructions=ap.system_prompt.output_instructions
+        )
+        return sp.generate_prompt()
+
+
 
 if __name__ == "__main__":
-    from src.interfaces import Intent
+    from src.interfaces import Intent, AgentPrompt, AgentAction
 
     pm = PromptManager()
-    prompt = pm.get_agent_prompt("intent-detection", intent_descriptions=Intent.llm_rep())
-    print("wait")
+    prompt = pm.check_system_prompt(
+        prompt_name="orchestration",
+        intent_descriptions=Intent.llm_rep(),
+        actions_and_parameter_requirements=AgentAction.llm_rep(),
+        query_descriptions=""
+    )
+    print(prompt)
+    print("")

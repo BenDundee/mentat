@@ -1,7 +1,7 @@
 from typing import List, Optional
 from pydantic import Field
 from enum import Enum
-from datetime import datetime as dt
+import datetime as dt
 
 from atomic_agents.agents.base_agent import BaseIOSchema
 
@@ -60,15 +60,17 @@ class CoachResponse(BaseIOSchema):
 
 
 class Assignment(BaseIOSchema):
+    """Schema for an assignment or action to be taken during a coaching session."""
     title: str
     description: Optional[str] = None
     due_date: Optional[str] = None  # ISO format
 
 
 class Goal(BaseIOSchema):
+    """Schema for a long-term coaching goal."""
     title: str = Field(..., description="The title of the goal")
     description: str = Field(None, description="The description of the goal")
-    due_date: dt.date = Field(None, description="The due date for this goal")
+    due_date: dt.datetime = Field(None, description="The due date for this goal")
 
 
 class CoachingSessionState(BaseIOSchema):
@@ -84,7 +86,6 @@ class CoachingSessionState(BaseIOSchema):
     is_active: bool = Field(False, description="Whether this coaching session is still active")
     summary: Optional[str] = Field("", description="Summary of the coaching session")
     session_completion_reason: Optional[str] = Field(None, description="Reason for session completion")
-
 
     @staticmethod
     def get_new_session(session_id: str) -> "CoachingSessionState":

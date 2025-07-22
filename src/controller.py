@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from atomic_agents.lib.components.agent_memory import Message
 
@@ -21,27 +21,35 @@ class Controller:
         self.agent_flows = AgentFlows(self.config, self.rag_service)
         logger.info("Controller initialized successfully")
     
-    def get_response(self, input: Message, history: Optional[List[Message]], conversation_id: Optional[str]) -> Message:
+    def get_response(self, user_message: str, conversation_id: Optional[str]) -> Tuple[str, str]:
         """Process user messages and generate responses.
 
-        input (Message): The latest user message.
+        user_message (str): The latest user message.
         history (List[Message]): The conversation history up to this point.
         return (str): The generated response.
         """
         logger.info("Processing user request...")
         try:
-            self.conversation.initiate_turn(input, history, conversation_id)
+            if conversation_id != self.conversation.state.conversation_id:
+                # TODO: Write existing conversation to disk, initiate new conversation
+                pass
+
+            self.conversation.initiate_turn(user_message, conversation_id)
             if self.conversation.state.persona.is_empty():
                 logger.info("Updating persona...")
                 self.conversation.state.persona = self.agent_flows.update_persona()
 
             # Determine intent
             logger.info("Detecting intent of incoming message...")
-            self.conversation.state.detected_intent = self.agent_flows.determine_intent(self.conversation.state)
+            self.conversation.current_turn.detected_intent, self.conversation.current_turn.confidence = \
+                self.agent_flows.determine_intent(self.conversation.state)
+            if self.conversation.current_turn.confidence < 75: # TODO: Config???
+                _ = self.conversation.current_turn.errors.append["Intent confidence below threshold"]
 
             # Simple response: Invokes agent directly
-            if self.conversation.state.detected_intent == Intent.SIMPLE:
-                self.conversation.state.response = self.agent_flows.generate_simple_response(self.conversation.state)
+            if self.conversation.current_intent() == Intent.SIMPLE:
+                self.conversation.set_response(
+                    self.agent_flows.generate_simple_response(self.conversation.state), role="assistant")
 
             # Coaching session: Initiation
             elif self.conversation.state.detected_intent == Intent.COACHING_SESSION_REQUEST:
@@ -76,16 +84,14 @@ class Controller:
             return self.conversation.advance_conversation()
             
         except Exception as e:
+            # TODO: better error reporting, use `ConversationState.TurnState.errors`
             logger.error(f"Error processing request: {e}")
-            return get_message(
-                role="assistant",
-                message="I apologize, but I encountered an error processing your request.",
-                turn_id=input.turn_id
-            )
+            return "assistant", "I apologize, but I encountered an error processing your request."
 
     def _store_conversation(self, messages: List[Dict]):
         """Store conversation data for future retrieval."""
         # TODO: Move this method to `RAGService`
+        # TODO: Also fix this code
         conversation_data = {
             "user_message": {"content": messages[-1]["content"]},
             "history": messages,

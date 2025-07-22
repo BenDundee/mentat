@@ -37,11 +37,6 @@ class AgentPrompt:
             self.system_prompt = SystemPrompt(**self.system_prompt)
         
         if isinstance(self.llm_parameters, dict):
-            # Handle nested ModelAPIParameters conversion
-            #if isinstance(self.llm_parameters.get('model_api_parameters'), dict):
-            #    self.llm_parameters['model_api_parameters'] = ModelAPIParameters(
-            #        **self.llm_parameters['model_api_parameters']
-            #    )
             self.llm_parameters = LLMParams(**self.llm_parameters)
 
     def format(self, **kwargs: Dict[str, str]):
