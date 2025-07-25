@@ -3,22 +3,21 @@ from typing import Tuple
 
 from src.agents import AgentHandler
 from src.configurator import Configurator
-from src.interfaces import Persona
-from src.interfaces import Intent, ConversationState
+from src.interfaces import Persona, TurnState, OrchestrationAgentInputSchema
 from src.managers.prompt_manager import PromptManager
 from src.managers.persona_manager import PersonaManager
 from src.managers.query_manager import QueryManager
-from src.services import RAGService
-
+from src.services import RAGService, ConversationService
 
 logger = logging.getLogger(__name__)
 
 
 class AgentFlows:
 
-    def __init__(self, cfg: Configurator, rag_service: RAGService):
+    def __init__(self, cfg: Configurator, rag_service: RAGService, conversation_svc: ConversationService = None):
         self.config = cfg
         self.rag_service = rag_service
+        self.conversation_svc = conversation_svc
         self.agent_handler = AgentHandler(self.config)
         self.prompt_manager = PromptManager()
         self.persona_manager = PersonaManager(self.config)
@@ -27,7 +26,7 @@ class AgentFlows:
         logger.info("Setting initial states...")
         self.agent_handler.initialize_agents(self.prompt_manager)
 
-    def update_persona(self) -> Persona:
+    def update_persona(self):
         """Update user persona based on interactions."""
         logger.debug("Updating persona...")
         self.agent_handler.persona_agent.get_context_provider("persona_context").clear()
@@ -43,22 +42,21 @@ class AgentFlows:
         query_result = self.rag_service.query_all_collections_combined(query)
         self.agent_handler.persona_agent.get_context_provider("persona_context").query_result = query_result
         persona = self.agent_handler.persona_agent.run()
+
         self.rag_service.add_persona_data(persona)
+        self.conversation_svc.state.persona = persona
 
-        return persona
+    def orchestrate(self):
+        instructions = self.agent_handler.orchestration_agent.run(
+            OrchestrationAgentInputSchema(user_input=self.conversation_svc.current_turn.user_message)
+        )
+        self.conversation_svc.orchestrate_turn(instructions)
 
-    def determine_intent(self, conversation: ConversationState) -> Tuple[Intent, int]:
-        #self.agent_handler.intent_detection_agent.get_context_provider("intent_context").previous_intent = \
-        #    conversation.detected_intent
-        self.agent_handler.intent_detection_agent.get_context_provider("intent_context").turn_history = \
-            conversation.history[-5:]  # TODO: config?
-        intent_response, confidence = self.agent_handler.intent_detection_agent.run(conversation)
-        return intent_response.intent, confidence
+    def generate_simple_response(self, turn_state: TurnState) -> TurnState:
 
-    def generate_simple_response(self, conversation: ConversationState) -> str:
-        response = self.agent_handler.coach_agent.run(conversation)
-        tid = f"{len(conversation.history)+1}"
-        return response.response
+        # response = self.agent_handler.coach_agent.run(conversation_state)
+
+        return turn_state
 
 
 if __name__ == "__main__":
@@ -68,7 +66,12 @@ if __name__ == "__main__":
 
     config = Configurator()
     rag_service = RAGService(config)
+    convo_svc = ConversationService(rag_service)
+
     am = AgentFlows(config, rag_service)
-    conversation = ConversationState(user_message=get_message(role="user", message="Hello"))
-    intent = am.determine_intent(conversation)
+
+
+
+
+
     print("wait")

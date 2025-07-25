@@ -9,7 +9,8 @@ from typing import Dict, List, Optional, Type, TYPE_CHECKING
 from src.tools import SearchTool, SearchToolConfig
 
 from src.interfaces import (
-    ConversationState, Persona, SimpleMessageContentIOSchema, Intent, IntentDetectionResponse,
+    ConversationState, Persona, #SimpleMessageContentIOSchema,
+    OrchestrationAgentOutputSchema, OrchestrationAgentInputSchema,
     AgentPrompt, QueryAgentInputSchema, QueryAgentOutputSchema, CoachResponse
 )
 
@@ -33,11 +34,6 @@ class AgentHandler(object):
 
     def initialize_agents(self, prompt_manager: PromptManager):
         logger.info("Initializing agents...")
-        self.intent_detection_agent = self.__configure_agent(
-            prompt=prompt_manager.get_agent_prompt("intent-detection", intent_descriptions=Intent.llm_rep()),
-            input_schema=ConversationState,
-            output_schema=IntentDetectionResponse
-        )
         self.query_agent = self.__configure_agent(
             prompt=prompt_manager.get_agent_prompt("query"),
             input_schema=QueryAgentInputSchema,
@@ -48,16 +44,21 @@ class AgentHandler(object):
             input_schema=None,
             output_schema=Persona
         )
-        self.coach_agent = self.__configure_agent(
-            prompt=prompt_manager.get_agent_prompt("coach"),
-            input_schema=ConversationState,
-            output_schema=CoachResponse
+        self.orchestration_agent = self.__configure_agent(
+            prompt=prompt_manager.get_agent_prompt("orchestration"),
+            input_schema=OrchestrationAgentInputSchema,
+            output_schema=OrchestrationAgentOutputSchema
         )
+        #self.coach_agent = self.__configure_agent(
+        #    prompt=prompt_manager.get_agent_prompt("coach"),
+        #    input_schema=ConversationState,
+        #    output_schema=CoachResponse
+        #)
 
         self.agent_map = {
-            "intent_detection": self.intent_detection_agent,
             "query": self.query_agent,
             "persona": self.persona_agent,
+            "orchestration": self.orchestration_agent,
         }
 
         logger.info("Initializing tools...")
@@ -65,36 +66,12 @@ class AgentHandler(object):
             SearchToolConfig(base_url="google.com", max_results=self.config.data_config.search_results_per_query)
         )
 
-        logger.info("Initializing chat memory...")
-        self.full_memory = AgentMemory()
-
         logger.info("Registering context providers...")
         persona_context = PersonaContextProvider(title="persona_context")
         self.persona_agent.register_context_provider("persona_context", persona_context)
 
         query_context = QueryContextProvider(title="query_context")
         self.query_agent.register_context_provider("query_context", query_context)
-
-        intent_context = IntentContextProvider(title="intent_context")
-        self.intent_detection_agent.register_context_provider("intent_context", intent_context)
-
-
-    def update_memory(self, msgs: List[Dict]):
-        # Get history and update. I think there's a better way to do this?
-        self.full_memory.history = []  # Reset every time. Is there a better way to do it?
-        for m in msgs:
-            self.full_memory.initialize_turn()
-            self.full_memory.history.append(
-                Message(
-                    role=m["role"],
-                    content=SimpleMessageContentIOSchema(content=m["content"]),
-                    turn_id=self.full_memory.current_turn_id
-                )
-            )
-
-        # Update memory
-        logger.info("Updating relevant agent memories...")
-        # self.persona_agent.memory = self.full_memory
 
     def __configure_agent(
             self,
@@ -113,16 +90,6 @@ class AgentHandler(object):
                 output_schema=output_schema
             )
         )
-
-    def reconfigure_agent(self, agent_name: str):
-        agent = self.agent_map[agent_name]
-        memory = agent.memory
-        contexts = agent.system_prompt_generator.context_providers
-
-        # Reconfigure, reset
-        self.__configure_agent(agent_name, agent.input_schema, agent.output_schema)
-        agent.memory = memory
-        agent.system_prompt_generator.context_providers = contexts
 
 
 if __name__ == "__main__":

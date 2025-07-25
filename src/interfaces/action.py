@@ -21,13 +21,13 @@ class AgentAction(Enum):
             AgentAction.SEARCH_WEB.value:
                 "Use when the user's query requires recent, external, or general knowledge not present in internal "
                 "documents.",
-            AgentAction.GENERATE_RESPONSE.value:
-                "Use when the user's input can be answered directly and doesn't require additional context or "
-                "retrieval.",
             AgentAction.INITIATE_COACHING_SESSION.value:
                 "Use proactively when the user explicitly requests or clearly indicates the need for a structured "
                 "coaching conversation. Examples include requests for career advice, discussing feedback, or seeking "
                 "help to solve a professional challenge.",
+            AgentAction.GENERATE_RESPONSE.value:
+                "Use when the user's input can be answered directly and doesn't require additional context or "
+                "retrieval. Note that th",
         }
 
     @staticmethod
@@ -40,12 +40,12 @@ class AgentAction(Enum):
             AgentAction.SEARCH_WEB.value: [
                 f"i.  Construct {num_web_searches} web searches that are relevant to the task"
             ],
-            AgentAction.GENERATE_RESPONSE.value: [
-                "i.  No additional parameters are required for this action."
-            ],
             AgentAction.INITIATE_COACHING_SESSION.value: [
                 "i.  No additional parameters are required for this action. "
             ],
+             AgentAction.GENERATE_RESPONSE.value: [
+                 "i.  No additional parameters are required for this action."
+             ]
         }
 
     # Problem: The orchestrator has to choose a set of actions, and each action has a different set of parameters that

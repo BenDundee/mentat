@@ -70,13 +70,15 @@ class PromptManager:
 
 if __name__ == "__main__":
     from src.interfaces import Intent, AgentPrompt, AgentAction
+    from src.managers.query_manager import QueryManager
 
     pm = PromptManager()
+    qm = QueryManager()
     prompt = pm.check_system_prompt(
         prompt_name="orchestration",
         intent_descriptions=Intent.llm_rep(),
         actions_and_parameter_requirements=AgentAction.llm_rep(),
-        query_descriptions=""
+        query_descriptions=qm.generate_query_summary()
     )
     print(prompt)
     print("")

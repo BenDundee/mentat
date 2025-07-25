@@ -3,6 +3,7 @@ from .coach import *
 from .config import *
 from .chat import *
 from .intent import *
+from .orchestration import *
 from .persona import *
 from .prompt import *
 from .query import *

@@ -5,7 +5,8 @@ from typing import Optional, Tuple
 
 from atomic_agents.lib.components.agent_memory import Message
 
-from src.interfaces import ConversationState, Persona, TurnState, CoachingStage, CoachingSessionState, Intent
+from src.interfaces import ConversationState, Persona, TurnState, CoachingStage, CoachingSessionState, Intent, \
+    OrchestrationAgentOutputSchema
 from src.utils import get_message, strip_message
 from .rag_service import RAGService
 
@@ -27,6 +28,14 @@ class ConversationService:
         if conversation_id and conversation_id != self.state.conversation_id:
             self.state = ConversationState(conversation_id=conversation_id)
         self.current_turn = TurnState(user_message=user_msg)
+
+    def orchestrate_turn(self, instructions: OrchestrationAgentOutputSchema):
+        self.current_turn.detected_intent = instructions.intent
+        self.current_turn.detected_intent_reasoning = instructions.intent_reasoning
+        self.current_turn.action_directives = instructions.action_directives
+        self.current_turn.response_outline = instructions.response_outline
+        self.current_turn.conversation_summary = instructions.conversation_summary
+        self.current_turn.errors.extend(instructions.errors)
 
     def current_intent(self) -> Intent:
         if not self.current_turn.detected_intent:

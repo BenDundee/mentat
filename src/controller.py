@@ -16,9 +16,10 @@ class Controller:
     
     def __init__(self, config: Configurator):
         self.config = config
+        # TODO: Consider whether rag service and convo svc need to be here or not. Can they be moved to `AgentFlows`?
         self.rag_service = RAGService(config)
         self.conversation = ConversationService(self.rag_service)
-        self.agent_flows = AgentFlows(self.config, self.rag_service)
+        self.agent_flows = AgentFlows(self.config, self.rag_service, self.conversation)
         logger.info("Controller initialized successfully")
     
     def get_response(self, user_message: str, conversation_id: Optional[str]) -> Tuple[str, str]:
@@ -33,40 +34,28 @@ class Controller:
             if conversation_id != self.conversation.state.conversation_id:
                 # TODO: Write existing conversation to disk, initiate new conversation
                 pass
-
             self.conversation.initiate_turn(user_message, conversation_id)
+
+            # Update persona -- don't outsource this decision to Orchestration Agent
             if self.conversation.state.persona.is_empty():
                 logger.info("Updating persona...")
-                self.conversation.state.persona = self.agent_flows.update_persona()
+                self.agent_flows.update_persona()
 
-            # Determine intent
-            logger.info("Detecting intent of incoming message...")
-            self.conversation.current_turn.detected_intent, self.conversation.current_turn.confidence = \
-                self.agent_flows.determine_intent(self.conversation.state)
+            # Orchestrate conversation
+            logger.info("Orchestrating conversation...")
+            self.agent_flows.orchestrate()
             if self.conversation.current_turn.confidence < 75: # TODO: Config???
-                _ = self.conversation.current_turn.errors.append["Intent confidence below threshold"]
+                pass
 
             # Simple response: Invokes agent directly
             if self.conversation.current_intent() == Intent.SIMPLE:
-                self.conversation.set_response(
-                    self.agent_flows.generate_simple_response(self.conversation.state), role="assistant")
+                pass
 
             # Coaching session: Initiation
             elif self.conversation.state.detected_intent == Intent.COACHING_SESSION_REQUEST:
                 # Coaching Session Management Agent -> CoachingAgent
                 self.conversation.state.coaching_session = CoachingSessionState.get_new_session("12345")
-
-
-
-
-
-
-
-
-
-
-
-
+    
             # Coaching session: Continuation
             elif self.conversation.state.detected_intent == Intent.COACHING_SESSION_RESPONSE:
                 # Coaching Session Management Agent -> CoachingAgent

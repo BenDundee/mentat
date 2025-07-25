@@ -29,10 +29,10 @@ class QueryManager:
         return self.queries.get(query_name)
 
     def generate_query_summary(self) -> str:
-        summary = "The following queries are available: \n"
+        summary = []
         for q in self.queries:
-            summary += f"  - `{q}`: {self.queries[q].query_summary}\n"
-        return summary
+            summary.append(f"  • `{q}`: {self.queries[q].query_summary}")
+        return "\n".join(summary)
 
 
 if __name__ == "__main__":
