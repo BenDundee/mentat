@@ -11,6 +11,11 @@ from .coach import CoachingSessionState, CoachingStage
 from .orchestration import Intent
 
 
+class SimpleMessageContentIOSchema(BaseIOSchema):
+    """Schema for the content of a simple message."""
+    content: str = Field(..., description="The text of the message")
+
+
 class TurnState(BaseIOSchema):
     """Schema for the state of the current turn in a conversation between a user and an AI agent."""
     user_message: Optional[Message] = Field(None, description="The current message from the user")

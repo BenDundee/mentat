@@ -61,7 +61,6 @@ class AgentAction(Enum):
             output.append(f"  • `{_enum}`: {desc}")
             output.append(f"     ○ Additional output requirements:")
             output.extend(f"         {p}" for p in parameters)
-
         return "\n".join(output)
 
 

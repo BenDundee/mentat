@@ -3,7 +3,7 @@ from typing import Tuple
 
 from src.agents import AgentHandler
 from src.configurator import Configurator
-from src.interfaces import Persona, TurnState, OrchestrationAgentInputSchema
+from src.interfaces import OrchestrationAgentInputSchema
 from src.managers.prompt_manager import PromptManager
 from src.managers.persona_manager import PersonaManager
 from src.managers.query_manager import QueryManager
@@ -24,7 +24,10 @@ class AgentFlows:
         self.query_manager = QueryManager()
 
         logger.info("Setting initial states...")
-        self.agent_handler.initialize_agents(self.prompt_manager)
+        prompt_configs = {
+            "query_desctiptions": self.query_manager.generate_query_summary(),
+        }
+        self.agent_handler.initialize_agents(self.prompt_manager, prompt_configs)
 
     def update_persona(self):
         """Update user persona based on interactions."""
@@ -52,11 +55,9 @@ class AgentFlows:
         )
         self.conversation_svc.orchestrate_turn(instructions)
 
-    def generate_simple_response(self, turn_state: TurnState) -> TurnState:
-
+    def generate_simple_response(self):
         # response = self.agent_handler.coach_agent.run(conversation_state)
-
-        return turn_state
+        pass
 
 
 if __name__ == "__main__":
@@ -65,13 +66,11 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s")
 
     config = Configurator()
-    rag_service = RAGService(config)
+    rag_service = RAGService(config, initialize=False)
     convo_svc = ConversationService(rag_service)
+    am = AgentFlows(config, rag_service, convo_svc)
 
-    am = AgentFlows(config, rag_service)
-
-
-
-
+    convo_svc.initiate_turn(user_msg="Hello")
+    am.orchestrate()
 
     print("wait")

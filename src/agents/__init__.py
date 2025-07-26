@@ -9,14 +9,15 @@ from typing import Dict, List, Optional, Type, TYPE_CHECKING
 from src.tools import SearchTool, SearchToolConfig
 
 from src.interfaces import (
-    ConversationState, Persona, #SimpleMessageContentIOSchema,
+    ConversationState, Persona, SimpleMessageContentIOSchema,
     OrchestrationAgentOutputSchema, OrchestrationAgentInputSchema,
-    AgentPrompt, QueryAgentInputSchema, QueryAgentOutputSchema, CoachResponse
+    AgentPrompt, QueryAgentInputSchema, QueryAgentOutputSchema, CoachResponse,
+    Intent, AgentAction
 )
 
-from .intent_context import IntentContextProvider
-from .persona_context import PersonaContextProvider
-from .query_context import QueryContextProvider
+from src.agents.intent_context import IntentContextProvider
+from src.agents.persona_context import PersonaContextProvider
+from src.agents.query_context import QueryContextProvider
 
 # https://peps.python.org/pep-0563/  lame
 if TYPE_CHECKING:
@@ -32,7 +33,7 @@ class AgentHandler(object):
         self.config = config
         self.prompt_dir = config.base_dir / "prompts"
 
-    def initialize_agents(self, prompt_manager: PromptManager):
+    def initialize_agents(self, prompt_manager: PromptManager, prompt_configs: Optional[Dict[str, str]] = None):
         logger.info("Initializing agents...")
         self.query_agent = self.__configure_agent(
             prompt=prompt_manager.get_agent_prompt("query"),
@@ -45,7 +46,11 @@ class AgentHandler(object):
             output_schema=Persona
         )
         self.orchestration_agent = self.__configure_agent(
-            prompt=prompt_manager.get_agent_prompt("orchestration"),
+            prompt=prompt_manager.get_agent_prompt(
+                "orchestration",
+                intent_descriptions=Intent.llm_rep(),
+                actions_and_parameter_requirements=AgentAction.llm_rep(),
+                query_descriptions=prompt_configs.get("query_descriptions", "")),
             input_schema=OrchestrationAgentInputSchema,
             output_schema=OrchestrationAgentOutputSchema
         )

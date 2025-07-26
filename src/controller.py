@@ -55,7 +55,7 @@ class Controller:
             elif self.conversation.state.detected_intent == Intent.COACHING_SESSION_REQUEST:
                 # Coaching Session Management Agent -> CoachingAgent
                 self.conversation.state.coaching_session = CoachingSessionState.get_new_session("12345")
-    
+
             # Coaching session: Continuation
             elif self.conversation.state.detected_intent == Intent.COACHING_SESSION_RESPONSE:
                 # Coaching Session Management Agent -> CoachingAgent

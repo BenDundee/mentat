@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class RAGService:
     """Encapsulates all RAG/retrieval functionality using LlamaIndex."""
 
-    def __init__(self, config: Configurator):
+    def __init__(self, config: Configurator, initialize: bool = True):
         self.config = config
 
         # Update LlamaIndex settings
@@ -86,7 +86,8 @@ class RAGService:
         self.query_engine = self._setup_router()
 
         # Load initial documents if needed
-        self._load_initial_documents()
+        if initialize:
+            self._load_initial_documents()
 
     def _load_initial_documents(self):
         """Load existing data files into LlamaIndex."""

@@ -27,7 +27,7 @@ class ConversationService:
         msg = get_message(role="user", message=user_msg, turn_id=f"{self.turn_counter}")
         if conversation_id and conversation_id != self.state.conversation_id:
             self.state = ConversationState(conversation_id=conversation_id)
-        self.current_turn = TurnState(user_message=user_msg)
+        self.current_turn = TurnState(user_message=msg)
 
     def orchestrate_turn(self, instructions: OrchestrationAgentOutputSchema):
         self.current_turn.detected_intent = instructions.intent
