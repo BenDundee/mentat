@@ -3,7 +3,7 @@ from typing import Tuple
 
 from src.agents import AgentHandler
 from src.configurator import Configurator
-from src.interfaces import OrchestrationAgentInputSchema
+from src.interfaces import OrchestrationAgentInputSchema, CoachingStage, CoachingAgentInputSchema
 from src.managers.prompt_manager import PromptManager
 from src.managers.persona_manager import PersonaManager
 from src.managers.query_manager import QueryManager
@@ -56,12 +56,19 @@ class AgentFlows:
         self.conversation_svc.orchestrate_turn(instructions)
 
     def generate_simple_response(self):
-        # response = self.agent_handler.coach_agent.run(conversation_state)
-        pass
-
+        self.agent_handler.coach_agent.memory = self.conversation_svc.get_history()
+        self.conversation_svc.current_turn.response = self.agent_handler.coach_agent.run(
+            CoachingAgentInputSchema(
+                user_message=self.conversation_svc.current_turn.user_message,
+                persona=self.persona_manager.persona,
+                conversation_summary=self.conversation_svc.current_turn.conversation_summary,
+                response_outline=self.conversation_svc.current_turn.response_outline,
+                coaching_stage=self.conversation_svc.current_turn.coaching_stage
+            )
+        )
+        logger.info("")
 
 if __name__ == "__main__":
-    from src.utils import get_message
 
     logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s")
 
@@ -70,7 +77,15 @@ if __name__ == "__main__":
     convo_svc = ConversationService(rag_service)
     am = AgentFlows(config, rag_service, convo_svc)
 
-    convo_svc.initiate_turn(user_msg="Hello")
+    #convo_svc.initiate_turn(user_msg="Hello")
+    #am.orchestrate()
+
+    convo_svc.restart_turn()
+    convo_svc.initiate_turn(
+        user_msg="Hello, my name is Ben. I am excited to be working with you. I have provided you with several "
+                 "documents that will help you understand my background and my career trajectory. I’d like your help in "
+                 "taking my career to the next level. Please let me know what questions I can answer for you."
+    )
     am.orchestrate()
 
     print("wait")

@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from pydantic import Field
 from atomic_agents.agents.base_agent import BaseIOSchema
-from atomic_agents.lib.components.agent_memory import Message, AgentMemory
+from atomic_agents.lib.components.agent_memory import Message
 
 from .action import ActionDirective
 from .persona import Persona
@@ -37,19 +37,10 @@ class ConversationState(BaseIOSchema):
     conversation_id: Optional[str] = Field(None, description="Unique identifier for the conversation")
     history: Optional[List[TurnState]] = Field(default_factory=list, description="The conversation history")
     user_id: Optional[str] = Field("guest", description="Identifier for the current user")
-    persona: Optional[Persona] = Field(None, description="The persona for the current user")
+    persona: Optional[Persona] = Field(Persona.get_empty_persona(), description="The persona for the current user")
     coaching_session: Optional[CoachingSessionState] = Field(None, description="Details of the current coaching session")
     conversation_start: str = Field(default_factory=lambda: dt.datetime.now().isoformat(), description="Timestamp for the start of the conversation")
     conversation_end: Optional[str] = Field(None, description="Timestamp for the end of the conversation")
 
-    def current_turn(self):
-        return self.history[-1]
-
-    def get_history(self) -> AgentMemory:
-        memory = AgentMemory()
-        for h in self.history:
-            memory.history.append(h.user_message)
-            memory.history.append(h.response)
-        return memory
 
 

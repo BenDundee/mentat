@@ -9,10 +9,10 @@ from typing import Dict, List, Optional, Type, TYPE_CHECKING
 from src.tools import SearchTool, SearchToolConfig
 
 from src.interfaces import (
-    ConversationState, Persona, SimpleMessageContentIOSchema,
+    ConversationState, Persona, SimpleMessageContentIOSchema, CoachingStage,
     OrchestrationAgentOutputSchema, OrchestrationAgentInputSchema,
     AgentPrompt, QueryAgentInputSchema, QueryAgentOutputSchema, CoachResponse,
-    Intent, AgentAction
+    Intent, AgentAction, CoachingAgentInputSchema
 )
 
 from src.agents.intent_context import IntentContextProvider
@@ -54,16 +54,22 @@ class AgentHandler(object):
             input_schema=OrchestrationAgentInputSchema,
             output_schema=OrchestrationAgentOutputSchema
         )
-        #self.coach_agent = self.__configure_agent(
-        #    prompt=prompt_manager.get_agent_prompt("coach"),
-        #    input_schema=ConversationState,
-        #    output_schema=CoachResponse
-        #)
+        self.coach_agent = self.__configure_agent(
+            prompt=prompt_manager.get_agent_prompt(
+                "coach",
+                coaching_framework=CoachingStage.llm_rep()
+            ),
+            input_schema=CoachingAgentInputSchema,
+            output_schema=CoachResponse
+        )
 
         self.agent_map = {
             "query": self.query_agent,
             "persona": self.persona_agent,
             "orchestration": self.orchestration_agent,
+            "coach": self.coach_agent,
+            # "critic": self.critic_agent, -- this agent ensures the coach constructs a good response
+            # "summarization": self.summarization_agent -- this agent updates the CoachingSession that lives in ConversationState
         }
 
         logger.info("Initializing tools...")

@@ -40,22 +40,3 @@ class Intent(Enum):
         return "\n".join(
             f"  • `{intent}`: {desc}" for intent, desc in Intent.description().items()
         )
-
-
-class DetectedIntent(BaseIOSchema):
-    """Schema for the detected intent."""
-    intent: Intent = Field(..., description="Detected intent")
-    confidence: int = Field(..., description="Confidence score for the detected intent, between 0 and 100")
-    reasoning: str = Field(..., description="Explanation of why this intent was chosen")
-
-    @staticmethod
-    def parser(raw: Dict[str, str]) -> "DetectedIntent":
-        try:
-            assert "intent" in raw and "confidence" in raw and "reasoning" in raw
-        except AssertionError:
-            raise KeyError("Invalid raw response from LLM: missing required keys")
-        return DetectedIntent(
-            intent=Intent.get_intent(raw["intent"]),
-            confidence=int(raw["confidence"]),
-            reasoning=raw["reasoning"]
-        )

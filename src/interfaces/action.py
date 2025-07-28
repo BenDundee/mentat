@@ -25,9 +25,6 @@ class AgentAction(Enum):
                 "Use proactively when the user explicitly requests or clearly indicates the need for a structured "
                 "coaching conversation. Examples include requests for career advice, discussing feedback, or seeking "
                 "help to solve a professional challenge.",
-            AgentAction.GENERATE_RESPONSE.value:
-                "Use when the user's input can be answered directly and doesn't require additional context or "
-                "retrieval. Note that th",
         }
 
     @staticmethod

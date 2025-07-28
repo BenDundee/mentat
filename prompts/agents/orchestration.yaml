@@ -4,7 +4,7 @@ llm_parameters:
   model_provider: openrouter
   model: google/gemini-2.5-pro-preview
   model_api_parameters:
-    temperature: 1.0
+    temperature: 0.0
     top_p: 0.8
     max_tokens: 2000
 
@@ -25,12 +25,12 @@ system_prompt:
     additional information that may have been injected into your context."
     - "Summarize the entire conversation in 100 words or less."
     - "Determine the intent of the user from the following set of intents:\n{intent_descriptions}"
-    - "Explain your reasoning for the given intent using an integer between 0 (no confidence) and 100 (full confidence)"
-    - "Assign a confidence for the detected intent."
+    - "Explain your reasoning for choosing the intent"
+    - "Assign a confidence score for the intent using an integer between 0 (no confidence) and 100 (full confidence)"
     - "Determine any relevant actions that should be taken by the team. Note that some actions may require 
     additional directives. Please use the following list to ensure you return the appropriate actions and their 
     associated directive:\n{actions_and_parameter_requirements}"
-    - "The following queries against the doucment store are available:\n{query_descriptions}"
+    - "The following queries against the document store are available:\n{query_descriptions}"
     - "Give a brief outline of what the response should look like, what information you have requested, and how that 
     information can be used in the response."
   output_instructions:

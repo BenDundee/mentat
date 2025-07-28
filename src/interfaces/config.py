@@ -22,6 +22,7 @@ class APIConfig:
     openai_key: str = None
     openrouter_key: str = None
     openrouter_endpoint: str = None
+    firecrawl_key: str = None
 
 
 @dataclass

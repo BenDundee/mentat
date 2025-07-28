@@ -1,9 +1,15 @@
-from typing import List, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, Optional
 from pydantic import Field
 from enum import Enum
 import datetime as dt
 
 from atomic_agents.agents.base_agent import BaseIOSchema
+from atomic_agents.lib.components.agent_memory import Message
+
+#if TYPE_CHECKING:
+from .persona import Persona
 
 
 class CoachingStage(Enum):
@@ -14,31 +20,35 @@ class CoachingStage(Enum):
     REVIEW = "review"
 
     @staticmethod
-    def state_descriptions():
+    def descriptions():
         return {
-            CoachingStage.CONTRACT:
-                " - Establish the purpose of the session"
-                " - Confirm long-term goals and user context"
-                " - Clarify expectations for the session.",
-            CoachingStage.LISTEN:
-                " - Encourage deep reflection and open expression."
-                " - Explore emotions, beliefs, and challenges." 
-                " - Incorporate feedback documents and past sessions.",
-            CoachingStage.EXPLORE:
-                " - Help uncover patterns, obstacles, and possibilities."
-                " - Link discoveries to long-term objectives."
-                " - Use RAG (retrieval-augmented generation) for relevant context.",
-            CoachingStage.ACTION_PLANNING:
-                " -  Identify actionable next steps"
-                " -  Use GROW structure:"
-                " -- **Goal**: What do you want to achieve next?"
-                " -- **Reality**: Where are you now?"
-                " -- **Options**: What can you try?"
-                " -- **Will**: What will you commit to?",
-            CoachingStage.REVIEW:
-                " - Reflect on insights gained during the session."
-                " - Offer journaling or behavioral assignments."
-                " - Reinforce connection to long-term goals.",
+            CoachingStage.CONTRACT.value: [
+                "Establish the purpose of the session",
+                "Confirm long-term goals and user context"
+                "Clarify expectations for the session",
+            ],
+            CoachingStage.LISTEN.value: [
+                "Encourage deep reflection and open expression.",
+                "Explore emotions, beliefs, and challenges.",
+                "Incorporate feedback documents and past sessions."
+            ],
+            CoachingStage.EXPLORE.value: [
+                "Help uncover patterns, obstacles, and possibilities.",
+                "Link discoveries to long-term objectives.",
+                "Use RAG (retrieval-augmented generation) for relevant context.",
+            ],
+            CoachingStage.ACTION_PLANNING.value: [
+                "Build an actionable goal by asking the following questions:",
+                "**Goal**: What do you want to achieve next?",
+                "**Reality**: Where are you now?",
+                "**Options**: What can you try?",
+                "**Will**: What will you commit to?"
+            ],
+            CoachingStage.REVIEW.value: [
+                "Reflect on insights gained during the session.",
+                "Offer journaling or behavioral assignments.",
+                "Reinforce connection to long-term goals."
+            ]
         }
 
     @staticmethod
@@ -50,13 +60,12 @@ class CoachingStage(Enum):
 
     @staticmethod
     def llm_rep():
-        return '\n'.join([f"- {state}: {desc}" for state, desc in CoachingStage.state_descriptions().items()])
-
-
-class CoachResponse(BaseIOSchema):
-    """Schema for the coach response."""
-    response: str = Field(..., description="Response from the coach")
-    reasoning: str = Field(..., description="Explanation of why this response was chosen")
+        out = []
+        for stage, desc in CoachingStage.descriptions().items():
+            out.append(f"  • `{stage}`:")
+            for d in desc:
+                out.append(f"    ○ {d}")
+        return "\n".join(out)
 
 
 class Assignment(BaseIOSchema):
@@ -100,3 +109,23 @@ class CoachingSessionState(BaseIOSchema):
             summary=""
         )
 
+
+class CoachingAgentInputSchema(BaseIOSchema):
+    """Schema for the input to the coaching agent."""
+    user_message: Message = Field(..., description="User message from the user")
+    persona: Persona = Field(..., description="The persona for the current user")
+    conversation_summary: str = Field(..., description="A brief summary of the conversation so far, you may not have access to the full history.")
+    response_outline: str = Field(..., description="A high-level recommendation for a response to the user.")
+    coaching_stage: Optional[CoachingStage] = Field(None, description="Current stage of the coaching session, if a session is active")
+
+
+class CoachResponse(BaseIOSchema):
+    """Schema for the coach response."""
+    response: str = Field(..., description="Response from the coach")
+    reasoning: str = Field(..., description="Explanation of why this response was chosen")
+    insights: Optional[List[str]] = Field(default_factory=list, description="Insight about the user, based on what youve seen so far.")
+
+
+if __name__ == "__main__":
+    print(CoachingStage.llm_rep())
+    print("wait")

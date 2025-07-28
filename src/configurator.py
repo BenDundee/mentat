@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict
 from yaml import safe_load
 
-from src.interfaces import APIConfig, DataConfig, DeploymentConfig, ConnectionConfig
+from src.interfaces import APIConfig, DataConfig, DeploymentConfig, ConnectionConfig, Persona
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -47,6 +47,7 @@ class Configurator:
             self.api_config = self.__load_api_yml()
             self.agent_config_map = self.__load_agents_yml()
             self.data_config = self.__load_data_yml()
+            self.persona = self.__load_persona_yml()
             self.configured = True
 
     def __load_api_yml(self):
@@ -66,6 +67,13 @@ class Configurator:
         assert_present(agent_config)
         with open(agent_config, "r") as f:
             return {a["agent_name"]: a["prompt"] for a in safe_load(f)["agents"]}
+
+    def __load_persona_yml(self) -> Persona :
+        persona_config = self.config_dir / "persona.yml"
+        if not persona_config.exists():
+            return Persona.get_empty_persona()
+        with open(persona_config, "r") as f:
+            return Persona(**safe_load(f))
 
     def get_openrouter_client(self) -> Instructor:
         return from_openai(
