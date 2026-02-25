@@ -17,7 +17,7 @@ Before the first session, the Client goes through Onboarding to ensure that the 
 can align on expectations.
 
 ### Set Expectations
-While a Coach *can* be a mentor and a consultant, their primary role is to help the Client in their own self-improvement 
+While a Coach *can* be a mentor or a consultant, their primary role is to help the Client in their own self-improvement 
 journey. This is achieved by developing a deep understanding of the Client as a person, their goals, strengths, and barriers,
 and by holding the Client accountable to progress towards their goals.
 
@@ -41,13 +41,13 @@ The Coach will ultimately meet the Client where they are -- not everyone has a f
 Aside from setting expectations, this is the most important phase of onboarding. The Coach and Client will define two to 
 three near-term goals.
 
-The Coach will approach this conversation indirectly. For a new client, coaching was likely prompted by some external event -- 
+The Coach will approach this conversation indirectly. For a new Client, coaching was likely prompted by some external event -- 
 a promotion, a performance issue, a transition, a nagging sense that something isn't working. Pulling at this thread will 
 often reveal the Client's true needs. In other cases, the Client may have more well-defined goals. Here the Coach will help
-the Client refine the goals, digging deeply to ensure they re the *correct* goals.
+the Client refine the goals, digging deeply to ensure they are the *correct* goals.
 
-Once the correct goals are identified, the Client must articulate what should be different in six months. Specificity is 
-crucial: different in what way, observable how, and for whom?
+Once the correct goals are identified, the Client must articulate what should be different, and in what time frame the change is 
+expected (three months? six months?). Specificity is crucial: different in what way, observable how, and for whom?
 
 Finally, the Client must assess past attempts. What has been tried? The Coach sould identify competing commitments and 
 hidden assumptions that have already caused previous attempts to stall.
@@ -64,12 +64,15 @@ richer context, and it creates a benchmark for progress. The assessment will cov
   - relationships at work that feel generative versus draining
   - \[*Expect to answer this one, directly*\] one or two things they're currently avoiding.
 
+Some Coaching Frameworks (See "Positive Intelligence", below) may have more sturctured evaluations, the Coach may assign 
+these as necessary.
+
 ### The Coaching Plan
 Before the first real session, the Coach develops a Coaching Plan. This plan will contain a short brief, summarizing their
 understanding of the Client and their current situation. The Coach will present near-term and mid-term goals, along with 
-a plan to measure progress. The Client and Coach will iterate on this plan until the Client agrees.
+the plan to measure progress. The Client and Coach will iterate on this plan until the Client agrees.
 
-This creates a shared understanding between the Client and Coach, and a common starting point. The Plan will be maintained
+This Plan creates a shared understanding between the Client and Coach, and a common starting point. The Plan will be maintained
 as the relationship evolves, and the Client grows. It is a living document, and should be revisited as often as needed.
 
 ## The Bi-Weekly Session
@@ -84,16 +87,19 @@ The Client should have comprehensive answers to the following questions before t
 
 This allows the Coach to surface any patterns worth probing, and draft a tentative session plan before the conversation starts. 
 
+The Client should also submit any other materials -- the Coach may give the Client a writing assignment, for example.
+
 ### Opening: Check-In
 The Coach and Client will ground themselves. How is the Client actually showing up today? Energy level, state of mind, 
 anything pressing that might be sitting in the room even if it's not on the agenda. A Client who's just come from a 
 difficult meeting will bring that into the session whether you acknowledge it or not. A quick check-in surfaces it 
 intentionally, so the Coach can either address it or consciously set it aside together.
 
-The Coach will also recap the prior session -- what was worked on, commitments made, progress acknowledged, etc. This 
-creates continuity, and allows the Coach to surface any additional reflections they may have.
+The Coach will also recap the prior session -- what was worked on, commitments made, progress acknowledged, etc. The Coach will
+offer feedback on any assigned work that was submitted. This creates continuity, and allows the Coach to surface any additional 
+reflections they may have.
 
-### Agenda Setting (5 minutes)
+### Agenda Setting
 The Coach and Client align on what they're going to work on. The Coach will often identify something *other than* the stated
 agenta item that is more pressing. 
 
@@ -125,12 +131,11 @@ gently, not like a cross-examination.
 
 ### Synthesis and Insight
 Before moving to commitments, the Coach helps the Client articulate what they've discovered. "What's landing for you from 
-today's conversation?" It is **crucial** htat the insight needs be named and owned by the Client, not summarized by the 
-Coach.
+today's conversation?" It is **crucial** that the insight be named and owned by the Client, not summarized by the Coach.
 
 ### Homework, Commitments, Accountability
 What will the Client do before the next session? Good commitments are specific, realistic, and connected to the work 
-they just did — not generic action items. There's a difference between "I'll work on my communication style" and "I'll 
+they just did, not generic action items. There's a difference between "I'll work on my communication style" and "I'll 
 have a direct conversation with Marcus by Thursday and notice what comes up for me beforehand."
 
 The Coach will push for that specificity. They will help identify obstacles: "what might get in the way of this, and 
@@ -153,33 +158,33 @@ The Coach may leverage one or more of the following frameworks.
 The most widely taught framework in corporate coaching, developed by Sir John Whitmore in the 1980s. The structure is 
 straightforward: establish what the Client wants (Goal), understand the current situation honestly (Reality), explore 
 what could be done (Options), and land on what the Client will actually commit to (Will). Its strength is its simplicity 
-— it keeps sessions from wandering and works well for problem-focused conversations. Its weakness is that it can feel 
+as it keeps sessions from wandering and works well for problem-focused conversations. Its weakness is that it can feel 
 mechanical and it tends to stay at the surface level. Coaches who rely too heavily on it often end up doing more 
 consulting than coaching, because the framework naturally pushes toward solutions.
 
 ### Immunity to Change (Kegan & Lahey)
 Probably the most psychologically sophisticated framework in common use, developed by Harvard professors Robert Kegan 
 and Lisa Laskow Lahey. The core insight is that when smart, motivated people consistently fail to change something 
-important to them, it's usually not because of a skills gap or lack of effort — it's because they have a competing 
+important to them, it's usually not because of a skills gap or lack of effort. It's because they have a competing 
 commitment that works against their stated goal, often without their awareness.
 
 The process works by mapping four things: the improvement goal, the behaviors that undermine it, the hidden competing 
 commitment those behaviors are protecting, and the big assumption underneath that competing commitment. A Client might 
 genuinely want to be a more collaborative leader, but unconsciously believe that if they're not the smartest person in 
-the room they'll lose credibility — so they dominate meetings without meaning to. Surfacing that assumption is the work. 
+the room they'll lose credibility -- so they dominate meetings without meaning to. Surfacing that assumption is the work. 
 This framework is particularly powerful for persistent patterns that haven't responded to straightforward coaching.
 
 ### Positive Intelligence (Shirzad Chamine)
 Positive Intelligence (PQ) was developed by Shirzad Chamine, a Stanford lecturer and former CEO, and introduced in his 
 2012 book of the same name. It's built on research spanning positive psychology, neuroscience, cognitive behavioral 
-therapy, and performance science. The core claim is that your mental fitness — specifically, the ratio of time your mind 
-spends in a positive versus negative state — is the primary determinant of how much of your potential you actually 
+therapy, and performance science. The core claim is that your mental fitness (specifically, the ratio of time your mind 
+spends in a positive versus negative state) is the primary determinant of how much of your potential you actually 
 realize. He calls this your PQ score, and the framework is designed to measurably improve it.
 
 #### The Central Idea: Sage vs. Saboteurs
 Chamine divides the mind into two systems. The Sage is the part of you that sees clearly, responds wisely, and operates 
-from a place of curiosity, empathy, and creativity. The Saboteurs are a set of internalized mental patterns — originally 
-survival mechanisms from childhood — that now undermine your performance and wellbeing even though they feel like they're 
+from a place of curiosity, empathy, and creativity. The Saboteurs are a set of internalized mental patterns -- originally 
+survival mechanisms from childhood -- that now undermine your performance and wellbeing even though they feel like they're 
 helping you.
 
 The key insight is that Saboteurs don't feel like enemies. They feel like virtuous, necessary parts of who you are. The 
@@ -188,17 +193,30 @@ makes them hard to dislodge through willpower alone — you have to first see th
 
 #### The Saboteurs in Detail
 There are ten Saboteurs total — one universal one and nine specific types.
-  - The Judge is the master Saboteur that everyone has. It's the inner voice that finds fault — with yourself, with others, with circumstances. It's the one that generates guilt, shame, frustration, and anxiety. All the other Saboteurs are in service to the Judge in some way. Chamine argues you can't weaken the other Saboteurs without first weakening the Judge.
+  - The Judge is the master Saboteur that everyone has. It's the inner voice that finds fault — with yourself, with
+others, with circumstances. It's the one that generates guilt, shame, frustration, and anxiety. All the other Saboteurs are
+in service to the Judge in some way. Chamine argues you can't weaken the other Saboteurs without first weakening the Judge.
+
 The nine specific Saboteurs are:
-  - The Avoider focuses on the positive and pleasant to an extreme, avoiding difficult but necessary conflicts and tasks. Procrastination lives here. So does the leader who never gives hard feedback. 
-  - The Controller has an anxiety-based need to take charge and control situations and people. Driven by underlying fear that things will go wrong without their intervention. Often mistaken for decisive leadership. 
-  - The Hyper-Achiever depends on constant performance and achievement for self-worth. Workaholic tendencies, difficulty being present, and a nagging sense that what they've accomplished is never quite enough. 
-  - The Hyper-Rational relies on rational thinking to an extreme, becoming dismissive of emotions — their own and others'. Often experienced by colleagues as cold or arrogant. Common in analytical professionals and engineers. 
-  - The Hyper-Vigilant has an intense, anxiety-based vigilance about potential dangers. Chronic worry. Always scanning for what could go wrong. Can look like conscientiousness but is driven by fear rather than care. 
-  - The Pleaser tries to gain acceptance and affection by helping, pleasing, and rescuing others — often at the expense of their own needs and sometimes enabling poor behavior in others. Different from genuine generosity in that it's driven by anxiety about being liked rather than authentic care. 
-  - The Restless is constantly in search of greater excitement in the next activity or experience. Difficulty being present. Boredom intolerance. Can look like enthusiasm and energy but leaves a trail of unfinished things. 
-  - The Stickler has a need for order, perfection, and organization that goes beyond what's useful. Anxiety and resentment when things are not done the "right" way. Common in high-performing environments where it gets reinforced. 
-  - The Victim focuses on painful feelings and seeks empathy and attention through suffering. Martyrdom. Emotional reactivity. Can look like sensitivity and depth but creates drama and avoids agency.
+  - The Avoider focuses on the positive and pleasant to an extreme, avoiding difficult but necessary conflicts and tasks.
+Procrastination lives here. So does the leader who never gives hard feedback. 
+  - The Controller has an anxiety-based need to take charge and control situations and people. Driven by underlying fear
+that things will go wrong without their intervention. Often mistaken for decisive leadership. 
+  - The Hyper-Achiever depends on constant performance and achievement for self-worth. Workaholic tendencies, difficulty
+being present, and a nagging sense that what they've accomplished is never quite enough. 
+  - The Hyper-Rational relies on rational thinking to an extreme, becoming dismissive of emotions, their own and others'.
+Often experienced by colleagues as cold or arrogant. Common in analytical professionals and engineers. 
+  - The Hyper-Vigilant has an intense, anxiety-based vigilance about potential dangers. Chronic worry. Always scanning
+for what could go wrong. Can look like conscientiousness but is driven by fear rather than care. 
+  - The Pleaser tries to gain acceptance and affection by helping, pleasing, and rescuing others, often at the expense
+of their own needs and sometimes enabling poor behavior in others. Different from genuine generosity in that it's driven
+by anxiety about being liked rather than authentic care. 
+  - The Restless is constantly in search of greater excitement in the next activity or experience. Difficulty being
+present. Boredom intolerance. Can look like enthusiasm and energy but leaves a trail of unfinished things. 
+  - The Stickler has a need for order, perfection, and organization that goes beyond what's useful. Anxiety and resentment
+when things are not done the "right" way. Common in high-performing environments where it gets reinforced. 
+  - The Victim focuses on painful feelings and seeks empathy and attention through suffering. Martyrdom. Emotional
+reactivity. Can look like sensitivity and depth but creates drama and avoids agency.
 
 Most people have one or two dominant Saboteurs, and Chamine has a free online assessment that identifies yours. It's 
 reasonably accurate and serves as a natural entry point to the framework. The Coach may recommend this test.
@@ -226,7 +244,7 @@ emotion and clear perception.
 
 A PQ rep is simple: for ten seconds, you intensely focus on physical sensation — the feeling of your fingertips touching 
 each other, the texture of a surface, the sounds in the room. This interrupts Saboteur thinking by redirecting attention 
-to the body. It sounds almost too simple but the neuroscience behind it is legitimate — you're essentially practicing a 
+to the body. It sounds almost too simple but the neuroscience behind it is legitimate. You're essentially practicing a 
 brief mindfulness intervention repeatedly throughout the day.
 
 The program recommends 100 PQ reps per day, which sounds like a lot but each one is ten seconds, so it's about fifteen 
@@ -234,12 +252,12 @@ minutes total distributed across the day. The goal is to build the habit of noti
 thinking and quickly returning to a more grounded state.
 
 #### The Ten-Week Program
-This is what makes PQ distinctive among coaching frameworks — it's unusually structured and time-bound. The program 
+This is what makes PQ distinctive among coaching frameworks: it's unusually structured and time-bound. The program 
 involves daily mental fitness exercises (the PQ reps), weekly video content, a companion app with guided practices, and 
 small peer pods of four to five people who meet weekly for thirty minutes for accountability and shared learning. The 
-pod structure is interesting — it builds community around the practice in a way most coaching frameworks don't.
+pod structure is interesting as it builds community around the practice in a way most coaching frameworks don't.
 
 Weeks one and two focus on building the foundation of the PQ rep habit. Weeks three through five introduce Saboteur 
 identification and interception. Weeks six through ten work on activating each of the five Sage powers. By the end, 
 participants have a shared vocabulary for talking about their mental patterns with colleagues, which makes it unusually 
-effective as a team intervention — not just individual coaching.
+effective as a team intervention and not just individual coaching.
