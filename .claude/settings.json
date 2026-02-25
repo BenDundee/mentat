@@ -2,7 +2,7 @@
   "hooks": {
     "Stop": [
       {
-        "matcher": "Bash",
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
@@ -10,6 +10,12 @@
           }
         ]
       }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(uv add:*)",
+      "Bash(uv run:*)"
     ]
   }
 }

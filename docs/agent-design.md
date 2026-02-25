@@ -20,9 +20,11 @@ The Orchestration Agent will:
     - A Web Search Agent that can construct queries against the internet
     - A RAG Agent that retrieves relevant details from documents the User has uploaded, and past conversations
     - A Persona Agent that injects details about the user into the response.
-    - A Plan Management Agent that ensures the conversation is flowing in a direction that will make agreed-upon progress.
+    - A Plan Management Agent that ensures the conversation is flowing in a direction that will make agreed-upon 
+progress.
 
-This information is passed to the Context Management Agent.
+Once the other agents (which can run in parallel) return, the Orchestration Agent passes this information to the Context 
+Management Agent.
 
 ### Context Management Agent
 After engaging some or all of the above agents, the Orchestration Agent will collect the *potentially* relevant 
@@ -116,6 +118,9 @@ configuration options available:
   - LLM Provider (ie, `openrouter`)
   - Model name (ie, `anthropic/claude-sonnet-4.6`)
   - LLM parameters: `top_k`, `temperature`, etc.
+  - LLM System Prompt, along with any necessary substitution parameters. (In the past I've solved this with a wrapper 
+around (one of) the `langchain` Prompt object(s).)
+  - LLM Prompt Parameters (if they're known before run-time)
 
 Note that API keys should be stored separately in the `.env` files.
 
@@ -129,7 +134,8 @@ these LLM Providers can be initialized as an `LLMProvider` class or `llm_provide
 registry should provide a way to map LLM Provider Name to some class or object that can issue calls into the LLM. The 
 LLM Provider object should contain:
   - LLM Provider Name (ie, `openrouter`, allows mapping of Agent configs to LLM Provider configs)
-  - LLM Provider Endpoint (optional, could be `https://openrouter.ai/api/v1/chat/completions`, for `openrouter`, for example)
+  - LLM Provider Endpoint (optional, could be `https://openrouter.ai/api/v1/chat/completions`, for `openrouter`, for 
+example)
   - LLM Secret, and a way to map the API keys in `.env`
   - LLM Connection Details, if necessary.
 
