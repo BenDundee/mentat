@@ -101,7 +101,7 @@ reflections they may have.
 
 ### Agenda Setting
 The Coach and Client align on what they're going to work on. The Coach will often identify something *other than* the stated
-agenta item that is more pressing. 
+agenda item that is more pressing. 
 
 If the Client says "I want to talk about a presentation I have to give next week," a less skilled Coach takes that at face 
 value and gives presentation advice. A better Coach asks why that presentation feels like the thing to bring here, and might 
@@ -133,7 +133,7 @@ gently, not like a cross-examination.
 Before moving to commitments, the Coach helps the Client articulate what they've discovered. "What's landing for you from 
 today's conversation?" It is **crucial** that the insight be named and owned by the Client, not summarized by the Coach.
 
-### Homework, Commitments, Accountability
+### Homework, Commitments, & Accountability
 What will the Client do before the next session? Good commitments are specific, realistic, and connected to the work 
 they just did, not generic action items. There's a difference between "I'll work on my communication style" and "I'll 
 have a direct conversation with Marcus by Thursday and notice what comes up for me beforehand."

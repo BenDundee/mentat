@@ -16,12 +16,22 @@ The agentic back-end of the bot will serve to build and manage the correct conte
     - A Search Agent determines if any relevant information is needed from the internet, executes searches, and summarizes results
     - A RAG Agent manage past conversations and uploaded documents, retrieving relevant details
     - A Persona Agent maintains an understanding of the user as a person, for example, current goals and challenges.
+    - A Plan Management Agent maintains the long-term Coaching Plan, ensuring that the team of Agents keeps its long term focus.
   - The Orchestration Agent collects all pieces of the context and passes to the Context Management Agent.
   - A Context Management Agent looks at the current conversation and all information provided by the Orchestration Agent and determines the most relevant details to pass to the Coaching Agent.
   - The Coaching Agent constructs a response.
   - The Quality Agent reviews the response and rates it (1-5). If the Quality Agent finds the response unacceptable (3 or less), it gives feedback to the Coaching Agent, who rewrites the response.
 
+After a conversation or session is concluded:
+  - The Persona Agent updates its understanding of the User, noting any changes to goals.
+  - The Plan Management Agent updates the Coaching Plan, ensuring that the User's near-term and long-term goals are 
+being tracked, and progress is being made.
+  - The Client Management Agent will summarize the conversation, ensuring that any action items or takeaways are logged. 
+Progress towards goals and/or changes to the Coaching Plan are noted, and the Coaching Plan is itself updated.
+
 More details about how the coach interacts with the world are found in `docs/coaching-philosophy.md`.
+
+More details about the agents in the back end are found in `docs/agent-design.md`.
 
 ## Pull Requests
 
