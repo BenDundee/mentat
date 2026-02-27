@@ -48,6 +48,11 @@ testpaths = ["tests"]
 markers = [
     "integration: marks tests as integration tests requiring real API keys (deselect with '-m not integration')",
 ]
+filterwarnings = [
+    # LangChain stores structured output in AIMessage.parsed which is typed None;
+    # this is a known upstream issue not fixable in our code.
+    "ignore:Pydantic serializer warnings:UserWarning",
+]
 
 [tool.pyrefly]
 project_includes = ["src"]
