@@ -1,9 +1,10 @@
-"""LangGraph workflow definition for Phase 1."""
+"""LangGraph workflow definition."""
 
 from langchain_core.messages import AIMessage
 from langgraph.graph import END, START, StateGraph
 
 from mentat.agents.orchestration import OrchestrationAgent
+from mentat.agents.search import SearchAgent
 from mentat.core.logging import get_logger
 from mentat.graph.state import GraphState
 
@@ -41,18 +42,34 @@ def format_response(state: GraphState) -> GraphState:
     )
 
 
+def _route_after_orchestration(state: GraphState) -> str:
+    """Route to search node if orchestration suggests it, otherwise format_response."""
+    result = state.get("orchestration_result")
+    if result is not None and "search" in result.suggested_agents:
+        return "search"
+    return "format_response"
+
+
 def build_graph() -> StateGraph:
-    """Construct the Phase 1 LangGraph workflow."""
+    """Construct the LangGraph workflow."""
     orchestration_agent = OrchestrationAgent()
+    search_agent = SearchAgent()
 
     graph = StateGraph(GraphState)  # pyrefly: ignore[bad-specialization]
     # pyrefly: ignore[no-matching-overload]
     graph.add_node("orchestration", orchestration_agent.run)
     # pyrefly: ignore[no-matching-overload]
+    graph.add_node("search", search_agent.run)
+    # pyrefly: ignore[no-matching-overload]
     graph.add_node("format_response", format_response)
 
     graph.add_edge(START, "orchestration")
-    graph.add_edge("orchestration", "format_response")
+    graph.add_conditional_edges(
+        "orchestration",
+        _route_after_orchestration,
+        {"search": "search", "format_response": "format_response"},
+    )
+    graph.add_edge("search", "format_response")
     graph.add_edge("format_response", END)
 
     return graph

@@ -38,3 +38,20 @@ class OrchestrationResult(BaseModel, frozen=True):
     reasoning: str
     # Phase 2+: drives routing; empty in Phase 1
     suggested_agents: tuple[str, ...] = ()
+
+
+class SearchResult(BaseModel, frozen=True):
+    """A single search result retrieved from DuckDuckGo."""
+
+    title: str
+    url: str
+    snippet: str
+    retrieved_at: str  # ISO-8601 UTC timestamp string
+
+
+class SearchAgentResult(BaseModel, frozen=True):
+    """Result produced by the Search Agent."""
+
+    queries: tuple[str, ...]
+    results: tuple[SearchResult, ...]
+    summary: str
