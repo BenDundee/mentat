@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mentat — Executive Coach</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="logo">Mentat</span>
+        <button id="new-chat-btn" class="btn-new-chat" title="New conversation">+</button>
+      </div>
+      <nav id="conversation-list" class="conversation-list"></nav>
+    </aside>
+
+    <!-- Main chat panel -->
+    <main class="chat-panel">
+      <header class="chat-header">
+        <span id="chat-title">New Conversation</span>
+      </header>
+
+      <div id="messages" class="messages"></div>
+
+      <form id="chat-form" class="chat-form">
+        <textarea
+          id="message-input"
+          class="message-input"
+          placeholder="Message your coach…"
+          rows="1"
+          autofocus
+        ></textarea>
+        <button type="submit" id="send-btn" class="btn-send" title="Send">
+          &#9658;
+        </button>
+      </form>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

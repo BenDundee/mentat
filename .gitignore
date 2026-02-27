@@ -1,1 +1,26 @@
 .idea/
+
+# Environment
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+.venv/
+
+# Logs
+log/
+
+# pyrefly
+.pyrefly/
+
+# uv
+uv.lock
+log/*
+!log/.gitkeep
