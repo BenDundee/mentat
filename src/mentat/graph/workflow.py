@@ -1,19 +1,34 @@
-"""LangGraph workflow definition for Phase 1."""
+"""LangGraph workflow definition for Mentat."""
 
 from langchain_core.messages import AIMessage
 from langgraph.graph import END, START, StateGraph
 
 from mentat.agents.orchestration import OrchestrationAgent
+from mentat.agents.rag import RAGAgent
 from mentat.core.logging import get_logger
+from mentat.core.vector_store import VectorStoreService
 from mentat.graph.state import GraphState
 
 logger = get_logger(__name__)
 
 
+def _route_after_orchestration(state: GraphState) -> str:
+    """Determine which node to visit after orchestration.
+
+    Returns:
+        ``"rag"`` if the orchestration result suggests the RAG agent,
+        otherwise ``"format_response"``.
+    """
+    result = state.get("orchestration_result")
+    if result is not None and "rag" in result.suggested_agents:
+        return "rag"
+    return "format_response"
+
+
 def format_response(state: GraphState) -> GraphState:
     """Render the OrchestrationResult as a human-readable assistant message.
 
-    Phase 2: replace this node with the Coaching Agent output.
+    If RAG results are present their summary is appended to the response.
     """
     result = state.get("orchestration_result")
     if result is None:
@@ -25,6 +40,10 @@ def format_response(state: GraphState) -> GraphState:
             f"({confidence_pct}% confidence)\n\n"
             f"**Reasoning:** {result.reasoning}"
         )
+
+    rag_results = state.get("rag_results")
+    if rag_results is not None and rag_results.summary:
+        response_text = f"{response_text}\n\n**Context:** {rag_results.summary}"
 
     assistant_message = AIMessage(content=response_text)
     return GraphState(
@@ -41,26 +60,34 @@ def format_response(state: GraphState) -> GraphState:
     )
 
 
-def build_graph() -> StateGraph:
-    """Construct the Phase 1 LangGraph workflow."""
+def build_graph(vector_store: VectorStoreService) -> StateGraph:
+    """Construct the LangGraph workflow."""
     orchestration_agent = OrchestrationAgent()
+    rag_agent = RAGAgent(vector_store)
 
     graph = StateGraph(GraphState)  # pyrefly: ignore[bad-specialization]
     # pyrefly: ignore[no-matching-overload]
     graph.add_node("orchestration", orchestration_agent.run)
     # pyrefly: ignore[no-matching-overload]
+    graph.add_node("rag", rag_agent.run)
+    # pyrefly: ignore[no-matching-overload]
     graph.add_node("format_response", format_response)
 
     graph.add_edge(START, "orchestration")
-    graph.add_edge("orchestration", "format_response")
+    graph.add_conditional_edges(  # pyrefly: ignore[no-matching-overload]
+        "orchestration",
+        _route_after_orchestration,
+        {"rag": "rag", "format_response": "format_response"},
+    )
+    graph.add_edge("rag", "format_response")
     graph.add_edge("format_response", END)
 
     return graph
 
 
-def compile_graph():  # type: ignore[return]
+def compile_graph(vector_store: VectorStoreService):  # type: ignore[return]
     """Build and compile the LangGraph workflow."""
-    graph = build_graph()
+    graph = build_graph(vector_store)
     compiled = graph.compile()
     logger.info("LangGraph workflow compiled successfully.")
     return compiled
