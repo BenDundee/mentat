@@ -17,6 +17,17 @@ Passing
 skips the server entirely and runs the full pytest suite instead.
 .SH OPTIONS
 .TP
+.B \-\-debug
+Start the server using the Output Testing Agent as the final pipeline node.
+Instead of a normal coaching response, the chat window displays a formatted
+dump of the full
+.B GraphState
+(intent, confidence, search results, etc.).
+Useful for verifying end-to-end pipeline behaviour during development.
+Sets the
+.B MENTAT_DEBUG=1
+environment variable before launching uvicorn.
+.TP
 .B \-\-all\-tests
 Run the full pytest test suite instead of starting the server.
 Unit, config, graph, and API tests are always executed.
@@ -28,6 +39,13 @@ is present in the environment.
 .BR \-h ", " \-\-help
 Print a short usage summary and exit.
 .SH ENVIRONMENT
+.TP
+.B MENTAT_DEBUG
+When set to
+.BR 1 ", " true ", or " yes ,
+the server compiles the graph with the Output Testing Agent instead of the
+normal response formatter. Set automatically by
+.BR \-\-debug .
 .TP
 .B OPENROUTER_API_KEY
 Required to start the server and to run integration tests. Must be set in a
@@ -63,6 +81,14 @@ Start the development server:
 .RS
 .EX
 ./run.sh
+.EE
+.RE
+.PP
+Start the server in debug mode:
+.PP
+.RS
+.EX
+./run.sh --debug
 .EE
 .RE
 .PP

@@ -3,6 +3,7 @@
 #
 # Usage:
 #   ./run.sh                 Start the development server (default)
+#   ./run.sh --debug         Start the server with the Output Testing Agent
 #   ./run.sh --all-tests     Run the full pytest suite
 #   ./run.sh -h | --help     Show this help and exit
 #
@@ -12,17 +13,22 @@ set -e
 
 # ── Argument parsing ────────────────────────────────────────────────────────
 RUN_TESTS=false
+DEBUG=false
 
 usage() {
     cat <<EOF
 Usage: ./run.sh [OPTIONS]
 
 Options:
+  --debug        Start the server using the Output Testing Agent, which dumps
+                 the full pipeline state to the chat window instead of a normal
+                 response. Useful for inspecting agent output during development.
   --all-tests    Run the full pytest test suite instead of starting the server
   -h, --help     Show this help message and exit
 
 Examples:
   ./run.sh               Start the Mentat server at http://localhost:8000
+  ./run.sh --debug        Start the server in debug mode (state dump responses)
   ./run.sh --all-tests   Run all unit and graph tests (integration tests
                          require OPENROUTER_API_KEY and are skipped otherwise)
 EOF
@@ -30,6 +36,9 @@ EOF
 
 for arg in "$@"; do
     case "$arg" in
+        --debug)
+            DEBUG=true
+            ;;
         --all-tests)
             RUN_TESTS=true
             ;;
@@ -69,5 +78,10 @@ fi
 (sleep 2 && open http://localhost:8000) &
 
 # ── Start server ────────────────────────────────────────────────────────────
-echo "Starting Mentat at http://localhost:8000 ..."
-uv run uvicorn mentat.api.app:app --reload --host 0.0.0.0 --port 8000
+if [ "$DEBUG" = true ]; then
+    echo "Starting Mentat at http://localhost:8000 (debug mode — Output Testing Agent active) ..."
+    MENTAT_DEBUG=1 uv run uvicorn mentat.api.app:app --reload --host 0.0.0.0 --port 8000
+else
+    echo "Starting Mentat at http://localhost:8000 ..."
+    uv run uvicorn mentat.api.app:app --reload --host 0.0.0.0 --port 8000
+fi
