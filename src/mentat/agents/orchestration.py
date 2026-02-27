@@ -2,7 +2,7 @@
 
 from typing import cast
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from mentat.agents.base import BaseAgent
 from mentat.core.models import Intent, OrchestrationResult
@@ -13,9 +13,10 @@ class _IntentClassification(BaseModel):
     """Internal schema used for structured LLM output."""
 
     intent: Intent
-    confidence: float = Field(ge=0.0, le=1.0)
+    # Anthropic rejects min/max schema constraints; validated by OrchestrationResult
+    confidence: float
     reasoning: str
-    suggested_agents: list[str] = Field(default_factory=list)
+    suggested_agents: list[str] = []
 
 
 class OrchestrationAgent(BaseAgent):
