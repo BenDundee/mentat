@@ -16,6 +16,9 @@ The Orchestration Agent will:
   provide speedier responses.
   - Understand the context of the conversation
     - The User Intent may be to initiate a coaching session
+    - The User may be in the middle of a coaching session, if so the Orchestration Agent should understand the phase of 
+the session, and the session plan
+    - The User may just need to check in, or get quick advice
   - Determine which agents to engage, if any. The Orchestration agent may engage:
     - A Web Search Agent that can construct queries against the internet
     - A RAG Agent that retrieves relevant details from documents the User has uploaded, and past conversations
@@ -26,15 +29,9 @@ progress.
 Once the other agents (which can run in parallel) return, the Orchestration Agent passes this information to the Context 
 Management Agent.
 
-### Context Management Agent
-After engaging some or all of the above agents, the Orchestration Agent will collect the *potentially* relevant 
-information and pass it to the Contex Management Agent, which will select and summarize the most relevant context to 
-pass to the Coaching Agent. You can think of this as a first pass plus second pass -- the first pass should have a high 
-recall, ensuring all relevant information is available to the Context Management Agent.
-
 ### The Search Agent
 If relevant details are needed from the internet, the Search Agent determines the relevant queries to issue. It has 
-access to a Search Tool, and can retreive and summarize information from the internet.
+access to a Search Tool, and can retrieve and summarize information from the internet.
 
 ### The RAG Agent
 During the course of the relationship, the User will have many conversations, and will upload many documents. The RAG 
@@ -69,11 +66,25 @@ Agent, which inflates the input token count.
   - But we also know that long context inputs may bury specific and important details. 
 
 **The Context Management Agent is responsible for finding the needles in the haystack.** The Context Management Agent 
-will ensure that only the *most relevant* details are passed to the Coaching Agent.
+will ensure that only the *most relevant* details are passed to the Coaching Agent.  You can think of this as a first 
+pass plus second pass -- the first pass should have a high recall, ensuring all relevant information is available to the 
+Context Management Agent. The Context Management Agent is the second pass, designed to have high accuracy.
+
+The Context Management Agent will rank all information it receives, and give the Coaching Agent an outline of a 
+response:
+  - It will truncate the conversation history, if necessary
+  - It will prioritize the information found from the RAG and Search Agents
+  - If a Coaching Session is ongoing, it will help the Coaching Agent understand where they are in the conversation, 
+and how it may move the session forward, while accomplishing the goals set out in the plan.
+  - It will use information about the User's persona to offer advice on the tone and direction of the response, and to 
+call out any long term trends or tendencies that have been noted.
+
+The Coaching Agent's success or failure depends on the Context Management Agent doing its job.
 
 ### The Coaching Agent
 The Coaching Agent is responsible for taking the context and constructing the appropriate response. The response should 
-be tailored to the User, personalized based on their past interactions.
+be tailored to the User, personalized based on their past interactions. If a session is in progress, the Coaching Agent 
+should ensure that it's moving forward in a productive direction, towards the session goals as agreed with the User.
 
 ### The Feedback Agent
 Once the Coaching Agent constructs a response, the Feedback Agent reviews the relevant context and grades the response 
