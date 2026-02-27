@@ -38,3 +38,20 @@ class OrchestrationResult(BaseModel, frozen=True):
     reasoning: str
     # Phase 2+: drives routing; empty in Phase 1
     suggested_agents: tuple[str, ...] = ()
+
+
+class DocumentChunk(BaseModel, frozen=True):
+    """A single chunk of text retrieved from the vector store."""
+
+    content: str
+    source: str  # "conversations" or "documents"
+    document_id: str
+    metadata: dict[str, str] = {}
+
+
+class RAGAgentResult(BaseModel, frozen=True):
+    """Result produced by the RAG Agent."""
+
+    query: str  # the generated search query (for debugging)
+    chunks: tuple[DocumentChunk, ...] = ()
+    summary: str
