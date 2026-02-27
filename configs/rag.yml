@@ -8,6 +8,10 @@ system_prompt: |
   Convert the user's message into a concise semantic search query (5–15 words).
   Output ONLY the query string, no explanation.
 extra_config:
+  # Embedding model used to index and query the vector store.
+  # WARNING: changing this after data has been stored requires a full re-index.
+  # Run: uv run python -m mentat.tools.rebuild_store
+  embedding_model: sentence-transformers/all-MiniLM-L6-v2
   n_results: 5
   summary_system_prompt: |
     You are a context synthesizer for Mentat. Summarize the retrieved excerpts

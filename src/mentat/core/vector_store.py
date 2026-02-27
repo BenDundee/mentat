@@ -11,10 +11,20 @@ from mentat.core.models import DocumentChunk
 
 logger = get_logger(__name__)
 
-_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+_DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 _CHROMA_PATH = "data/chroma"
 _COLLECTION_CONVERSATIONS = "conversations"
 _COLLECTION_DOCUMENTS = "documents"
+_META_KEY = "embedding_model"
+
+
+class EmbeddingModelMismatchError(RuntimeError):
+    """Raised on startup when the configured embedding model differs from the
+    model used to build the existing vector store.
+
+    The store must be rebuilt before the application can start.
+    Run:  uv run python -m mentat.tools.rebuild_store
+    """
 
 
 class VectorStoreService:
@@ -25,23 +35,96 @@ class VectorStoreService:
     - ``documents``: uploaded document chunks
 
     Both collections are queried together in :meth:`search`.
+
+    On startup the service validates that the configured ``embedding_model``
+    matches the model recorded in each collection's metadata.  If there is a
+    mismatch (or the collection has data but no recorded model) an
+    :class:`EmbeddingModelMismatchError` is raised immediately rather than
+    silently returning nonsensical results.
     """
 
-    def __init__(self, persist_path: str = _CHROMA_PATH) -> None:
-        logger.info("Initializing VectorStoreService (path=%s)", persist_path)
-        self._embeddings = HuggingFaceEmbeddings(model_name=_EMBEDDING_MODEL)
+    def __init__(
+        self,
+        embedding_model: str = _DEFAULT_EMBEDDING_MODEL,
+        persist_path: str = _CHROMA_PATH,
+    ) -> None:
+        logger.info(
+            "Initializing VectorStoreService (model=%s, path=%s)",
+            embedding_model,
+            persist_path,
+        )
+        self._embedding_model_name = embedding_model
+        self._embeddings = HuggingFaceEmbeddings(model_name=embedding_model)
         self._client = chromadb.PersistentClient(
             path=persist_path,
             settings=chromadb.Settings(anonymized_telemetry=False),
         )
-        self._conversations = self._client.get_or_create_collection(
-            _COLLECTION_CONVERSATIONS
-        )
-        self._documents = self._client.get_or_create_collection(_COLLECTION_DOCUMENTS)
+        self._conversations = self._init_collection(_COLLECTION_CONVERSATIONS)
+        self._documents = self._init_collection(_COLLECTION_DOCUMENTS)
         logger.info("VectorStoreService ready.")
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _init_collection(self, name: str) -> chromadb.Collection:
+        """Get or create a collection, validating the embedding model fingerprint.
+
+        - New empty collection: metadata is written now.
+        - Existing collection with matching model: proceed normally.
+        - Existing collection with a *different* model, or data present but no
+          model recorded: raise :class:`EmbeddingModelMismatchError`.
+
+        Args:
+            name: Collection name.
+
+        Returns:
+            The validated ChromaDB collection.
+
+        Raises:
+            EmbeddingModelMismatchError: Fingerprint mismatch or untracked data.
+        """
+        # Pass our metadata so brand-new collections are tagged on creation.
+        # For existing collections, ChromaDB ignores the metadata argument and
+        # returns the stored collection unchanged.
+        collection = self._client.get_or_create_collection(
+            name,
+            metadata={_META_KEY: self._embedding_model_name},
+        )
+
+        stored_model: str | None = (collection.metadata or {}).get(_META_KEY)
+
+        if stored_model is None:
+            # Collection existed before fingerprinting was introduced.
+            if collection.count() > 0:
+                raise EmbeddingModelMismatchError(
+                    f"Collection '{name}' contains data but has no embedding model "
+                    f"recorded. Re-index with: "
+                    f"uv run python -m mentat.tools.rebuild_store"
+                )
+            # Empty + no metadata → stamp it now and proceed.
+            collection.modify(metadata={_META_KEY: self._embedding_model_name})
+            logger.debug(
+                "Stamped new collection '%s' with model '%s'",
+                name,
+                self._embedding_model_name,
+            )
+
+        elif stored_model != self._embedding_model_name:
+            raise EmbeddingModelMismatchError(
+                f"Collection '{name}' was indexed with '{stored_model}' but "
+                f"configs/rag.yml specifies '{self._embedding_model_name}'. "
+                f"Re-index with: uv run python -m mentat.tools.rebuild_store"
+            )
+
+        return collection
 
     def _embed(self, text: str) -> list[float]:
         return self._embeddings.embed_query(text)
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
 
     def add_conversation(self, text: str, metadata: dict[str, str]) -> str:
         """Store a conversation turn and return its generated ID.
@@ -109,7 +192,7 @@ class VectorStoreService:
                 continue
             k = min(n_results, count)
             results = collection.query(
-                query_embeddings=[query_embedding],  # pyrefly: ignore[bad-argument-type]
+                query_embeddings=[query_embedding],  # pyrefly: ignore
                 n_results=k,
                 include=["documents", "metadatas", "distances"],
             )

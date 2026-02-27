@@ -21,10 +21,15 @@ logger = get_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Initialize services and compile the agent graph once at startup."""
-    logger.info("Starting Mentat — initializing vector store and agent graph...")
+    from mentat.core.config import load_agent_config
     from mentat.core.vector_store import VectorStoreService
 
-    vector_store = VectorStoreService()
+    logger.info("Starting Mentat — initializing vector store and agent graph...")
+    rag_config = load_agent_config("rag")
+    embedding_model: str = rag_config.extra_config.get(
+        "embedding_model", "sentence-transformers/all-MiniLM-L6-v2"
+    )
+    vector_store = VectorStoreService(embedding_model=embedding_model)
     app.state.vector_store = vector_store
     app.state.graph = compile_graph(vector_store=vector_store)
     logger.info("Mentat ready.")
