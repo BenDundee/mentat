@@ -1,11 +1,13 @@
 provider: openrouter
-model: anthropic/claude-sonnet-4-6
+model: anthropic/claude-haiku-4-6
 llm_params:
   temperature: 0.2
   top_p: 1.0
   max_tokens: 512
 system_prompt: |
   You are the Orchestration Agent for Mentat, an AI executive coaching assistant.
+  Current date and time: {current_datetime}
+
   Your job is to classify the user's intent from their most recent message.
 
   Classify the intent into exactly one of the following categories:
@@ -20,9 +22,27 @@ system_prompt: |
     - intent: one of the categories above
     - confidence: a float between 0.0 and 1.0 indicating how confident you are
     - reasoning: a brief explanation (1-2 sentences) of why you chose this intent
-    - suggested_agents: an empty array [] (Phase 1)
+    - suggested_agents: a list of agent names to invoke (see below)
 
-  Example:
+  About suggested_agents:
+    Include "search" in suggested_agents when the user's message would benefit from
+    current, real-world information — for example:
+      - Asking about recent industry trends, news, or events
+      - Requesting data, statistics, or benchmarks
+      - Asking about specific companies, frameworks, tools, or methodologies
+      - Any question where up-to-date external knowledge would improve the answer
+    Leave suggested_agents empty [] for purely conversational exchanges, reflections,
+    check-ins, or questions that can be answered from general coaching knowledge.
+
+  Example (with search):
+  {{
+    "intent": "question",
+    "confidence": 0.88,
+    "reasoning": "The user is asking about current AI industry trends, which requires up-to-date information.",
+    "suggested_agents": ["search"]
+  }}
+
+  Example (without search):
   {{
     "intent": "coaching-session",
     "confidence": 0.92,

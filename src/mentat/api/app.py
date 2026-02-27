@@ -1,5 +1,6 @@
 """FastAPI application factory."""
 
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -21,8 +22,12 @@ logger = get_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Compile the agent graph once at startup."""
-    logger.info("Starting Mentat — compiling agent graph...")
-    app.state.graph = compile_graph()
+    debug = os.environ.get("MENTAT_DEBUG", "").lower() in ("1", "true", "yes")
+    if debug:
+        logger.info("Starting Mentat — debug mode (Output Testing Agent active)...")
+    else:
+        logger.info("Starting Mentat — compiling agent graph...")
+    app.state.graph = compile_graph(debug=debug)
     logger.info("Mentat ready.")
     yield
     logger.info("Mentat shutting down.")

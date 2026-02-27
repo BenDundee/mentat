@@ -41,7 +41,12 @@ class OrchestrationAgent(BaseAgent):
         chain = self.prompt_template | structured_llm
         raw = cast(
             _IntentClassification,
-            chain.invoke({"user_message": state["user_message"]}),
+            chain.invoke(
+                {
+                    "user_message": state["user_message"],
+                    "current_datetime": self._now(),
+                }
+            ),
         )
 
         result = OrchestrationResult(
