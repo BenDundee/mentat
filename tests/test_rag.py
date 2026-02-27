@@ -12,6 +12,7 @@ from mentat.core.models import (
     OrchestrationResult,
     RAGAgentResult,
 )
+from mentat.core.vector_store import _META_KEY
 from mentat.graph.state import GraphState
 from mentat.graph.workflow import _route_after_orchestration
 
@@ -80,7 +81,79 @@ def test_rag_agent_result_with_chunks():
 
 
 # ---------------------------------------------------------------------------
-# VectorStoreService
+# VectorStoreService — embedding model fingerprint validation
+# ---------------------------------------------------------------------------
+
+_MODEL_A = "sentence-transformers/all-MiniLM-L6-v2"
+_MODEL_B = "sentence-transformers/all-mpnet-base-v2"
+
+
+def _make_collection_mock(
+    stored_model: str | None,
+    count: int = 0,
+) -> MagicMock:
+    """Build a MagicMock chromadb.Collection with controlled metadata and count."""
+    col = MagicMock()
+    col.metadata = {_META_KEY: stored_model} if stored_model is not None else None
+    col.count.return_value = count
+    return col
+
+
+def _make_vs_with_mock_collection(collection_mock: MagicMock, model: str) -> None:
+    """Instantiate VectorStoreService with fully patched internals.
+
+    Calls __init__ on the real class but patches out ChromaDB, HuggingFace,
+    and the collection for both conversations and documents.
+    """
+    from mentat.core.vector_store import VectorStoreService
+
+    with (
+        patch("mentat.core.vector_store.HuggingFaceEmbeddings"),
+        patch("mentat.core.vector_store.chromadb.PersistentClient") as mock_client_cls,
+    ):
+        mock_client = MagicMock()
+        mock_client.get_or_create_collection.return_value = collection_mock
+        mock_client_cls.return_value = mock_client
+        VectorStoreService(embedding_model=model)
+
+
+def test_fingerprint_match_proceeds():
+    """VectorStoreService starts successfully when embedding model matches stored."""
+    col = _make_collection_mock(stored_model=_MODEL_A, count=5)
+    # Should not raise
+    _make_vs_with_mock_collection(col, _MODEL_A)
+
+
+def test_fingerprint_mismatch_raises():
+    """VectorStoreService raises EmbeddingModelMismatchError on model change."""
+    from mentat.core.vector_store import EmbeddingModelMismatchError
+
+    col = _make_collection_mock(stored_model=_MODEL_A, count=5)
+    with pytest.raises(EmbeddingModelMismatchError, match=_MODEL_A):
+        _make_vs_with_mock_collection(col, _MODEL_B)
+
+
+def test_untracked_collection_with_data_raises():
+    """Existing data without a recorded model raises EmbeddingModelMismatchError."""
+    from mentat.core.vector_store import EmbeddingModelMismatchError
+
+    col = _make_collection_mock(stored_model=None, count=10)
+    with pytest.raises(EmbeddingModelMismatchError, match="no embedding model recorded"):
+        _make_vs_with_mock_collection(col, _MODEL_A)
+
+
+def test_empty_untracked_collection_gets_stamped():
+    """An empty collection with no metadata gets the model stamped and proceeds."""
+    col = _make_collection_mock(stored_model=None, count=0)
+    # Should not raise; modify() should be called for both collections
+    _make_vs_with_mock_collection(col, _MODEL_A)
+    # The same mock is returned for both collections, so modify is called twice
+    assert col.modify.call_count == 2
+    col.modify.assert_called_with(metadata={"embedding_model": _MODEL_A})
+
+
+# ---------------------------------------------------------------------------
+# VectorStoreService — search behaviour (mock)
 # ---------------------------------------------------------------------------
 
 
