@@ -95,7 +95,12 @@ class SearchAgent(BaseAgent):
         chain = self.prompt_template | structured_llm
         plan = cast(
             _QueryPlan,
-            chain.invoke({"user_message": state["user_message"]}),
+            chain.invoke(
+                {
+                    "user_message": state["user_message"],
+                    "current_datetime": self._now(),
+                }
+            ),
         )
         self._logger.debug("Generated queries: %s", plan.queries)
         return plan.queries
@@ -167,6 +172,7 @@ class SearchAgent(BaseAgent):
             return "No search results were found for the given queries."
 
         context_lines = [
+            f"Current date and time: {self._now()}",
             f"User message: {state['user_message']}",
             f"Search queries: {', '.join(queries)}",
             "",
