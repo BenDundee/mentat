@@ -4,6 +4,7 @@ from langchain_core.messages import AIMessage
 from langgraph.graph import END, START, StateGraph
 
 from mentat.agents.orchestration import OrchestrationAgent
+from mentat.agents.output_testing import OutputTestingAgent
 from mentat.agents.search import SearchAgent
 from mentat.core.logging import get_logger
 from mentat.graph.state import GraphState
@@ -50,10 +51,16 @@ def _route_after_orchestration(state: GraphState) -> str:
     return "format_response"
 
 
-def build_graph() -> StateGraph:
-    """Construct the LangGraph workflow."""
+def build_graph(debug: bool = False) -> StateGraph:
+    """Construct the LangGraph workflow.
+
+    Args:
+        debug: When True, replace the format_response node with OutputTestingAgent,
+               which dumps the full pipeline state to the chat window.
+    """
     orchestration_agent = OrchestrationAgent()
     search_agent = SearchAgent()
+    final_node_fn = OutputTestingAgent().run if debug else format_response
 
     graph = StateGraph(GraphState)  # pyrefly: ignore[bad-specialization]
     # pyrefly: ignore[no-matching-overload]
@@ -61,7 +68,7 @@ def build_graph() -> StateGraph:
     # pyrefly: ignore[no-matching-overload]
     graph.add_node("search", search_agent.run)
     # pyrefly: ignore[no-matching-overload]
-    graph.add_node("format_response", format_response)
+    graph.add_node("format_response", final_node_fn)
 
     graph.add_edge(START, "orchestration")
     graph.add_conditional_edges(
@@ -75,9 +82,13 @@ def build_graph() -> StateGraph:
     return graph
 
 
-def compile_graph():  # type: ignore[return]
-    """Build and compile the LangGraph workflow."""
-    graph = build_graph()
+def compile_graph(debug: bool = False):  # type: ignore[return]
+    """Build and compile the LangGraph workflow.
+
+    Args:
+        debug: Passed through to ``build_graph``; enables the debug state dump.
+    """
+    graph = build_graph(debug=debug)
     compiled = graph.compile()
-    logger.info("LangGraph workflow compiled successfully.")
+    logger.info("LangGraph workflow compiled successfully (debug=%s).", debug)
     return compiled
