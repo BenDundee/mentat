@@ -7,6 +7,11 @@ from mentat.graph.state import GraphState
 from mentat.graph.workflow import format_response
 
 
+def _make_mock_vector_store() -> MagicMock:
+    """Return a minimal VectorStoreService mock."""
+    return MagicMock()
+
+
 def _make_state(**overrides) -> GraphState:
     base: GraphState = {
         "messages": [],
@@ -47,15 +52,21 @@ def test_format_response_without_result():
 
 
 def test_build_graph_has_expected_nodes():
-    """build_graph() should include orchestration and format_response nodes."""
+    """build_graph() should include orchestration, rag, and format_response nodes."""
     from mentat.graph.workflow import build_graph
 
-    with patch("mentat.graph.workflow.OrchestrationAgent") as MockAgent:
-        MockAgent.return_value.run = MagicMock()
-        graph = build_graph()
+    mock_vs = _make_mock_vector_store()
+    with (
+        patch("mentat.graph.workflow.OrchestrationAgent") as MockOrch,
+        patch("mentat.graph.workflow.RAGAgent") as MockRAG,
+    ):
+        MockOrch.return_value.run = MagicMock()
+        MockRAG.return_value.run = MagicMock()
+        graph = build_graph(vector_store=mock_vs)
 
     node_names = list(graph.nodes.keys())
     assert "orchestration" in node_names
+    assert "rag" in node_names
     assert "format_response" in node_names
 
 
@@ -63,8 +74,13 @@ def test_compile_graph_succeeds():
     """compile_graph() should return a compiled graph without raising."""
     from mentat.graph.workflow import compile_graph
 
-    with patch("mentat.graph.workflow.OrchestrationAgent") as MockAgent:
-        MockAgent.return_value.run = MagicMock()
-        compiled = compile_graph()
+    mock_vs = _make_mock_vector_store()
+    with (
+        patch("mentat.graph.workflow.OrchestrationAgent") as MockOrch,
+        patch("mentat.graph.workflow.RAGAgent") as MockRAG,
+    ):
+        MockOrch.return_value.run = MagicMock()
+        MockRAG.return_value.run = MagicMock()
+        compiled = compile_graph(vector_store=mock_vs)
 
     assert compiled is not None

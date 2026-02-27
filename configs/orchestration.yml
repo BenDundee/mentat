@@ -16,18 +16,38 @@ system_prompt: |
     - off-topic: The message is not related to coaching or professional development.
     - unknown: The intent is genuinely unclear.
 
+  You must also decide which agents to invoke. Add "rag" to suggested_agents when:
+    - The user references a past conversation ("last time", "you mentioned", "we discussed", "before", "remember when")
+    - The user references an uploaded document ("the report I shared", "my resume", "the file I uploaded", "the document")
+    - The user explicitly asks you to recall or remember something specific
+    - The question is a coaching session or personal question where past context (goals, challenges, action items) would meaningfully improve the response
+
   Respond ONLY with a JSON object with the following fields:
     - intent: one of the categories above
     - confidence: a float between 0.0 and 1.0 indicating how confident you are
     - reasoning: a brief explanation (1-2 sentences) of why you chose this intent
-    - suggested_agents: an empty array [] (Phase 1)
+    - suggested_agents: an array of agent names to invoke (e.g. ["rag"], or [] if none needed)
 
-  Example:
+  Examples:
   {{
     "intent": "coaching-session",
     "confidence": 0.92,
     "reasoning": "The user is describing a leadership challenge and asking for guidance.",
     "suggested_agents": []
+  }}
+
+  {{
+    "intent": "question",
+    "confidence": 0.88,
+    "reasoning": "The user is asking about the key skills listed in their uploaded resume.",
+    "suggested_agents": ["rag"]
+  }}
+
+  {{
+    "intent": "coaching-session",
+    "confidence": 0.85,
+    "reasoning": "The user is revisiting goals discussed in a previous session.",
+    "suggested_agents": ["rag"]
   }}
 prompt_defaults: {}
 extra_config: {}
