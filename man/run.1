@@ -1,0 +1,102 @@
+.TH RUN 1 "2026-02-26" "Mentat 0.1.0" "Mentat Manual"
+.SH NAME
+run \- start the Mentat development server or run the test suite
+.SH SYNOPSIS
+.B ./run.sh
+.RI [ OPTIONS ]
+.SH DESCRIPTION
+.B run.sh
+is the primary entry point for local development of Mentat, an AI executive
+coaching chatbot with a multi-agent LangGraph backend.
+.PP
+By default it validates the environment, starts a FastAPI/uvicorn development
+server with hot-reload enabled, and opens the chat UI in the default browser.
+.PP
+Passing
+.B \-\-all\-tests
+skips the server entirely and runs the full pytest suite instead.
+.SH OPTIONS
+.TP
+.B \-\-all\-tests
+Run the full pytest test suite instead of starting the server.
+Unit, config, graph, and API tests are always executed.
+Integration tests (which call the live OpenRouter API) are skipped
+automatically unless
+.B OPENROUTER_API_KEY
+is present in the environment.
+.TP
+.BR \-h ", " \-\-help
+Print a short usage summary and exit.
+.SH ENVIRONMENT
+.TP
+.B OPENROUTER_API_KEY
+Required to start the server and to run integration tests. Must be set in a
+.I .env
+file in the project root. Copy
+.I .env.example
+as a starting point.
+.TP
+.B LOG_LEVEL
+Controls logging verbosity. Accepted values:
+.BR DEBUG ", " INFO ", " WARNING ", " ERROR .
+Defaults to
+.B DEBUG
+(as set in
+.IR .env.example ).
+.SH FILES
+.TP
+.I .env
+Local environment file. Must contain
+.BR OPENROUTER_API_KEY .
+Not committed to version control.
+.TP
+.I .env.example
+Template for
+.IR .env .
+Committed to version control.
+.TP
+.I log/mentat.log
+Runtime log file written by the server. Rotated automatically on each startup.
+.SH EXAMPLES
+Start the development server:
+.PP
+.RS
+.EX
+./run.sh
+.EE
+.RE
+.PP
+Run all tests:
+.PP
+.RS
+.EX
+./run.sh --all-tests
+.EE
+.RE
+.PP
+View this manual page without installing it:
+.PP
+.RS
+.EX
+man ./man/run.1
+.EE
+.RE
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 1
+A required environment variable is missing, the
+.I .env
+file does not exist, or an unknown option was passed.
+.SH SEE ALSO
+.BR uvicorn (1),
+.BR pytest (1)
+.PP
+Project documentation:
+.I docs/agent-design.md
+and
+.I docs/coaching-philosophy.md
+.SH AUTHORS
+Ben Dundee and Claude Sonnet 4.6.
