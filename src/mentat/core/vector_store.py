@@ -11,12 +11,6 @@ from mentat.core.models import DocumentChunk
 
 logger = get_logger(__name__)
 
-_DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-_CHROMA_PATH = "data/chroma"
-_COLLECTION_CONVERSATIONS = "conversations"
-_COLLECTION_DOCUMENTS = "documents"
-_META_KEY = "embedding_model"
-
 
 class EmbeddingModelMismatchError(RuntimeError):
     """Raised on startup when the configured embedding model differs from the
@@ -30,9 +24,9 @@ class EmbeddingModelMismatchError(RuntimeError):
 class VectorStoreService:
     """Wraps ChromaDB and HuggingFace embeddings for semantic search.
 
-    Two collections are maintained:
-    - ``conversations``: past conversation turns
-    - ``documents``: uploaded document chunks
+    Two collections are maintained (names are configurable via rag.yml):
+    - ``collection_conversations``: past conversation turns
+    - ``collection_documents``: uploaded document chunks
 
     Both collections are queried together in :meth:`search`.
 
@@ -41,12 +35,18 @@ class VectorStoreService:
     mismatch (or the collection has data but no recorded model) an
     :class:`EmbeddingModelMismatchError` is raised immediately rather than
     silently returning nonsensical results.
+
+    All configurable values are injected via the constructor so they stay in
+    ``configs/rag.yml`` as the single source of truth.
     """
 
     def __init__(
         self,
-        embedding_model: str = _DEFAULT_EMBEDDING_MODEL,
-        persist_path: str = _CHROMA_PATH,
+        embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2",
+        persist_path: str = "data/chroma",
+        collection_conversations: str = "conversations",
+        collection_documents: str = "documents",
+        meta_key: str = "embedding_model",
     ) -> None:
         logger.info(
             "Initializing VectorStoreService (model=%s, path=%s)",
@@ -54,13 +54,16 @@ class VectorStoreService:
             persist_path,
         )
         self._embedding_model_name = embedding_model
+        self._meta_key = meta_key
         self._embeddings = HuggingFaceEmbeddings(model_name=embedding_model)
         self._client = chromadb.PersistentClient(
             path=persist_path,
             settings=chromadb.Settings(anonymized_telemetry=False),
         )
-        self._conversations = self._init_collection(_COLLECTION_CONVERSATIONS)
-        self._documents = self._init_collection(_COLLECTION_DOCUMENTS)
+        self._conversations = self._init_collection(collection_conversations)
+        self._conversations_name = collection_conversations
+        self._documents = self._init_collection(collection_documents)
+        self._documents_name = collection_documents
         logger.info("VectorStoreService ready.")
 
     # ------------------------------------------------------------------
@@ -89,10 +92,10 @@ class VectorStoreService:
         # returns the stored collection unchanged.
         collection = self._client.get_or_create_collection(
             name,
-            metadata={_META_KEY: self._embedding_model_name},
+            metadata={self._meta_key: self._embedding_model_name},
         )
 
-        stored_model: str | None = (collection.metadata or {}).get(_META_KEY)
+        stored_model: str | None = (collection.metadata or {}).get(self._meta_key)
 
         if stored_model is None:
             # Collection existed before fingerprinting was introduced.
@@ -103,7 +106,7 @@ class VectorStoreService:
                     f"uv run python -m mentat.tools.rebuild_store"
                 )
             # Empty + no metadata → stamp it now and proceed.
-            collection.modify(metadata={_META_KEY: self._embedding_model_name})
+            collection.modify(metadata={self._meta_key: self._embedding_model_name})
             logger.debug(
                 "Stamped new collection '%s' with model '%s'",
                 name,
@@ -184,8 +187,8 @@ class VectorStoreService:
         chunks: list[DocumentChunk] = []
 
         for collection, source in [
-            (self._conversations, _COLLECTION_CONVERSATIONS),
-            (self._documents, _COLLECTION_DOCUMENTS),
+            (self._conversations, self._conversations_name),
+            (self._documents, self._documents_name),
         ]:
             count = collection.count()
             if count == 0:

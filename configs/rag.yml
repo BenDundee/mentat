@@ -9,9 +9,13 @@ system_prompt: |
   Output ONLY the query string, no explanation.
 extra_config:
   # Embedding model used to index and query the vector store.
-  # WARNING: changing this after data has been stored requires a full re-index.
-  # Run: uv run python -m mentat.tools.rebuild_store
+  # WARNING: changing any of the four values below after data has been stored
+  # requires a full re-index. Run: uv run python -m mentat.tools.rebuild_store
   embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  persist_path: data/chroma
+  collection_conversations: conversations
+  collection_documents: documents
+  meta_key: embedding_model
   n_results: 5
   summary_system_prompt: |
     You are a context synthesizer for Mentat. Summarize the retrieved excerpts

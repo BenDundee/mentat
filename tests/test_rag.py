@@ -12,7 +12,6 @@ from mentat.core.models import (
     OrchestrationResult,
     RAGAgentResult,
 )
-from mentat.core.vector_store import _META_KEY
 from mentat.graph.state import GraphState
 from mentat.graph.workflow import _route_after_orchestration
 
@@ -86,6 +85,7 @@ def test_rag_agent_result_with_chunks():
 
 _MODEL_A = "sentence-transformers/all-MiniLM-L6-v2"
 _MODEL_B = "sentence-transformers/all-mpnet-base-v2"
+_META_KEY = "embedding_model"  # matches configs/rag.yml extra_config.meta_key
 
 
 def _make_collection_mock(
@@ -138,7 +138,7 @@ def test_untracked_collection_with_data_raises():
     from mentat.core.vector_store import EmbeddingModelMismatchError
 
     col = _make_collection_mock(stored_model=None, count=10)
-    with pytest.raises(EmbeddingModelMismatchError, match="no embedding model recorded"):
+    with pytest.raises(EmbeddingModelMismatchError, match="no embedding model"):
         _make_vs_with_mock_collection(col, _MODEL_A)
 
 

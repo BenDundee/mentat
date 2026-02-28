@@ -26,10 +26,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     logger.info("Starting Mentat — initializing vector store and agent graph...")
     rag_config = load_agent_config("rag")
-    embedding_model: str = rag_config.extra_config.get(
-        "embedding_model", "sentence-transformers/all-MiniLM-L6-v2"
+    extra = rag_config.extra_config
+    vector_store = VectorStoreService(
+        embedding_model=extra.get(
+            "embedding_model", "sentence-transformers/all-MiniLM-L6-v2"
+        ),
+        persist_path=extra.get("persist_path", "data/chroma"),
+        collection_conversations=extra.get("collection_conversations", "conversations"),
+        collection_documents=extra.get("collection_documents", "documents"),
+        meta_key=extra.get("meta_key", "embedding_model"),
     )
-    vector_store = VectorStoreService(embedding_model=embedding_model)
     app.state.vector_store = vector_store
     app.state.graph = compile_graph(vector_store=vector_store)
     logger.info("Mentat ready.")
