@@ -31,15 +31,11 @@ def rebuild_store() -> None:
     rag_config = load_agent_config("rag")
     extra = rag_config.extra_config
 
-    new_model: str = extra.get(
-        "embedding_model", "sentence-transformers/all-MiniLM-L6-v2"
-    )
-    persist_path: str = extra.get("persist_path", "data/chroma")
-    collection_conversations: str = extra.get(
-        "collection_conversations", "conversations"
-    )
-    collection_documents: str = extra.get("collection_documents", "documents")
-    meta_key: str = extra.get("meta_key", "embedding_model")
+    new_model: str = extra["embedding_model"]
+    persist_path: str = extra["persist_path"]
+    collection_conversations: str = extra["collection_conversations"]
+    collection_documents: str = extra["collection_documents"]
+    meta_key: str = extra["meta_key"]
 
     collections = [collection_conversations, collection_documents]
 

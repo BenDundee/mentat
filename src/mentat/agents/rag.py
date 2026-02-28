@@ -22,11 +22,8 @@ class RAGAgent(BaseAgent):
     def __init__(self, vector_store: VectorStoreService) -> None:
         super().__init__()
         self._vector_store = vector_store
-        self._n_results: int = self.config.extra_config.get("n_results", 5)
-        summary_prompt_text: str = self.config.extra_config.get(
-            "summary_system_prompt",
-            "Summarize the retrieved excerpts in 2-4 sentences.",
-        )
+        self._n_results: int = self.config.extra_config["n_results"]
+        summary_prompt_text: str = self.config.extra_config["summary_system_prompt"]
         self._summary_prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", summary_prompt_text),

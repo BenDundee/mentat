@@ -28,13 +28,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     rag_config = load_agent_config("rag")
     extra = rag_config.extra_config
     vector_store = VectorStoreService(
-        embedding_model=extra.get(
-            "embedding_model", "sentence-transformers/all-MiniLM-L6-v2"
-        ),
-        persist_path=extra.get("persist_path", "data/chroma"),
-        collection_conversations=extra.get("collection_conversations", "conversations"),
-        collection_documents=extra.get("collection_documents", "documents"),
-        meta_key=extra.get("meta_key", "embedding_model"),
+        embedding_model=extra["embedding_model"],
+        persist_path=extra["persist_path"],
+        collection_conversations=extra["collection_conversations"],
+        collection_documents=extra["collection_documents"],
+        meta_key=extra["meta_key"],
     )
     app.state.vector_store = vector_store
     app.state.graph = compile_graph(vector_store=vector_store)
