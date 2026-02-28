@@ -5,7 +5,7 @@ from typing import Annotated
 from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
 
-from mentat.core.models import OrchestrationResult, SearchAgentResult
+from mentat.core.models import OrchestrationResult, RAGAgentResult, SearchAgentResult
 
 
 class GraphState(TypedDict):
@@ -23,7 +23,7 @@ class GraphState(TypedDict):
 
     # Phase 2+ fields (unused in Phase 1)
     search_results: SearchAgentResult | None
-    rag_results: str | None
+    rag_results: RAGAgentResult | None
     persona_context: str | None
     plan_context: str | None
     coaching_response: str | None

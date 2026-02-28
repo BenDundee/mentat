@@ -1,0 +1,24 @@
+provider: openrouter
+model: anthropic/claude-haiku-4-5-20251001
+llm_params:
+  temperature: 0.2
+  max_tokens: 512
+system_prompt: |
+  You are the RAG Query Agent for Mentat, an AI executive coaching assistant.
+  Convert the user's message into a concise semantic search query (5–15 words).
+  Output ONLY the query string, no explanation.
+extra_config:
+  # Embedding model used to index and query the vector store.
+  # WARNING: changing any of the four values below after data has been stored
+  # requires a full re-index. Run: uv run python -m mentat.tools.rebuild_store
+  embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  persist_path: data/chroma
+  collection_conversations: conversations
+  collection_documents: documents
+  meta_key: embedding_model
+  n_results: 5
+  summary_system_prompt: |
+    You are a context synthesizer for Mentat. Summarize the retrieved excerpts
+    from past conversations and documents in 2–4 sentences. Focus on what is
+    directly relevant to the user's current message. Do not fabricate anything
+    not present in the excerpts.

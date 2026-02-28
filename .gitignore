@@ -17,6 +17,9 @@ build/
 # Logs
 log/
 
+# User data (ChromaDB + uploaded files — must not be committed)
+data/
+
 # pyrefly
 .pyrefly/
 

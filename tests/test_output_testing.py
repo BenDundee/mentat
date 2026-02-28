@@ -139,15 +139,18 @@ def test_build_graph_debug_mode():
     """build_graph(debug=True) should wire OutputTestingAgent as the final node."""
     from unittest.mock import MagicMock, patch
 
+    mock_vs = MagicMock()
     with (
         patch("mentat.graph.workflow.OrchestrationAgent") as MockOrch,
         patch("mentat.graph.workflow.SearchAgent") as MockSearch,
+        patch("mentat.graph.workflow.RAGAgent") as MockRAG,
     ):
         MockOrch.return_value.run = MagicMock()
         MockSearch.return_value.run = MagicMock()
+        MockRAG.return_value.run = MagicMock()
         from mentat.graph.workflow import build_graph
 
-        graph = build_graph(debug=True)
+        graph = build_graph(vector_store=mock_vs, debug=True)
 
     assert "format_response" in graph.nodes
 
@@ -156,14 +159,17 @@ def test_build_graph_default_is_not_debug():
     """build_graph() without debug flag should not use OutputTestingAgent."""
     from unittest.mock import MagicMock, patch
 
+    mock_vs = MagicMock()
     with (
         patch("mentat.graph.workflow.OrchestrationAgent") as MockOrch,
         patch("mentat.graph.workflow.SearchAgent") as MockSearch,
+        patch("mentat.graph.workflow.RAGAgent") as MockRAG,
     ):
         MockOrch.return_value.run = MagicMock()
         MockSearch.return_value.run = MagicMock()
+        MockRAG.return_value.run = MagicMock()
         from mentat.graph.workflow import build_graph
 
-        graph = build_graph(debug=False)
+        graph = build_graph(vector_store=mock_vs, debug=False)
 
     assert "format_response" in graph.nodes
