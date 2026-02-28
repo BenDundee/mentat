@@ -298,6 +298,7 @@ def test_search_agent_real_llm():
         "orchestration_result": None,
         "search_results": None,
         "rag_results": None,
+        "context_management_result": None,
         "persona_context": None,
         "plan_context": None,
         "coaching_response": None,
