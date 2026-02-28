@@ -136,7 +136,7 @@ class ContextManagementAgent(BaseAgent):
         Returns:
             Structured _ContextBrief from the LLM.
         """
-        structured_llm = self.llm.with_structured_output(_ContextBrief)
+        structured_llm = self.llm.with_structured_output(_ContextBrief, strict=False)
         chain = self.prompt_template | structured_llm
         return cast(
             _ContextBrief,

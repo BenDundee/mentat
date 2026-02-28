@@ -92,7 +92,7 @@ class SearchAgent(BaseAgent):
         Returns:
             List of search query strings.
         """
-        structured_llm = self.llm.with_structured_output(_QueryPlan)
+        structured_llm = self.llm.with_structured_output(_QueryPlan, strict=False)
         chain = self.prompt_template | structured_llm
         plan = cast(
             _QueryPlan,
@@ -185,7 +185,7 @@ class SearchAgent(BaseAgent):
             )
         context = "\n".join(context_lines)
 
-        structured_llm = self.llm.with_structured_output(_SearchSummary)
+        structured_llm = self.llm.with_structured_output(_SearchSummary, strict=False)
         chain = self.summary_prompt_template | structured_llm
         summary_result = cast(
             _SearchSummary,

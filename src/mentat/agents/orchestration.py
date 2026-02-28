@@ -41,7 +41,9 @@ class OrchestrationAgent(BaseAgent):
             "Classifying intent for message: %.80s", state["user_message"]
         )
 
-        structured_llm = self.llm.with_structured_output(_IntentClassification)
+        structured_llm = self.llm.with_structured_output(
+            _IntentClassification, strict=False
+        )
         chain = self.prompt_template | structured_llm
         raw = cast(
             _IntentClassification,
