@@ -23,6 +23,7 @@ def _make_state(**overrides) -> GraphState:
         "orchestration_result": None,
         "search_results": None,
         "rag_results": None,
+        "context_management_result": None,
         "persona_context": None,
         "plan_context": None,
         "coaching_response": None,
@@ -56,7 +57,7 @@ def test_format_response_without_result():
 
 
 def test_build_graph_has_expected_nodes():
-    """build_graph() should include orchestration, search, rag, and format_response."""
+    """build_graph() should include all pipeline nodes."""
     from mentat.graph.workflow import build_graph
 
     mock_vs = _make_mock_vector_store()
@@ -64,16 +65,19 @@ def test_build_graph_has_expected_nodes():
         patch("mentat.graph.workflow.OrchestrationAgent") as MockOrch,
         patch("mentat.graph.workflow.SearchAgent") as MockSearch,
         patch("mentat.graph.workflow.RAGAgent") as MockRAG,
+        patch("mentat.graph.workflow.ContextManagementAgent") as MockCM,
     ):
         MockOrch.return_value.run = MagicMock()
         MockSearch.return_value.run = MagicMock()
         MockRAG.return_value.run = MagicMock()
+        MockCM.return_value.run = MagicMock()
         graph = build_graph(vector_store=mock_vs)
 
     node_names = list(graph.nodes.keys())
     assert "orchestration" in node_names
     assert "search" in node_names
     assert "rag" in node_names
+    assert "context_management" in node_names
     assert "format_response" in node_names
 
 
@@ -86,10 +90,12 @@ def test_compile_graph_succeeds():
         patch("mentat.graph.workflow.OrchestrationAgent") as MockOrch,
         patch("mentat.graph.workflow.SearchAgent") as MockSearch,
         patch("mentat.graph.workflow.RAGAgent") as MockRAG,
+        patch("mentat.graph.workflow.ContextManagementAgent") as MockCM,
     ):
         MockOrch.return_value.run = MagicMock()
         MockSearch.return_value.run = MagicMock()
         MockRAG.return_value.run = MagicMock()
+        MockCM.return_value.run = MagicMock()
         compiled = compile_graph(vector_store=mock_vs)
 
     assert compiled is not None
@@ -132,7 +138,7 @@ def test_route_with_search_takes_priority_over_rag():
 
 
 def test_route_without_agents():
-    """Returns 'format_response' when suggested_agents is empty."""
+    """Returns 'context_management' when suggested_agents is empty."""
     result = OrchestrationResult(
         intent=Intent.CHECK_IN,
         confidence=0.95,
@@ -140,13 +146,13 @@ def test_route_without_agents():
         suggested_agents=(),
     )
     state = _make_state(orchestration_result=result)
-    assert _route_after_orchestration(state) == "format_response"
+    assert _route_after_orchestration(state) == "context_management"
 
 
 def test_route_none_result():
-    """Returns 'format_response' when orchestration_result is None."""
+    """Returns 'context_management' when orchestration_result is None."""
     state = _make_state(orchestration_result=None)
-    assert _route_after_orchestration(state) == "format_response"
+    assert _route_after_orchestration(state) == "context_management"
 
 
 def test_route_after_search_to_rag():
@@ -161,8 +167,8 @@ def test_route_after_search_to_rag():
     assert _route_after_search(state) == "rag"
 
 
-def test_route_after_search_to_format_response():
-    """Returns 'format_response' after search when rag was not suggested."""
+def test_route_after_search_to_context_management():
+    """Returns 'context_management' after search when rag was not suggested."""
     result = OrchestrationResult(
         intent=Intent.QUESTION,
         confidence=0.9,
@@ -170,4 +176,4 @@ def test_route_after_search_to_format_response():
         suggested_agents=("search",),
     )
     state = _make_state(orchestration_result=result)
-    assert _route_after_search(state) == "format_response"
+    assert _route_after_search(state) == "context_management"

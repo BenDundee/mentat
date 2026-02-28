@@ -27,6 +27,7 @@ def _make_state(**overrides) -> GraphState:
         "orchestration_result": None,
         "search_results": None,
         "rag_results": None,
+        "context_management_result": None,
         "persona_context": None,
         "plan_context": None,
         "coaching_response": None,
@@ -272,8 +273,8 @@ def test_route_to_rag_when_suggested():
     assert _route_after_orchestration(state) == "rag"
 
 
-def test_route_to_format_response_by_default():
-    """_route_after_orchestration should return 'format_response' when no RAG."""
+def test_route_to_context_management_by_default():
+    """_route_after_orchestration should return 'context_management' when no RAG."""
     orch = OrchestrationResult(
         intent=Intent.CHECK_IN,
         confidence=0.95,
@@ -281,13 +282,13 @@ def test_route_to_format_response_by_default():
         suggested_agents=(),
     )
     state = _make_state(orchestration_result=orch)
-    assert _route_after_orchestration(state) == "format_response"
+    assert _route_after_orchestration(state) == "context_management"
 
 
-def test_route_to_format_response_when_no_orchestration():
-    """_route_after_orchestration with no result should go to format_response."""
+def test_route_to_context_management_when_no_orchestration():
+    """_route_after_orchestration with no result should go to context_management."""
     state = _make_state()
-    assert _route_after_orchestration(state) == "format_response"
+    assert _route_after_orchestration(state) == "context_management"
 
 
 # ---------------------------------------------------------------------------

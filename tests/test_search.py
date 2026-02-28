@@ -27,6 +27,7 @@ def _make_state(**overrides) -> GraphState:
         ),
         "search_results": None,
         "rag_results": None,
+        "context_management_result": None,
         "persona_context": None,
         "plan_context": None,
         "coaching_response": None,

@@ -17,6 +17,7 @@ def _make_state(message: str = "I need help with my team") -> GraphState:
         orchestration_result=None,
         search_results=None,
         rag_results=None,
+        context_management_result=None,
         persona_context=None,
         plan_context=None,
         coaching_response=None,

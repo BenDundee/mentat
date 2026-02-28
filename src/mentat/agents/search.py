@@ -75,6 +75,7 @@ class SearchAgent(BaseAgent):
             orchestration_result=state["orchestration_result"],
             search_results=search_agent_result,
             rag_results=state["rag_results"],
+            context_management_result=state["context_management_result"],
             persona_context=state["persona_context"],
             plan_context=state["plan_context"],
             coaching_response=state["coaching_response"],
