@@ -82,6 +82,7 @@ class OutputTestingAgent:
             orchestration_result=state["orchestration_result"],
             search_results=state["search_results"],
             rag_results=state["rag_results"],
+            context_management_result=state["context_management_result"],
             persona_context=state["persona_context"],
             plan_context=state["plan_context"],
             coaching_response=state["coaching_response"],

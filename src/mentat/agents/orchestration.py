@@ -41,7 +41,9 @@ class OrchestrationAgent(BaseAgent):
             "Classifying intent for message: %.80s", state["user_message"]
         )
 
-        structured_llm = self.llm.with_structured_output(_IntentClassification)
+        structured_llm = self.llm.with_structured_output(
+            _IntentClassification, strict=False
+        )
         chain = self.prompt_template | structured_llm
         raw = cast(
             _IntentClassification,
@@ -70,6 +72,7 @@ class OrchestrationAgent(BaseAgent):
             orchestration_result=result,
             search_results=state["search_results"],
             rag_results=state["rag_results"],
+            context_management_result=state["context_management_result"],
             persona_context=state["persona_context"],
             plan_context=state["plan_context"],
             coaching_response=state["coaching_response"],

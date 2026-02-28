@@ -17,6 +17,7 @@ def _make_state(**overrides) -> GraphState:
         "orchestration_result": None,
         "search_results": None,
         "rag_results": None,
+        "context_management_result": None,
         "persona_context": None,
         "plan_context": None,
         "coaching_response": None,
@@ -144,10 +145,12 @@ def test_build_graph_debug_mode():
         patch("mentat.graph.workflow.OrchestrationAgent") as MockOrch,
         patch("mentat.graph.workflow.SearchAgent") as MockSearch,
         patch("mentat.graph.workflow.RAGAgent") as MockRAG,
+        patch("mentat.graph.workflow.ContextManagementAgent") as MockCM,
     ):
         MockOrch.return_value.run = MagicMock()
         MockSearch.return_value.run = MagicMock()
         MockRAG.return_value.run = MagicMock()
+        MockCM.return_value.run = MagicMock()
         from mentat.graph.workflow import build_graph
 
         graph = build_graph(vector_store=mock_vs, debug=True)
@@ -164,10 +167,12 @@ def test_build_graph_default_is_not_debug():
         patch("mentat.graph.workflow.OrchestrationAgent") as MockOrch,
         patch("mentat.graph.workflow.SearchAgent") as MockSearch,
         patch("mentat.graph.workflow.RAGAgent") as MockRAG,
+        patch("mentat.graph.workflow.ContextManagementAgent") as MockCM,
     ):
         MockOrch.return_value.run = MagicMock()
         MockSearch.return_value.run = MagicMock()
         MockRAG.return_value.run = MagicMock()
+        MockCM.return_value.run = MagicMock()
         from mentat.graph.workflow import build_graph
 
         graph = build_graph(vector_store=mock_vs, debug=False)

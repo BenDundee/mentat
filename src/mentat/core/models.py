@@ -72,3 +72,15 @@ class RAGAgentResult(BaseModel, frozen=True):
     query: str  # the generated search query (for debugging)
     chunks: tuple[DocumentChunk, ...] = ()
     summary: str
+
+
+class ContextManagementResult(BaseModel, frozen=True):
+    """Result produced by the Context Management Agent."""
+
+    coaching_brief: str  # actionable instructions for the Coaching Agent
+    # e.g. "opening", "exploration", "insight", "action-planning", "closing"
+    session_phase: str
+    # e.g. "exploratory and Socratic — resist giving direct advice"
+    tone_guidance: str
+    key_information: str  # ranked, compressed excerpts from Search + RAG
+    conversation_summary: str  # compressed history (2-3 sentences)

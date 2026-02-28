@@ -3,6 +3,7 @@
 from langchain_core.messages import AIMessage
 from langgraph.graph import END, START, StateGraph
 
+from mentat.agents.context_management import ContextManagementAgent
 from mentat.agents.orchestration import OrchestrationAgent
 from mentat.agents.output_testing import OutputTestingAgent
 from mentat.agents.rag import RAGAgent
@@ -20,14 +21,14 @@ def _route_after_orchestration(state: GraphState) -> str:
     Returns:
         ``"search"`` if the orchestration result suggests the Search agent,
         ``"rag"`` if it suggests the RAG agent (and not search),
-        otherwise ``"format_response"``.
+        otherwise ``"context_management"``.
     """
     result = state.get("orchestration_result")
     if result is not None and "search" in result.suggested_agents:
         return "search"
     if result is not None and "rag" in result.suggested_agents:
         return "rag"
-    return "format_response"
+    return "context_management"
 
 
 def _route_after_search(state: GraphState) -> str:
@@ -35,33 +36,37 @@ def _route_after_search(state: GraphState) -> str:
 
     Returns:
         ``"rag"`` if the orchestration result also suggests the RAG agent,
-        otherwise ``"format_response"``.
+        otherwise ``"context_management"``.
     """
     result = state.get("orchestration_result")
     if result is not None and "rag" in result.suggested_agents:
         return "rag"
-    return "format_response"
+    return "context_management"
 
 
 def format_response(state: GraphState) -> GraphState:
-    """Render the OrchestrationResult as a human-readable assistant message.
+    """Render the coaching brief (or a fallback) as the assistant message.
 
-    If RAG results are present their summary is appended to the response.
+    Uses the coaching_brief from ContextManagementResult when available.
+    Falls back to the orchestration result summary for backwards compatibility.
     """
-    result = state.get("orchestration_result")
-    if result is None:
-        response_text = "I'm sorry, I couldn't process your message."
+    cm_result = state.get("context_management_result")
+    if cm_result is not None:
+        response_text = cm_result.coaching_brief
     else:
-        confidence_pct = int(result.confidence * 100)
-        response_text = (
-            f"**Intent detected:** {result.intent.value} "
-            f"({confidence_pct}% confidence)\n\n"
-            f"**Reasoning:** {result.reasoning}"
-        )
-
-    rag_results = state.get("rag_results")
-    if rag_results is not None and rag_results.summary:
-        response_text = f"{response_text}\n\n**Context:** {rag_results.summary}"
+        orch = state.get("orchestration_result")
+        if orch is None:
+            response_text = "I'm sorry, I couldn't process your message."
+        else:
+            confidence_pct = int(orch.confidence * 100)
+            response_text = (
+                f"**Intent detected:** {orch.intent.value} "
+                f"({confidence_pct}% confidence)\n\n"
+                f"**Reasoning:** {orch.reasoning}"
+            )
+        rag_results = state.get("rag_results")
+        if rag_results is not None and rag_results.summary:
+            response_text = f"{response_text}\n\n**Context:** {rag_results.summary}"
 
     assistant_message = AIMessage(content=response_text)
     return GraphState(
@@ -70,6 +75,7 @@ def format_response(state: GraphState) -> GraphState:
         orchestration_result=state["orchestration_result"],
         search_results=state["search_results"],
         rag_results=state["rag_results"],
+        context_management_result=state["context_management_result"],
         persona_context=state["persona_context"],
         plan_context=state["plan_context"],
         coaching_response=state["coaching_response"],
@@ -89,6 +95,7 @@ def build_graph(vector_store: VectorStoreService, debug: bool = False) -> StateG
     orchestration_agent = OrchestrationAgent()
     search_agent = SearchAgent()
     rag_agent = RAGAgent(vector_store)
+    context_management_agent = ContextManagementAgent()
     final_node_fn = OutputTestingAgent().run if debug else format_response
 
     graph = StateGraph(GraphState)  # pyrefly: ignore[bad-specialization]
@@ -99,20 +106,27 @@ def build_graph(vector_store: VectorStoreService, debug: bool = False) -> StateG
     # pyrefly: ignore[no-matching-overload]
     graph.add_node("rag", rag_agent.run)
     # pyrefly: ignore[no-matching-overload]
+    graph.add_node("context_management", context_management_agent.run)
+    # pyrefly: ignore[no-matching-overload]
     graph.add_node("format_response", final_node_fn)
 
     graph.add_edge(START, "orchestration")
     graph.add_conditional_edges(  # pyrefly: ignore[no-matching-overload]
         "orchestration",
         _route_after_orchestration,
-        {"search": "search", "rag": "rag", "format_response": "format_response"},
+        {
+            "search": "search",
+            "rag": "rag",
+            "context_management": "context_management",
+        },
     )
     graph.add_conditional_edges(  # pyrefly: ignore[no-matching-overload]
         "search",
         _route_after_search,
-        {"rag": "rag", "format_response": "format_response"},
+        {"rag": "rag", "context_management": "context_management"},
     )
-    graph.add_edge("rag", "format_response")
+    graph.add_edge("rag", "context_management")
+    graph.add_edge("context_management", "format_response")
     graph.add_edge("format_response", END)
 
     return graph
