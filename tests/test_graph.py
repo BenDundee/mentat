@@ -6,7 +6,6 @@ from mentat.core.models import Intent, OrchestrationResult
 from mentat.graph.state import GraphState
 from mentat.graph.workflow import (
     _route_after_orchestration,
-    _route_after_search,
     format_response,
 )
 
@@ -102,7 +101,7 @@ def test_compile_graph_succeeds():
 
 
 def test_route_with_search():
-    """Returns 'search' when suggested_agents contains 'search'."""
+    """Returns ['search'] when suggested_agents contains only 'search'."""
     result = OrchestrationResult(
         intent=Intent.QUESTION,
         confidence=0.9,
@@ -110,11 +109,11 @@ def test_route_with_search():
         suggested_agents=("search",),
     )
     state = _make_state(orchestration_result=result)
-    assert _route_after_orchestration(state) == "search"
+    assert _route_after_orchestration(state) == ["search"]
 
 
 def test_route_with_rag():
-    """Returns 'rag' when suggested_agents contains 'rag' (and not 'search')."""
+    """Returns ['rag'] when suggested_agents contains only 'rag'."""
     result = OrchestrationResult(
         intent=Intent.COACHING_SESSION,
         confidence=0.9,
@@ -122,11 +121,11 @@ def test_route_with_rag():
         suggested_agents=("rag",),
     )
     state = _make_state(orchestration_result=result)
-    assert _route_after_orchestration(state) == "rag"
+    assert _route_after_orchestration(state) == ["rag"]
 
 
-def test_route_with_search_takes_priority_over_rag():
-    """Returns 'search' when suggested_agents contains both 'search' and 'rag'."""
+def test_route_with_both_agents_returns_parallel_targets():
+    """Returns ['search', 'rag'] when both are suggested, enabling parallel fan-out."""
     result = OrchestrationResult(
         intent=Intent.QUESTION,
         confidence=0.9,
@@ -134,11 +133,11 @@ def test_route_with_search_takes_priority_over_rag():
         suggested_agents=("search", "rag"),
     )
     state = _make_state(orchestration_result=result)
-    assert _route_after_orchestration(state) == "search"
+    assert _route_after_orchestration(state) == ["search", "rag"]
 
 
 def test_route_without_agents():
-    """Returns 'context_management' when suggested_agents is empty."""
+    """Returns ['context_management'] when suggested_agents is empty."""
     result = OrchestrationResult(
         intent=Intent.CHECK_IN,
         confidence=0.95,
@@ -146,34 +145,10 @@ def test_route_without_agents():
         suggested_agents=(),
     )
     state = _make_state(orchestration_result=result)
-    assert _route_after_orchestration(state) == "context_management"
+    assert _route_after_orchestration(state) == ["context_management"]
 
 
 def test_route_none_result():
-    """Returns 'context_management' when orchestration_result is None."""
+    """Returns ['context_management'] when orchestration_result is None."""
     state = _make_state(orchestration_result=None)
-    assert _route_after_orchestration(state) == "context_management"
-
-
-def test_route_after_search_to_rag():
-    """Returns 'rag' when orchestration suggested both search and rag."""
-    result = OrchestrationResult(
-        intent=Intent.QUESTION,
-        confidence=0.9,
-        reasoning="Needs both sources.",
-        suggested_agents=("search", "rag"),
-    )
-    state = _make_state(orchestration_result=result)
-    assert _route_after_search(state) == "rag"
-
-
-def test_route_after_search_to_context_management():
-    """Returns 'context_management' after search when rag was not suggested."""
-    result = OrchestrationResult(
-        intent=Intent.QUESTION,
-        confidence=0.9,
-        reasoning="Only needs search.",
-        suggested_agents=("search",),
-    )
-    state = _make_state(orchestration_result=result)
-    assert _route_after_search(state) == "context_management"
+    assert _route_after_orchestration(state) == ["context_management"]
