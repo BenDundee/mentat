@@ -56,9 +56,11 @@ done
 
 # ── Run tests ───────────────────────────────────────────────────────────────
 if [ "$RUN_TESTS" = true ]; then
-    echo "Running test suite..."
-    uv run pytest tests/ -v
-    exit 0
+    mkdir -p log
+    LOG_FILE="log/tests_$(date +%Y%m%d_%H%M%S).log"
+    echo "Running test suite... (output also written to $LOG_FILE)"
+    uv run pytest tests/ -v 2>&1 | tee "$LOG_FILE"
+    exit "${PIPESTATUS[0]}"
 fi
 
 # ── Check for .env ─────────────────────────────────────────────────────────
