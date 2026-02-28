@@ -15,33 +15,21 @@ from mentat.graph.state import GraphState
 logger = get_logger(__name__)
 
 
-def _route_after_orchestration(state: GraphState) -> str:
-    """Determine which node to visit after orchestration.
+def _route_after_orchestration(state: GraphState) -> list[str]:
+    """Determine which nodes to visit after orchestration (parallel fan-out).
 
     Returns:
-        ``"search"`` if the orchestration result suggests the Search agent,
-        ``"rag"`` if it suggests the RAG agent (and not search),
-        otherwise ``"context_management"``.
+        A list of node names to dispatch in parallel. Both ``"search"`` and
+        ``"rag"`` are returned when both are suggested, enabling parallel
+        execution. Falls back to ``["context_management"]`` when no agents
+        are suggested or the result is None.
     """
     result = state.get("orchestration_result")
-    if result is not None and "search" in result.suggested_agents:
-        return "search"
-    if result is not None and "rag" in result.suggested_agents:
-        return "rag"
-    return "context_management"
-
-
-def _route_after_search(state: GraphState) -> str:
-    """Determine which node to visit after the Search agent.
-
-    Returns:
-        ``"rag"`` if the orchestration result also suggests the RAG agent,
-        otherwise ``"context_management"``.
-    """
-    result = state.get("orchestration_result")
-    if result is not None and "rag" in result.suggested_agents:
-        return "rag"
-    return "context_management"
+    if result is None:
+        return ["context_management"]
+    agents = result.suggested_agents
+    targets = [a for a in ("search", "rag") if a in agents]
+    return targets if targets else ["context_management"]
 
 
 def format_response(state: GraphState) -> GraphState:
@@ -114,17 +102,8 @@ def build_graph(vector_store: VectorStoreService, debug: bool = False) -> StateG
     graph.add_conditional_edges(  # pyrefly: ignore[no-matching-overload]
         "orchestration",
         _route_after_orchestration,
-        {
-            "search": "search",
-            "rag": "rag",
-            "context_management": "context_management",
-        },
     )
-    graph.add_conditional_edges(  # pyrefly: ignore[no-matching-overload]
-        "search",
-        _route_after_search,
-        {"rag": "rag", "context_management": "context_management"},
-    )
+    graph.add_edge("search", "context_management")
     graph.add_edge("rag", "context_management")
     graph.add_edge("context_management", "format_response")
     graph.add_edge("format_response", END)
