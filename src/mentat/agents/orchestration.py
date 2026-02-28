@@ -1,22 +1,26 @@
 """Orchestration Agent — classifies user intent."""
 
-from typing import cast
-
-from pydantic import BaseModel
+from typing import TypedDict, cast
 
 from mentat.agents.base import BaseAgent
 from mentat.core.models import Intent, OrchestrationResult
 from mentat.graph.state import GraphState
 
 
-class _IntentClassification(BaseModel):
-    """Internal schema used for structured LLM output."""
+class _IntentClassification(TypedDict):
+    """Internal schema used for structured LLM output.
+
+    TypedDict (not BaseModel) so LangChain stores a plain dict — not a
+    Pydantic model — in AIMessage.parsed.  This avoids a Pydantic
+    serialization warning that fires when a BaseModel subclass ends up in
+    that extra field.
+    """
 
     intent: Intent
     # Anthropic rejects min/max schema constraints; validated by OrchestrationResult
     confidence: float
     reasoning: str
-    suggested_agents: list[str] = []
+    suggested_agents: list[str]
 
 
 class OrchestrationAgent(BaseAgent):
@@ -45,10 +49,10 @@ class OrchestrationAgent(BaseAgent):
         )
 
         result = OrchestrationResult(
-            intent=raw.intent,
-            confidence=raw.confidence,
-            reasoning=raw.reasoning,
-            suggested_agents=tuple(raw.suggested_agents),
+            intent=raw["intent"],
+            confidence=raw["confidence"],
+            reasoning=raw["reasoning"],
+            suggested_agents=tuple(raw.get("suggested_agents", [])),
         )
 
         self._logger.info(
