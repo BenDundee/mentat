@@ -3,6 +3,7 @@
 from langchain_core.messages import AIMessage
 from langgraph.graph import END, START, StateGraph
 
+from mentat.agents.coaching import CoachingAgent
 from mentat.agents.context_management import ContextManagementAgent
 from mentat.agents.orchestration import OrchestrationAgent
 from mentat.agents.output_testing import OutputTestingAgent
@@ -45,13 +46,16 @@ def _route_after_search(state: GraphState) -> str:
 
 
 def format_response(state: GraphState) -> GraphState:
-    """Render the coaching brief (or a fallback) as the assistant message.
+    """Render the coaching response (or fallbacks) as the assistant message.
 
-    Uses the coaching_brief from ContextManagementResult when available.
-    Falls back to the orchestration result summary for backwards compatibility.
+    Prefers ``coaching_response`` from CoachingAgent, then falls back to the
+    ``coaching_brief`` from ContextManagementResult, and finally to the
+    orchestration result summary for backwards compatibility.
     """
-    cm_result = state.get("context_management_result")
-    if cm_result is not None:
+    coaching_response = state.get("coaching_response")
+    if coaching_response is not None:
+        response_text = coaching_response
+    elif (cm_result := state.get("context_management_result")) is not None:
         response_text = cm_result.coaching_brief
     else:
         orch = state.get("orchestration_result")
@@ -96,6 +100,7 @@ def build_graph(vector_store: VectorStoreService, debug: bool = False) -> StateG
     search_agent = SearchAgent()
     rag_agent = RAGAgent(vector_store)
     context_management_agent = ContextManagementAgent()
+    coaching_agent = CoachingAgent()
     final_node_fn = OutputTestingAgent().run if debug else format_response
 
     graph = StateGraph(GraphState)  # pyrefly: ignore[bad-specialization]
@@ -107,6 +112,8 @@ def build_graph(vector_store: VectorStoreService, debug: bool = False) -> StateG
     graph.add_node("rag", rag_agent.run)
     # pyrefly: ignore[no-matching-overload]
     graph.add_node("context_management", context_management_agent.run)
+    # pyrefly: ignore[no-matching-overload]
+    graph.add_node("coaching", coaching_agent.run)
     # pyrefly: ignore[no-matching-overload]
     graph.add_node("format_response", final_node_fn)
 
@@ -126,7 +133,8 @@ def build_graph(vector_store: VectorStoreService, debug: bool = False) -> StateG
         {"rag": "rag", "context_management": "context_management"},
     )
     graph.add_edge("rag", "context_management")
-    graph.add_edge("context_management", "format_response")
+    graph.add_edge("context_management", "coaching")
+    graph.add_edge("coaching", "format_response")
     graph.add_edge("format_response", END)
 
     return graph
