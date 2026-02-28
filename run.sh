@@ -82,8 +82,8 @@ fi
 # ── Start server ────────────────────────────────────────────────────────────
 if [ "$DEBUG" = true ]; then
     echo "Starting Mentat at http://localhost:8000 (debug mode — Output Testing Agent active) ..."
-    MENTAT_DEBUG=1 uv run uvicorn mentat.api.app:app --reload --host 0.0.0.0 --port 8000
+    MENTAT_DEBUG=1 LOG_LEVEL=DEBUG uv run uvicorn mentat.api.app:app --reload --host 0.0.0.0 --port 8000
 else
     echo "Starting Mentat at http://localhost:8000 ..."
-    uv run uvicorn mentat.api.app:app --reload --host 0.0.0.0 --port 8000
+    LOG_LEVEL=DEBUG uv run uvicorn mentat.api.app:app --reload --host 0.0.0.0 --port 8000
 fi
