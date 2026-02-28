@@ -262,7 +262,7 @@ def test_rag_agent_run_empty_retrieval_fallback():
 
 
 def test_route_to_rag_when_suggested():
-    """_route_after_orchestration should return 'rag' when suggested."""
+    """_route_after_orchestration should return ['rag'] when suggested."""
     orch = OrchestrationResult(
         intent=Intent.QUESTION,
         confidence=0.9,
@@ -270,11 +270,11 @@ def test_route_to_rag_when_suggested():
         suggested_agents=("rag",),
     )
     state = _make_state(orchestration_result=orch)
-    assert _route_after_orchestration(state) == "rag"
+    assert _route_after_orchestration(state) == ["rag"]
 
 
 def test_route_to_context_management_by_default():
-    """_route_after_orchestration should return 'context_management' when no RAG."""
+    """_route_after_orchestration returns ['context_management'] when no RAG."""
     orch = OrchestrationResult(
         intent=Intent.CHECK_IN,
         confidence=0.95,
@@ -282,13 +282,13 @@ def test_route_to_context_management_by_default():
         suggested_agents=(),
     )
     state = _make_state(orchestration_result=orch)
-    assert _route_after_orchestration(state) == "context_management"
+    assert _route_after_orchestration(state) == ["context_management"]
 
 
 def test_route_to_context_management_when_no_orchestration():
-    """_route_after_orchestration with no result should go to context_management."""
+    """_route_after_orchestration with no result returns ['context_management']."""
     state = _make_state()
-    assert _route_after_orchestration(state) == "context_management"
+    assert _route_after_orchestration(state) == ["context_management"]
 
 
 # ---------------------------------------------------------------------------

@@ -12,17 +12,18 @@ flowchart TD
     START([User Message]) --> orch[Orchestration Agent]
 
     orch -->|search suggested| search[Search Agent]
-    orch -->|rag suggested, no search| rag[RAG Agent]
+    orch -->|rag suggested| rag[RAG Agent]
     orch -->|no agents suggested| cm[Context Management Agent]
 
-    search -->|rag also suggested| rag
-    search -->|rag not suggested| cm
-
+    search --> cm
     rag --> cm
 
     cm --> fmt[format_response]
     fmt --> END([Assistant Reply])
 ```
+
+Search and RAG are dispatched in **parallel** when both are suggested — LangGraph
+fan-out merges their results before `context_management` runs.
 
 ### Node Descriptions
 
