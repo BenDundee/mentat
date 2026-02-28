@@ -1,5 +1,6 @@
 """FastAPI application factory."""
 
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -24,7 +25,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from mentat.core.config import load_agent_config
     from mentat.core.vector_store import VectorStoreService
 
-    logger.info("Starting Mentat — initializing vector store and agent graph...")
+    debug = os.environ.get("MENTAT_DEBUG", "").lower() in ("1", "true", "yes")
+    if debug:
+        logger.info("Starting Mentat — debug mode (Output Testing Agent active)...")
+    else:
+        logger.info("Starting Mentat — initializing vector store and agent graph...")
+
     rag_config = load_agent_config("rag")
     extra = rag_config.extra_config
     vector_store = VectorStoreService(
@@ -35,7 +41,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         meta_key=extra["meta_key"],
     )
     app.state.vector_store = vector_store
-    app.state.graph = compile_graph(vector_store=vector_store)
+    app.state.graph = compile_graph(vector_store=vector_store, debug=debug)
     logger.info("Mentat ready.")
     yield
     logger.info("Mentat shutting down.")

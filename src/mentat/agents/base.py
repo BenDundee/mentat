@@ -1,6 +1,7 @@
 """Abstract base class for all Mentat agents."""
 
 from abc import ABC, abstractmethod
+from datetime import datetime, timezone
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
@@ -40,6 +41,11 @@ class BaseAgent(ABC):
                 ("human", "{user_message}"),
             ]
         )
+
+    @staticmethod
+    def _now() -> str:
+        """Return the current UTC datetime as a human-readable string."""
+        return datetime.now(timezone.utc).strftime("%A, %d %B %Y at %H:%M UTC")
 
     @abstractmethod
     def run(self, state: GraphState) -> GraphState:

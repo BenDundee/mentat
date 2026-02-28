@@ -40,6 +40,23 @@ class OrchestrationResult(BaseModel, frozen=True):
     suggested_agents: tuple[str, ...] = ()
 
 
+class SearchResult(BaseModel, frozen=True):
+    """A single search result retrieved from DuckDuckGo."""
+
+    title: str
+    url: str
+    snippet: str
+    retrieved_at: str  # ISO-8601 UTC timestamp string
+
+
+class SearchAgentResult(BaseModel, frozen=True):
+    """Result produced by the Search Agent."""
+
+    queries: tuple[str, ...]
+    results: tuple[SearchResult, ...]
+    summary: str
+
+
 class DocumentChunk(BaseModel, frozen=True):
     """A single chunk of text retrieved from the vector store."""
 

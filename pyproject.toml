@@ -19,6 +19,9 @@ dependencies = [
     "pypdf>=6.7.4",
     "python-docx>=1.2.0",
     "python-multipart>=0.0.22",
+    "langchain-community>=0.4.1",
+    "duckduckgo-search>=8.1.1",
+    "ddgs>=9.10.0",
 ]
 
 [project.optional-dependencies]
@@ -49,6 +52,11 @@ ignore = []
 testpaths = ["tests"]
 markers = [
     "integration: marks tests as integration tests requiring real API keys (deselect with '-m not integration')",
+]
+filterwarnings = [
+    # LangChain stores structured output in AIMessage.parsed which is typed None;
+    # this is a known upstream issue not fixable in our code.
+    "ignore:Pydantic serializer warnings:UserWarning",
 ]
 
 [tool.pyrefly]
