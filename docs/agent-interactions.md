@@ -5,7 +5,7 @@ current implementation and planned future agents.
 
 ---
 
-## Current Pipeline (Phase 3+)
+## Current Pipeline (Phase 4+)
 
 ```mermaid
 flowchart TD
@@ -20,7 +20,8 @@ flowchart TD
 
     rag --> cm
 
-    cm --> fmt[format_response]
+    cm --> coach[Coaching Agent]
+    coach --> fmt[format_response]
     fmt --> END([Assistant Reply])
 ```
 
@@ -32,7 +33,8 @@ flowchart TD
 | `search` | `SearchAgent` | Generates queries, fetches DuckDuckGo results, summarizes |
 | `rag` | `RAGAgent` | Retrieves relevant chunks from ChromaDB; summarizes |
 | `context_management` | `ContextManagementAgent` | Ranks context, identifies session phase, produces coaching brief |
-| `format_response` | `format_response` / `OutputTestingAgent` | Renders the coaching brief as the assistant reply |
+| `coaching` | `CoachingAgent` | Constructs the actual coaching response using the brief |
+| `format_response` | `format_response` / `OutputTestingAgent` | Renders `coaching_response` as the assistant reply (falls back to `coaching_brief` then orchestration summary) |
 
 ---
 
@@ -67,7 +69,6 @@ flowchart TD
 |------|-------|---------|
 | `persona` | `PersonaAgent` | Maintains understanding of the user (goals, challenges, personality) |
 | `plan` | `PlanManagementAgent` | Tracks long-term coaching plan and progress towards goals |
-| `coaching` | `CoachingAgent` | Constructs the actual coaching response using the brief |
 | `quality` | `QualityAgent` | Rates the response (1–5); triggers a rewrite if score ≤ 3 |
 
 ### Post-Session Agents (run after conversation ends)
