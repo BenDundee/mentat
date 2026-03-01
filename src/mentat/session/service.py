@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from mentat.core.logging import get_logger
+from mentat.core.settings import settings
 from mentat.session.models import (
     ConversationSession,
     ConversationType,
@@ -14,7 +15,7 @@ from mentat.session.models import (
 
 logger = get_logger(__name__)
 
-_SESSION_DIR = Path("data/sessions")
+_SESSION_DIR = Path(settings.data_dir) / "sessions"
 
 # Ordered onboarding phases
 _ONBOARDING_PHASE_ORDER = [
@@ -89,9 +90,7 @@ class SessionService:
         """
         _SESSION_DIR.mkdir(parents=True, exist_ok=True)
         path = _SESSION_DIR / f"{session.session_id}.json"
-        path.write_text(
-            json.dumps(session.model_dump(), indent=2, default=str)
-        )
+        path.write_text(json.dumps(session.model_dump(), indent=2, default=str))
         logger.debug("Saved session %s (phase=%s).", session.session_id, session.phase)
 
     def advance_phase(

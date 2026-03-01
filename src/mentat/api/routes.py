@@ -72,8 +72,8 @@ def _extract_text(raw_bytes: bytes, suffix: str) -> str:
 
 @router.get("/health")
 async def health_check() -> dict[str, str]:
-    """Simple liveness check."""
-    return {"status": "ok"}
+    """Simple liveness check used by Docker healthcheck and load balancers."""
+    return {"status": "ok", "version": "0.1.0"}
 
 
 @router.post("/chat", response_model=ChatResponse)

@@ -76,9 +76,7 @@ class SessionUpdateAgent(BaseAgent):
 
         # Drop None values so we only merge facts actually learned this turn
         extracted = {
-            k: v
-            for k, v in output.extracted_data.model_dump().items()
-            if v is not None
+            k: v for k, v in output.extracted_data.model_dump().items() if v is not None
         }
 
         update_result = SessionUpdateResult(
