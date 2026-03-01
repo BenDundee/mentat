@@ -6,24 +6,20 @@ Coaches typically work on a regular cadence, with weekly or bi-weekly check-ins.
 between Coach and Client, and allows the Coach to build a rich understanding of the Client as a person, with a deep appreciation
 of their professional barriers.
 
-Aside from their regular coaching sessions, Clients will engage the Coach for several reasons:
-  - Evaluate a job or business opportunity.
-  - Review their resume and offer feedback.
-  - Get feedback on ideas or work products.
-  - Other professional advice, like whether their LinkedIn profile is positioned effectively, or how to motivate an employee at work.
+## Types of Sessions
 
-## Onboarding
+### Onboarding
 Before the first session, the Client goes through Onboarding to ensure that the Coach understands the Client's goals, and the two 
 can align on expectations.
 
-### Set Expectations
+#### Set Expectations
 While a Coach *can* be a mentor or a consultant, their primary role is to help the Client in their own self-improvement 
 journey. This is achieved by developing a deep understanding of the Client as a person, their goals, strengths, and barriers,
 and by holding the Client accountable to progress towards their goals.
 
 These are the terms of engagement.
 
-### 360° Understanding
+#### 360° Understanding
 The Coach will build a comprehensive professional background of the Client. This can be achieved by:
   - Providing documents, like HR reviews, resumes, and personality assessments
   - Interview questions
@@ -37,7 +33,7 @@ The Coach will seek to understand the Client's:
 
 The Coach will ultimately meet the Client where they are -- not everyone has a fully developed 5-year plan.
 
-### Goal Setting
+#### Goal Setting
 Aside from setting expectations, this is the most important phase of onboarding. The Coach and Client will define two to 
 three near-term goals.
 
@@ -56,7 +52,7 @@ Given this information, the Coach will synthesize two or three working focus are
 back to the client for confirmation or refinement. This reflection step is important as it signals that the Coach 
 has listened, and it gives the client ownership over the goals.
 
-### Self-Assessment
+#### Self-Assessment
 The Coach provides a structured set of questions to establish a baseline. This serves two purposes: it gives the Coach 
 richer context, and it creates a benchmark for progress. The assessment will cover the following areas: 
   - leadership strengths and what underlies them
@@ -67,7 +63,7 @@ richer context, and it creates a benchmark for progress. The assessment will cov
 Some Coaching Frameworks (See "Positive Intelligence", below) may have more sturctured evaluations, the Coach may assign 
 these as necessary.
 
-### The Coaching Plan
+#### The Coaching Plan
 Before the first real session, the Coach develops a Coaching Plan. This plan will contain a short brief, summarizing their
 understanding of the Client and their current situation. The Coach will present near-term and mid-term goals, along with 
 the plan to measure progress. The Client and Coach will iterate on this plan until the Client agrees.
@@ -75,11 +71,11 @@ the plan to measure progress. The Client and Coach will iterate on this plan unt
 This Plan creates a shared understanding between the Client and Coach, and a common starting point. The Plan will be maintained
 as the relationship evolves, and the Client grows. It is a living document, and should be revisited as often as needed.
 
-## The Bi-Weekly Session
+### The Bi-Weekly Session
 The regular cadence of coaching sessions establishes a rhythm of accountability, generates momentum, and gives the Client 
 enough space to do real work.
 
-### Homework
+#### Homework
 The Client should have comprehensive answers to the following questions before the session begins:
   - what happened since the last meeting that's worth bringing in, 
   - whether they completed their commitments from last time (and if not, what got in the way), and 
@@ -89,7 +85,7 @@ This allows the Coach to surface any patterns worth probing, and draft a tentati
 
 The Client should also submit any other materials -- the Coach may give the Client a writing assignment, for example.
 
-### Opening: Check-In
+#### Opening: Check-In
 The Coach and Client will ground themselves. How is the Client actually showing up today? Energy level, state of mind, 
 anything pressing that might be sitting in the room even if it's not on the agenda. A Client who's just come from a 
 difficult meeting will bring that into the session whether you acknowledge it or not. A quick check-in surfaces it 
@@ -99,7 +95,7 @@ The Coach will also recap the prior session -- what was worked on, commitments m
 offer feedback on any assigned work that was submitted. This creates continuity, and allows the Coach to surface any additional 
 reflections they may have.
 
-### Agenda Setting
+#### Agenda Setting
 The Coach and Client align on what they're going to work on. The Coach will often identify something *other than* the stated
 agenda item that is more pressing. 
 
@@ -111,7 +107,7 @@ strategic enough. The agenda-setting conversation can redirect the whole session
 The Coach will probe, not just accept. One technique: after the Client states their topic, the Coach may follow with "and 
 if we do good work on that today, what becomes possible for you?" That question often reveals the real stakes.
 
-### The Deep Work
+#### The Deep Work
 This is the core of the session and where teh best Coaches distinguish themselves. Great Coaches follow the Client's energy 
 and the thread of the conversation. But there are some reliable moves:
   - *Exploring the situation.* The coach asks questions to fully understand the landscape before moving toward solutions. 
@@ -129,11 +125,11 @@ causes, that's information. The Coach doesn't push through resistance, they get 
 you doesn't want to have that conversation. What's that about?" This is delicate territory and the Coach will approach it 
 gently, not like a cross-examination.
 
-### Synthesis and Insight
+#### Synthesis and Insight
 Before moving to commitments, the Coach helps the Client articulate what they've discovered. "What's landing for you from 
 today's conversation?" It is **crucial** that the insight be named and owned by the Client, not summarized by the Coach.
 
-### Homework, Commitments, & Accountability
+#### Homework, Commitments, & Accountability
 What will the Client do before the next session? Good commitments are specific, realistic, and connected to the work 
 they just did, not generic action items. There's a difference between "I'll work on my communication style" and "I'll 
 have a direct conversation with Marcus by Thursday and notice what comes up for me beforehand."
@@ -146,10 +142,21 @@ something designed to help the Client shift their perspective, for example.
 
 Commitments get logged and will be the first thing revisited at the next session.
 
-### Closing: Session Rating 
+#### Closing: Session Rating 
 The Coach will lead the client in a brief, structured retrospective. How useful was today's session, what was most 
 valuable, anything that felt off. This is partly product feedback for the Coach, but it also underscores the bilateral 
 nature of the relationship.
+
+### Other Types of Sessions
+Aside from their regular coaching sessions, Clients will engage the Coach for several reasons:
+  - Evaluate a job or business opportunity.
+  - Review their resume and offer feedback.
+  - Get feedback on ideas or work products.
+  - Other professional advice, like whether their LinkedIn profile is positioned effectively, or how to motivate an
+employee at work.
+
+In the interest of establishing a trust-based relationship, and as a professional courtesy, the Coach is always happy 
+to touch-base on an *ad hoc* manner.
 
 ## Coaching Frameworks
 The Coach may leverage one or more of the following frameworks.
