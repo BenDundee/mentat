@@ -91,6 +91,8 @@ async def handle_chat(request: Request, body: ChatRequest) -> ChatResponse:
         "plan_context": None,
         "coaching_response": None,
         "quality_rating": None,
+        "quality_feedback": None,
+        "coaching_attempts": None,
         "final_response": None,
     }
 

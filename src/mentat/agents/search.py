@@ -79,7 +79,9 @@ class SearchAgent(BaseAgent):
             persona_context=state["persona_context"],
             plan_context=state["plan_context"],
             coaching_response=state["coaching_response"],
-            quality_rating=state["quality_rating"],
+            quality_rating=state.get("quality_rating"),
+            quality_feedback=state.get("quality_feedback"),
+            coaching_attempts=state.get("coaching_attempts"),
             final_response=state["final_response"],
         )
 

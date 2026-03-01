@@ -34,4 +34,6 @@ class GraphState(TypedDict):
     plan_context: str | None
     coaching_response: str | None
     quality_rating: int | None
+    quality_feedback: str | None
+    coaching_attempts: int | None
     final_response: str | None
