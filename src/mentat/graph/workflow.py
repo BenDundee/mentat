@@ -10,6 +10,7 @@ from mentat.agents.output_testing import OutputTestingAgent
 from mentat.agents.quality import QualityAgent
 from mentat.agents.rag import RAGAgent
 from mentat.agents.search import SearchAgent
+from mentat.agents.session_update import SessionUpdateAgent
 from mentat.core.logging import get_logger
 from mentat.core.vector_store import VectorStoreService
 from mentat.graph.state import GraphState
@@ -99,6 +100,7 @@ def format_response(state: GraphState) -> GraphState:
         quality_feedback=state.get("quality_feedback"),
         coaching_attempts=state.get("coaching_attempts"),
         final_response=response_text,
+        session_state=state.get("session_state"),
     )
 
 
@@ -116,6 +118,7 @@ def build_graph(vector_store: VectorStoreService, debug: bool = False) -> StateG
     context_management_agent = ContextManagementAgent()
     coaching_agent = CoachingAgent()
     quality_agent = QualityAgent()
+    session_update_agent = SessionUpdateAgent()
     final_node_fn = OutputTestingAgent().run if debug else format_response
 
     graph = StateGraph(GraphState)  # pyrefly: ignore[bad-specialization]
@@ -133,6 +136,8 @@ def build_graph(vector_store: VectorStoreService, debug: bool = False) -> StateG
     graph.add_node("quality", quality_agent.run)
     # pyrefly: ignore[no-matching-overload]
     graph.add_node("format_response", final_node_fn)
+    # pyrefly: ignore[no-matching-overload]
+    graph.add_node("session_update", session_update_agent.run)
 
     graph.add_edge(START, "orchestration")
     graph.add_conditional_edges(  # pyrefly: ignore[no-matching-overload]
@@ -147,7 +152,8 @@ def build_graph(vector_store: VectorStoreService, debug: bool = False) -> StateG
         "quality",
         _route_after_quality,
     )
-    graph.add_edge("format_response", END)
+    graph.add_edge("format_response", "session_update")
+    graph.add_edge("session_update", END)
 
     return graph
 

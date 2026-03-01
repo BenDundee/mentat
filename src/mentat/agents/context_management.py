@@ -1,5 +1,6 @@
 """Context Management Agent — ranks and filters context for the Coaching Agent."""
 
+import json
 from typing import cast
 
 from pydantic import BaseModel
@@ -7,6 +8,7 @@ from pydantic import BaseModel
 from mentat.agents.base import BaseAgent
 from mentat.core.models import ContextManagementResult
 from mentat.graph.state import GraphState
+from mentat.session.models import ConversationSession
 
 
 class _ContextBrief(BaseModel):
@@ -76,6 +78,26 @@ class ContextManagementAgent(BaseAgent):
             quality_feedback=state.get("quality_feedback"),
             coaching_attempts=state.get("coaching_attempts"),
             final_response=state["final_response"],
+            session_state=state.get("session_state"),
+        )
+
+    def _format_session_context(self, session: ConversationSession) -> str:
+        """Format session state as a context block for the LLM.
+
+        Args:
+            session: Current conversation session.
+
+        Returns:
+            Formatted string summarising session state and phase guidance.
+        """
+        collected_json = json.dumps(session.collected_data, indent=2, default=str)
+        return (
+            f"SESSION CONTEXT\n"
+            f"Type: {session.conversation_type.value}\n"
+            f"Phase: {session.phase}\n"
+            f"Turn: {session.turn_count + 1}\n"
+            f"Coach scratchpad:\n{session.scratchpad or '(none yet)'}\n"
+            f"Collected data:\n{collected_json}"
         )
 
     def _build_context(self, state: GraphState) -> str:
@@ -105,7 +127,12 @@ class ContextManagementAgent(BaseAgent):
             history_lines.append(f"{role}: {content}")
         history_text = "\n".join(history_lines) if history_lines else "(no history)"
 
-        parts = [f"User message: {state['user_message']}"]
+        session = state.get("session_state")
+        parts = []
+        if session is not None:
+            parts.append(self._format_session_context(session))
+
+        parts.append(f"User message: {state['user_message']}")
 
         if orch:
             parts.append(

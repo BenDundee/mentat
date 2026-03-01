@@ -136,21 +136,32 @@ class TestOutputTestingAgent:
         assert new_state["quality_rating"] == 4
 
 
+def _patch_all_workflow_agents():
+    """Context manager that patches every agent instantiated in build_graph."""
+    from unittest.mock import patch
+
+    patches = [
+        patch("mentat.graph.workflow.OrchestrationAgent"),
+        patch("mentat.graph.workflow.SearchAgent"),
+        patch("mentat.graph.workflow.RAGAgent"),
+        patch("mentat.graph.workflow.ContextManagementAgent"),
+        patch("mentat.graph.workflow.CoachingAgent"),
+        patch("mentat.graph.workflow.QualityAgent"),
+        patch("mentat.graph.workflow.SessionUpdateAgent"),
+    ]
+    return patches
+
+
 def test_build_graph_debug_mode():
     """build_graph(debug=True) should wire OutputTestingAgent as the final node."""
-    from unittest.mock import MagicMock, patch
+    from contextlib import ExitStack
+    from unittest.mock import MagicMock
 
     mock_vs = MagicMock()
-    with (
-        patch("mentat.graph.workflow.OrchestrationAgent") as MockOrch,
-        patch("mentat.graph.workflow.SearchAgent") as MockSearch,
-        patch("mentat.graph.workflow.RAGAgent") as MockRAG,
-        patch("mentat.graph.workflow.ContextManagementAgent") as MockCM,
-    ):
-        MockOrch.return_value.run = MagicMock()
-        MockSearch.return_value.run = MagicMock()
-        MockRAG.return_value.run = MagicMock()
-        MockCM.return_value.run = MagicMock()
+    with ExitStack() as stack:
+        mocks = [stack.enter_context(p) for p in _patch_all_workflow_agents()]
+        for m in mocks:
+            m.return_value.run = MagicMock()
         from mentat.graph.workflow import build_graph
 
         graph = build_graph(vector_store=mock_vs, debug=True)
@@ -160,19 +171,14 @@ def test_build_graph_debug_mode():
 
 def test_build_graph_default_is_not_debug():
     """build_graph() without debug flag should not use OutputTestingAgent."""
-    from unittest.mock import MagicMock, patch
+    from contextlib import ExitStack
+    from unittest.mock import MagicMock
 
     mock_vs = MagicMock()
-    with (
-        patch("mentat.graph.workflow.OrchestrationAgent") as MockOrch,
-        patch("mentat.graph.workflow.SearchAgent") as MockSearch,
-        patch("mentat.graph.workflow.RAGAgent") as MockRAG,
-        patch("mentat.graph.workflow.ContextManagementAgent") as MockCM,
-    ):
-        MockOrch.return_value.run = MagicMock()
-        MockSearch.return_value.run = MagicMock()
-        MockRAG.return_value.run = MagicMock()
-        MockCM.return_value.run = MagicMock()
+    with ExitStack() as stack:
+        mocks = [stack.enter_context(p) for p in _patch_all_workflow_agents()]
+        for m in mocks:
+            m.return_value.run = MagicMock()
         from mentat.graph.workflow import build_graph
 
         graph = build_graph(vector_store=mock_vs, debug=False)

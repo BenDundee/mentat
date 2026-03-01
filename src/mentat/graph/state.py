@@ -11,6 +11,7 @@ from mentat.core.models import (
     RAGAgentResult,
     SearchAgentResult,
 )
+from mentat.session.models import ConversationSession
 
 
 class GraphState(TypedDict):
@@ -37,3 +38,6 @@ class GraphState(TypedDict):
     quality_feedback: str | None
     coaching_attempts: int | None
     final_response: str | None
+
+    # Session state (persists between turns via SessionService)
+    session_state: ConversationSession | None
