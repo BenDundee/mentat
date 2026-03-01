@@ -1,7 +1,7 @@
 """Session Update Agent — evaluates the completed turn and advances session state."""
 
 import json
-from typing import Any, cast
+from typing import cast
 
 from pydantic import BaseModel
 
@@ -10,12 +10,33 @@ from mentat.graph.state import GraphState
 from mentat.session.models import ConversationSession, SessionUpdateResult
 
 
+class _ExtractedData(BaseModel):
+    """Typed extracted-data fields for onboarding.
+
+    All fields are Optional so the LLM only populates what was learned this turn.
+    Using explicit fields (not dict[str, Any]) to satisfy Anthropic's structured
+    output requirement that additionalProperties must be false.
+    """
+
+    role: str | None = None
+    career_trajectory: str | None = None
+    current_fires: str | None = None
+    goals_near_term: list[str] | None = None
+    goals_long_term: list[str] | None = None
+    strengths: list[str] | None = None
+    patterns: list[str] | None = None
+    relationships_generative: list[str] | None = None
+    relationships_draining: list[str] | None = None
+    avoidances: list[str] | None = None
+    coaching_plan_agreed: bool | None = None
+
+
 class _SessionUpdateOutput(BaseModel):
     """Internal schema for structured session update output."""
 
     phase_complete: bool
     updated_scratchpad: str
-    extracted_data: dict[str, Any]
+    extracted_data: _ExtractedData
     reasoning: str
 
 
@@ -53,10 +74,17 @@ class SessionUpdateAgent(BaseAgent):
         context = self._build_context(state, session)
         output = self._call_llm(context)
 
+        # Drop None values so we only merge facts actually learned this turn
+        extracted = {
+            k: v
+            for k, v in output.extracted_data.model_dump().items()
+            if v is not None
+        }
+
         update_result = SessionUpdateResult(
             phase_complete=output.phase_complete,
             updated_scratchpad=output.updated_scratchpad,
-            extracted_data=output.extracted_data,
+            extracted_data=extracted,
             reasoning=output.reasoning,
         )
 

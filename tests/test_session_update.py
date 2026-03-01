@@ -75,12 +75,14 @@ def _make_output(
     extracted_data: dict | None = None,
     reasoning: str = "No change.",
 ):
-    from mentat.agents.session_update import _SessionUpdateOutput
+    from mentat.agents.session_update import _ExtractedData, _SessionUpdateOutput
 
+    # Build _ExtractedData from the dict (only known keys, rest ignored)
+    ed_kwargs = extracted_data or {}
     return _SessionUpdateOutput(
         phase_complete=phase_complete,
         updated_scratchpad=updated_scratchpad,
-        extracted_data=extracted_data or {},
+        extracted_data=_ExtractedData(**ed_kwargs),
         reasoning=reasoning,
     )
 
