@@ -76,6 +76,7 @@ class QualityAgent(BaseAgent):
             quality_feedback=feedback,
             coaching_attempts=state.get("coaching_attempts"),
             final_response=state["final_response"],
+            session_state=state.get("session_state"),
         )
 
     def _build_context(self, state: GraphState) -> str:

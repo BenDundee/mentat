@@ -90,4 +90,5 @@ class OutputTestingAgent:
             quality_feedback=state.get("quality_feedback"),
             coaching_attempts=state.get("coaching_attempts"),
             final_response=response_text,
+            session_state=state.get("session_state"),
         )

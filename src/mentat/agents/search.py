@@ -83,6 +83,7 @@ class SearchAgent(BaseAgent):
             quality_feedback=state.get("quality_feedback"),
             coaching_attempts=state.get("coaching_attempts"),
             final_response=state["final_response"],
+            session_state=state.get("session_state"),
         )
 
     def _generate_queries(self, state: GraphState) -> list[str]:

@@ -11,8 +11,10 @@ from mentat.api.schemas import ChatRequest, ChatResponse, DocumentUploadResponse
 from mentat.core.logging import get_logger
 from mentat.core.vector_store import utc_now_iso
 from mentat.graph.state import GraphState
+from mentat.session.service import SessionService
 
 logger = get_logger(__name__)
+_session_service = SessionService()
 
 router = APIRouter()
 
@@ -80,6 +82,14 @@ async def handle_chat(request: Request, body: ChatRequest) -> ChatResponse:
         {"role": msg.role.value, "content": msg.content} for msg in body.messages
     ]
 
+    # Load or create session state (best-effort — None degrades gracefully)
+    session_state = None
+    if body.session_id:
+        try:
+            session_state = _session_service.load_or_create(body.session_id)
+        except Exception as exc:
+            logger.warning("Failed to load session %s: %s", body.session_id, exc)
+
     initial_state: GraphState = {
         "messages": lc_messages,
         "user_message": user_message,
@@ -94,6 +104,7 @@ async def handle_chat(request: Request, body: ChatRequest) -> ChatResponse:
         "quality_feedback": None,
         "coaching_attempts": None,
         "final_response": None,
+        "session_state": session_state,
     }
 
     try:
@@ -101,6 +112,14 @@ async def handle_chat(request: Request, body: ChatRequest) -> ChatResponse:
     except Exception as exc:
         logger.exception("Graph execution failed: %s", exc)
         raise HTTPException(status_code=500, detail="Agent processing failed") from exc
+
+    # Persist the updated session (best-effort)
+    updated_session = final_state.get("session_state")
+    if updated_session is not None:
+        try:
+            _session_service.save(updated_session)
+        except Exception as exc:
+            logger.warning("Failed to save session %s: %s", body.session_id, exc)
 
     # Store this conversation turn for future RAG retrieval (best-effort)
     try:
