@@ -1,5 +1,7 @@
 """Output Testing Agent — dumps full GraphState to the chat window for debugging."""
 
+import json
+
 from langchain_core.messages import AIMessage
 
 from mentat.core.logging import get_logger
@@ -53,23 +55,76 @@ class OutputTestingAgent:
                 lines.append(f"_Retrieved: {r.retrieved_at}_\n")
             lines.append(f"**Summary:**\n{search.summary}\n")
 
-        # Remaining Phase 2+ string fields
-        string_fields: list[tuple[str, str]] = [
-            ("rag_results", "RAG Results"),
+        # RAG results
+        from mentat.core.models import RAGAgentResult
+
+        rag = state.get("rag_results")
+        if rag is not None:
+            lines.append("## RAG Results")
+            if isinstance(rag, RAGAgentResult):
+                lines.append(f"**Query:** {rag.query}")
+                lines.append(f"**Chunks retrieved:** {len(rag.chunks)}")
+                if rag.summary:
+                    lines.append(f"**Summary:**\n{rag.summary}\n")
+            else:
+                lines.append(f"{rag}\n")
+
+        # Context management result
+        cm = state.get("context_management_result")
+        if cm is not None:
+            lines.append("## Context Management Result")
+            lines.append(f"- **Session phase:** {cm.session_phase}")
+            lines.append(f"- **Tone guidance:** {cm.tone_guidance}")
+            if cm.key_information:
+                lines.append(f"- **Key information:** {cm.key_information}")
+            if cm.conversation_summary:
+                lines.append(f"- **Conversation summary:** {cm.conversation_summary}")
+            lines.append(f"\n**Coaching brief:**\n{cm.coaching_brief}\n")
+
+        # Coaching response + quality
+        coaching_response = state.get("coaching_response")
+        if coaching_response is not None:
+            lines.append(f"## Coaching Response\n{coaching_response}\n")
+
+        quality = state.get("quality_rating")
+        attempts = state.get("coaching_attempts")
+        if quality is not None or attempts is not None:
+            lines.append("## Quality")
+            if quality is not None:
+                lines.append(f"- **Rating:** {quality} / 5")
+            if attempts is not None:
+                lines.append(f"- **Coaching attempts:** {attempts}")
+            feedback = state.get("quality_feedback")
+            if feedback:
+                lines.append(f"- **Feedback:** {feedback}")
+            lines.append("")
+
+        # Final response
+        final = state.get("final_response")
+        if final is not None:
+            lines.append(f"## Final Response\n{final}\n")
+
+        # Session state
+        session = state.get("session_state")
+        if session is not None:
+            collected = json.dumps(session.collected_data, indent=2, default=str)
+            lines.append("## Session State")
+            lines.append(f"- **Type:** {session.conversation_type.value}")
+            lines.append(f"- **Phase:** {session.phase}")
+            lines.append(f"- **Turn:** {session.turn_count}")
+            lines.append(f"- **Session ID:** {session.session_id}")
+            if session.scratchpad:
+                lines.append(f"\n**Scratchpad:**\n{session.scratchpad}")
+            lines.append(f"\n**Collected data:**\n```json\n{collected}\n```\n")
+
+        # Misc context fields
+        for key, label in (
             ("persona_context", "Persona Context"),
             ("plan_context", "Plan Context"),
-            ("coaching_response", "Coaching Response"),
-            ("final_response", "Final Response"),
-        ]
-        for key, label in string_fields:
+        ):
             value = state.get(key)  # type: ignore[literal-required]
             if value is not None:
                 lines.append(f"## {label}\n{value}\n")
-
-        # Quality rating
-        quality = state.get("quality_rating")
-        if quality is not None:
-            lines.append(f"## Quality Rating\n{quality} / 5\n")
 
         # Message history summary
         messages = state.get("messages", [])
