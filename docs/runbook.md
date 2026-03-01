@@ -229,6 +229,15 @@ Your `.env` file is missing or `OPENROUTER_API_KEY` is not set. Check:
 grep OPENROUTER_API_KEY .env
 ```
 
+### Server isn't reachable right after `docker compose up -d`
+
+The sentence-transformer embedding model is downloaded and loaded during startup, which takes 30–90 seconds the first time. The healthcheck has a `start_period: 90s` grace window, but if you curl immediately after `docker compose up -d`, you'll get "Connection refused" while the model is still loading. Wait a moment, then retry:
+
+```bash
+docker compose logs -f mentat   # watch for "Mentat ready."
+curl http://localhost:8000/api/health
+```
+
 ### Docker container exits immediately
 
 ```bash
@@ -238,6 +247,7 @@ docker compose logs mentat   # check the error
 Common causes:
 - `.env` file missing (Docker reads it via `env_file: .env` in compose)
 - Port 8000 already in use — stop the local dev server first, or change the port mapping in `docker-compose.yml`
+- Image built with an old Dockerfile — rebuild with `docker compose build --no-cache`
 
 ### ChromaDB embedding model mismatch
 
