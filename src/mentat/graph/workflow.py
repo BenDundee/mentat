@@ -7,6 +7,7 @@ from mentat.agents.coaching import CoachingAgent
 from mentat.agents.context_management import ContextManagementAgent
 from mentat.agents.orchestration import OrchestrationAgent
 from mentat.agents.output_testing import OutputTestingAgent
+from mentat.agents.quality import QualityAgent
 from mentat.agents.rag import RAGAgent
 from mentat.agents.search import SearchAgent
 from mentat.core.logging import get_logger
@@ -31,6 +32,29 @@ def _route_after_orchestration(state: GraphState) -> list[str]:
     agents = result.suggested_agents
     targets = [a for a in ("search", "rag") if a in agents]
     return targets if targets else ["context_management"]
+
+
+_MAX_COACHING_ATTEMPTS = 3
+
+
+def _route_after_quality(state: GraphState) -> str:
+    """Route back to coaching for a rewrite, or proceed to format_response.
+
+    Returns:
+        ``"coaching"`` when the quality rating is ≤ 3 and the coaching agent
+        has not yet reached the attempt limit. ``"format_response"`` otherwise.
+    """
+    rating = state.get("quality_rating")
+    attempts = state.get("coaching_attempts") or 0
+    if rating is not None and rating <= 3 and attempts < _MAX_COACHING_ATTEMPTS:
+        logger.info(
+            "Quality rating %d ≤ 3 (attempt %d/%d) — routing back to coaching.",
+            rating,
+            attempts,
+            _MAX_COACHING_ATTEMPTS,
+        )
+        return "coaching"
+    return "format_response"
 
 
 def format_response(state: GraphState) -> GraphState:
@@ -71,7 +95,9 @@ def format_response(state: GraphState) -> GraphState:
         persona_context=state["persona_context"],
         plan_context=state["plan_context"],
         coaching_response=state["coaching_response"],
-        quality_rating=state["quality_rating"],
+        quality_rating=state.get("quality_rating"),
+        quality_feedback=state.get("quality_feedback"),
+        coaching_attempts=state.get("coaching_attempts"),
         final_response=response_text,
     )
 
@@ -89,6 +115,7 @@ def build_graph(vector_store: VectorStoreService, debug: bool = False) -> StateG
     rag_agent = RAGAgent(vector_store)
     context_management_agent = ContextManagementAgent()
     coaching_agent = CoachingAgent()
+    quality_agent = QualityAgent()
     final_node_fn = OutputTestingAgent().run if debug else format_response
 
     graph = StateGraph(GraphState)  # pyrefly: ignore[bad-specialization]
@@ -103,6 +130,8 @@ def build_graph(vector_store: VectorStoreService, debug: bool = False) -> StateG
     # pyrefly: ignore[no-matching-overload]
     graph.add_node("coaching", coaching_agent.run)
     # pyrefly: ignore[no-matching-overload]
+    graph.add_node("quality", quality_agent.run)
+    # pyrefly: ignore[no-matching-overload]
     graph.add_node("format_response", final_node_fn)
 
     graph.add_edge(START, "orchestration")
@@ -113,7 +142,11 @@ def build_graph(vector_store: VectorStoreService, debug: bool = False) -> StateG
     graph.add_edge("search", "context_management")
     graph.add_edge("rag", "context_management")
     graph.add_edge("context_management", "coaching")
-    graph.add_edge("coaching", "format_response")
+    graph.add_edge("coaching", "quality")
+    graph.add_conditional_edges(  # pyrefly: ignore[no-matching-overload]
+        "quality",
+        _route_after_quality,
+    )
     graph.add_edge("format_response", END)
 
     return graph

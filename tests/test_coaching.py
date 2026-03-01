@@ -31,6 +31,8 @@ def _make_state(**overrides) -> GraphState:
         "plan_context": None,
         "coaching_response": None,
         "quality_rating": None,
+        "quality_feedback": None,
+        "coaching_attempts": None,
         "final_response": None,
     }
     return GraphState(**{**base, **overrides})
@@ -84,6 +86,51 @@ def test_run_populates_coaching_response():
         new_state["coaching_response"]
         == "What makes delegation feel so difficult right now?"
     )
+
+
+def test_run_increments_coaching_attempts():
+    """run() should increment coaching_attempts on each invocation."""
+    agent = _make_agent_instance()
+
+    fake_llm_response = MagicMock()
+    fake_llm_response.content = "Coaching reply."
+    chain_mock = MagicMock()
+    chain_mock.invoke.return_value = fake_llm_response
+    agent.prompt_template.__or__ = MagicMock(return_value=chain_mock)
+
+    state = _make_state(coaching_attempts=None)
+    new_state = agent.run(state)
+    assert new_state["coaching_attempts"] == 1
+
+    # Simulate second attempt (e.g. after quality rewrite loop)
+    state2 = _make_state(coaching_attempts=1)
+    new_state2 = agent.run(state2)
+    assert new_state2["coaching_attempts"] == 2
+
+
+def test_run_rewrite_includes_feedback_in_prompt():
+    """run() should include quality_feedback in the prompt when set."""
+    agent = _make_agent_instance()
+
+    fake_llm_response = MagicMock()
+    fake_llm_response.content = "Improved coaching reply."
+    chain_mock = MagicMock()
+    chain_mock.invoke.return_value = fake_llm_response
+    agent.prompt_template.__or__ = MagicMock(return_value=chain_mock)
+
+    state = _make_state(
+        coaching_response="Previous poor response.",
+        quality_feedback="Be more specific; ask about a concrete example.",
+        coaching_attempts=1,
+    )
+    agent.run(state)
+
+    # Inspect what was passed to the chain
+    call_args = chain_mock.invoke.call_args
+    prompt_input = call_args[0][0]["user_message"]
+    assert "REWRITE INSTRUCTIONS" in prompt_input
+    assert "Be more specific" in prompt_input
+    assert "Previous poor response." in prompt_input
 
 
 def test_run_preserves_other_state_fields():

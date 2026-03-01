@@ -27,13 +27,20 @@ class CoachingAgent(BaseAgent):
         """Generate the coaching response from the coaching brief.
 
         Args:
-            state: Current graph state after ContextManagementAgent has run.
+            state: Current graph state after ContextManagementAgent has run,
+                or after QualityAgent has requested a rewrite.
 
         Returns:
-            New GraphState with ``coaching_response`` populated.
+            New GraphState with ``coaching_response`` and ``coaching_attempts``
+            populated.
         """
         user_message = state["user_message"]
-        self._logger.info("CoachingAgent running for message: %.80s", user_message)
+        attempts = (state.get("coaching_attempts") or 0) + 1
+        self._logger.info(
+            "CoachingAgent running (attempt %d) for message: %.80s",
+            attempts,
+            user_message,
+        )
 
         prompt_input = self._build_prompt_input(state)
         chain = self.prompt_template | self.llm
@@ -41,7 +48,9 @@ class CoachingAgent(BaseAgent):
         coaching_response: str = cast(str, result.content)
 
         self._logger.debug(
-            "Coaching response generated (%d chars)", len(coaching_response)
+            "Coaching response generated (attempt=%d, chars=%d)",
+            attempts,
+            len(coaching_response),
         )
 
         return GraphState(
@@ -54,7 +63,9 @@ class CoachingAgent(BaseAgent):
             persona_context=state["persona_context"],
             plan_context=state["plan_context"],
             coaching_response=coaching_response,
-            quality_rating=state["quality_rating"],
+            quality_rating=state.get("quality_rating"),
+            quality_feedback=state.get("quality_feedback"),
+            coaching_attempts=attempts,
             final_response=state["final_response"],
         )
 
@@ -99,6 +110,17 @@ class CoachingAgent(BaseAgent):
             )
 
         parts.append(f"Recent conversation:\n{history_text}")
+
+        quality_feedback = state.get("quality_feedback")
+        if quality_feedback:
+            previous_response = state.get("coaching_response") or ""
+            parts.append(
+                f"REWRITE INSTRUCTIONS:\n"
+                f"Your previous response was rated poorly. Previous response:\n"
+                f"{previous_response}\n\n"
+                f"Quality reviewer feedback:\n{quality_feedback}\n\n"
+                f"Please rewrite the response addressing the feedback above."
+            )
 
         return "\n\n".join(parts)
 
