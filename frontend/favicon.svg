@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Rounded background -->
+  <rect width="32" height="32" rx="6" fill="#1a2744"/>
+  <!-- M strokes -->
+  <rect x="5" y="7" width="4" height="19" rx="1" fill="#7eb8f7"/>
+  <rect x="23" y="7" width="4" height="19" rx="1" fill="#7eb8f7"/>
+  <line x1="8" y1="8" x2="16" y2="18" stroke="#7eb8f7" stroke-width="3" stroke-linecap="round"/>
+  <line x1="16" y1="18" x2="24" y2="8" stroke="#7eb8f7" stroke-width="3" stroke-linecap="round"/>
+  <!-- Neural accent dots -->
+  <circle cx="6"  cy="7"  r="2.5" fill="#4a9eff"/>
+  <circle cx="26" cy="7"  r="2.5" fill="#4a9eff"/>
+  <circle cx="16" cy="18" r="2.5" fill="#4a9eff"/>
+  <circle cx="6"  cy="25" r="2.5" fill="#4a9eff"/>
+  <circle cx="26" cy="25" r="2.5" fill="#4a9eff"/>
+</svg>
