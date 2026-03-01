@@ -28,10 +28,12 @@
       <div id="messages" class="messages"></div>
 
       <form id="chat-form" class="chat-form">
+        <input type="file" id="file-input" accept=".pdf,.txt,.docx" style="display:none" />
+        <button type="button" id="attach-btn" class="btn-attach" title="Attach document">&#128206;</button>
         <textarea
           id="message-input"
           class="message-input"
-          placeholder="Message your coach…"
+          placeholder="Message your coach… (Shift+Enter to send)"
           rows="1"
           autofocus
         ></textarea>

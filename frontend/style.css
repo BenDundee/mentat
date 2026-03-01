@@ -130,13 +130,13 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg); }
   border-radius: var(--radius);
   line-height: 1.55;
   font-size: 0.93rem;
-  white-space: pre-wrap;
 }
 
 .message.user .bubble {
   background: var(--user-bubble);
   color: var(--user-text);
   border-bottom-right-radius: 4px;
+  white-space: pre-wrap;
 }
 
 .message.assistant .bubble {
@@ -146,8 +146,28 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg); }
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
-/* Markdown-ish bold inside bubbles */
+/* Markdown rendering in assistant bubbles */
 .bubble strong { font-weight: 700; }
+.bubble em { font-style: italic; }
+.bubble h3 { font-size: 1.05rem; font-weight: 700; margin: 0.75em 0 0.3em; }
+.bubble h4 { font-size: 0.97rem; font-weight: 700; margin: 0.6em 0 0.25em; }
+.bubble ul, .bubble ol { margin: 0.4em 0 0.4em 1.4em; padding: 0; }
+.bubble li { margin-bottom: 0.2em; }
+.bubble code {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  background: rgba(0,0,0,0.06);
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+  font-size: 0.88em;
+}
+.bubble pre {
+  background: #f5f5f4;
+  border-radius: 8px;
+  padding: 12px;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+.bubble pre code { background: none; padding: 0; }
 
 /* Typing indicator */
 .typing-indicator span {
@@ -209,6 +229,32 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg); }
 }
 .btn-send:hover { background: #3a65e8; }
 .btn-send:disabled { background: #bbb; cursor: default; }
+
+.btn-attach {
+  background: transparent;
+  color: #888;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-attach:hover { background: var(--bg); color: #444; }
+
+/* Ephemeral status message bubble shown during SSE streaming */
+.status-message {
+  font-style: italic;
+  color: #999;
+  font-size: 0.85rem;
+  box-shadow: none !important;
+  background: transparent !important;
+}
 
 /* ── Empty state ──────────────────────────────────────────────────── */
 .empty-state {

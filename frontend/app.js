@@ -12,6 +12,7 @@
  */
 
 const API_URL = "/api/chat";
+const STREAM_URL = "/api/chat/stream";
 const STORAGE_KEY = "mentat_state";
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -50,13 +51,90 @@ function titleFromMessage(content) {
   return content.slice(0, 50) + (content.length > 50 ? "…" : "");
 }
 
-/** Minimal markdown → HTML: bold (**text**) only. */
+/** Apply inline markdown: inline code, bold, italic. */
+function applyInline(s) {
+  return s
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, "<em>$1</em>");
+}
+
+/** Full markdown → HTML renderer. Handles headers, lists, code blocks, inline formatting. */
 function renderMarkdown(text) {
-  return text
+  // Escape HTML characters first
+  const escaped = text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    .replace(/>/g, "&gt;");
+
+  const lines = escaped.split("\n");
+  const out = [];
+  let inCode = false;
+  let codeBuf = [];
+  let inUl = false;
+  let inOl = false;
+
+  const closeList = () => {
+    if (inUl) { out.push("</ul>"); inUl = false; }
+    if (inOl) { out.push("</ol>"); inOl = false; }
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Fenced code block toggle
+    if (line.trimStart().startsWith("```")) {
+      if (inCode) {
+        out.push(`<pre><code>${codeBuf.join("\n")}</code></pre>`);
+        codeBuf = [];
+        inCode = false;
+      } else {
+        closeList();
+        inCode = true;
+      }
+      continue;
+    }
+    if (inCode) { codeBuf.push(line); continue; }
+
+    // Headers
+    if (/^### /.test(line)) { closeList(); out.push(`<h4>${applyInline(line.slice(4))}</h4>`); continue; }
+    if (/^## /.test(line))  { closeList(); out.push(`<h3>${applyInline(line.slice(3))}</h3>`); continue; }
+    if (/^# /.test(line))   { closeList(); out.push(`<h3>${applyInline(line.slice(2))}</h3>`); continue; }
+
+    // Unordered list item
+    const ulM = line.match(/^[*-] (.+)/);
+    if (ulM) {
+      if (inOl) { out.push("</ol>"); inOl = false; }
+      if (!inUl) { out.push("<ul>"); inUl = true; }
+      out.push(`<li>${applyInline(ulM[1])}</li>`);
+      continue;
+    }
+
+    // Ordered list item
+    const olM = line.match(/^\d+\. (.+)/);
+    if (olM) {
+      if (inUl) { out.push("</ul>"); inUl = false; }
+      if (!inOl) { out.push("<ol>"); inOl = true; }
+      out.push(`<li>${applyInline(olM[1])}</li>`);
+      continue;
+    }
+
+    // Blank line → paragraph break
+    if (line.trim() === "") {
+      closeList();
+      if (i < lines.length - 1) out.push("<br>");
+      continue;
+    }
+
+    // Regular text line
+    closeList();
+    out.push(applyInline(line));
+  }
+
+  closeList();
+  if (inCode) out.push(`<pre><code>${codeBuf.join("\n")}</code></pre>`);
+
+  return out.join("\n");
 }
 
 // ── Render ─────────────────────────────────────────────────────────────────
@@ -109,7 +187,13 @@ function createMessageEl(role, content) {
 
   const bubble = document.createElement("div");
   bubble.className = "bubble";
-  bubble.innerHTML = renderMarkdown(content);
+
+  if (role === "assistant") {
+    bubble.innerHTML = renderMarkdown(content);
+  } else {
+    // User messages: preserve text as-is (CSS handles pre-wrap)
+    bubble.textContent = content;
+  }
 
   wrapper.appendChild(bubble);
   return wrapper;
@@ -133,6 +217,58 @@ function showTypingIndicator() {
 function removeTypingIndicator() {
   const el = document.getElementById("typing-indicator");
   if (el) el.remove();
+}
+
+// ── Status message (SSE ephemeral bubble) ─────────────────────────────────
+
+function showStatusMessage(text) {
+  const container = document.getElementById("messages");
+  const wrapper = document.createElement("div");
+  wrapper.className = "message assistant";
+  wrapper.id = "status-msg";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble status-message";
+  bubble.textContent = text;
+
+  wrapper.appendChild(bubble);
+  container.appendChild(wrapper);
+  container.scrollTop = container.scrollHeight;
+}
+
+function updateStatusMessage(text) {
+  const el = document.getElementById("status-msg");
+  if (el) el.querySelector(".bubble").textContent = text;
+}
+
+function removeStatusMessage() {
+  const el = document.getElementById("status-msg");
+  if (el) el.remove();
+}
+
+// ── SSE parsing ────────────────────────────────────────────────────────────
+
+/**
+ * Parse complete SSE events from a buffer.
+ * Returns { parsed: Event[], remainder: string } where remainder is any
+ * incomplete trailing data that hasn't yet formed a full event.
+ */
+function parseSSEBuffer(buffer) {
+  const parsed = [];
+  const chunks = buffer.split("\n\n");
+  // The last element may be an incomplete event; keep it as the remainder
+  const complete = chunks.slice(0, -1);
+  const remainder = chunks[chunks.length - 1];
+
+  for (const chunk of complete) {
+    const line = chunk.trim();
+    if (!line.startsWith("data: ")) continue;
+    try {
+      parsed.push(JSON.parse(line.slice(6)));
+    } catch (_) { /* ignore malformed JSON */ }
+  }
+
+  return { parsed, remainder };
 }
 
 // ── Actions ────────────────────────────────────────────────────────────────
@@ -171,9 +307,9 @@ async function sendMessage(content) {
 
   const convId = conv.id;
 
-  // Optimistically add user message
+  // Optimistically add user message and show status bubble
   appendMessage(convId, "user", content);
-  showTypingIndicator();
+  showStatusMessage("Connecting\u2026");
   setSendDisabled(true);
 
   const messages = activeConversation().messages.map((m) => ({
@@ -182,7 +318,7 @@ async function sendMessage(content) {
   }));
 
   try {
-    const response = await fetch(API_URL, {
+    const response = await fetch(STREAM_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messages, session_id: convId }),
@@ -193,15 +329,62 @@ async function sendMessage(content) {
       throw new Error(err.detail || `HTTP ${response.status}`);
     }
 
-    const data = await response.json();
-    removeTypingIndicator();
-    appendMessage(convId, "assistant", data.reply);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const { parsed, remainder } = parseSSEBuffer(buffer);
+      buffer = remainder;
+      for (const event of parsed) {
+        if (event.type === "status") updateStatusMessage(event.message);
+        if (event.type === "reply") {
+          removeStatusMessage();
+          appendMessage(convId, "assistant", event.content);
+        }
+      }
+    }
   } catch (err) {
-    removeTypingIndicator();
+    removeStatusMessage();
     appendMessage(convId, "assistant", `Error: ${err.message}`);
   } finally {
     setSendDisabled(false);
     document.getElementById("message-input").focus();
+  }
+}
+
+async function uploadDocument(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const response = await fetch("/api/documents/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const conv = activeConversation();
+    if (conv) {
+      appendMessage(
+        conv.id,
+        "assistant",
+        `\uD83D\uDCC4 Uploaded: ${data.filename} (${data.chunks_stored} chunks stored)`,
+      );
+    }
+  } catch (err) {
+    const conv = activeConversation();
+    if (conv) {
+      appendMessage(conv.id, "assistant", `Error uploading file: ${err.message}`);
+    }
   }
 }
 
@@ -222,16 +405,29 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("chat-form");
   const input = document.getElementById("message-input");
   const newChatBtn = document.getElementById("new-chat-btn");
+  const attachBtn = document.getElementById("attach-btn");
+  const fileInput = document.getElementById("file-input");
 
   newChatBtn.addEventListener("click", newConversation);
 
   input.addEventListener("input", () => autoResize(input));
 
+  // Shift+Enter submits; plain Enter inserts a newline
   input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && e.shiftKey) {
       e.preventDefault();
       form.requestSubmit();
     }
+  });
+
+  attachBtn.addEventListener("click", () => fileInput.click());
+
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    if (!activeConversation()) newConversation();
+    uploadDocument(file);
+    fileInput.value = ""; // reset so the same file can be re-uploaded
   });
 
   form.addEventListener("submit", (e) => {
