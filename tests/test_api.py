@@ -8,7 +8,7 @@ async def test_health_check(async_client):
     """GET /api/health should return 200 ok."""
     response = await async_client.get("/api/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json() == {"status": "ok", "version": "0.1.0"}
 
 
 @pytest.mark.anyio

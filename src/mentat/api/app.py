@@ -1,6 +1,5 @@
 """FastAPI application factory."""
 
-import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -11,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from mentat.api.routes import router
 from mentat.core.logging import get_logger, setup_logging
+from mentat.core.settings import settings
 from mentat.graph.workflow import compile_graph
 
 load_dotenv()
@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from mentat.core.config import load_agent_config
     from mentat.core.vector_store import VectorStoreService
 
-    debug = os.environ.get("MENTAT_DEBUG", "").lower() in ("1", "true", "yes")
+    debug = settings.mentat_debug
     if debug:
         logger.info("Starting Mentat — debug mode (Output Testing Agent active)...")
     else:

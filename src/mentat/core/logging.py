@@ -1,7 +1,6 @@
 """Logging configuration for Mentat."""
 
 import logging
-import os
 from pathlib import Path
 
 LOG_DIR = Path("log")
@@ -18,7 +17,9 @@ def setup_logging() -> None:
 
     LOG_DIR.mkdir(exist_ok=True)
 
-    level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
+    from mentat.core.settings import settings
+
+    level_name = settings.log_level.upper()
     level = getattr(logging, level_name, logging.INFO)
 
     fmt = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"

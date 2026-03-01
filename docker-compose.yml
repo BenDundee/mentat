@@ -1,0 +1,24 @@
+services:
+  mentat:
+    build: .
+    image: mentat:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - mentat_data:/app/data
+      - mentat_logs:/app/log
+    env_file: .env
+    environment:
+      - DATA_DIR=/app/data
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  mentat_data:
+  mentat_logs:
