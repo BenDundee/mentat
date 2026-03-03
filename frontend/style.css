@@ -105,7 +105,35 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg); }
   font-weight: 600;
   font-size: 0.95rem;
   color: #555;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
+
+.think-toggle {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: #aaa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  user-select: none;
+}
+
+.think-block {
+  display: none;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: #f0f4ff;
+  border-left: 3px solid #4f7cff;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #555;
+  max-width: 100%;
+}
+
+body.show-think .think-block { display: block; }
 
 /* ── Messages ─────────────────────────────────────────────────────── */
 .messages {
@@ -229,6 +257,23 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg); }
 }
 .btn-send:hover { background: #3a65e8; }
 .btn-send:disabled { background: #bbb; cursor: default; }
+
+.btn-stop {
+  background: #e53e3e;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  font-size: 1rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.btn-stop:hover { background: #c53030; }
 
 .btn-attach {
   background: transparent;

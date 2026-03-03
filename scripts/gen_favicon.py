@@ -5,15 +5,16 @@ import zlib
 from pathlib import Path
 
 # --- colour palette -----------------------------------------------------------
-BG = (26, 39, 68, 255)        # dark navy  #1a2744
+BG = (26, 39, 68, 255)  # dark navy  #1a2744
 STROKE = (126, 184, 247, 255)  # light blue #7eb8f7
-DOT = (74, 158, 255, 255)      # accent     #4a9eff
-TR = (0, 0, 0, 0)              # transparent (rounded corners)
+DOT = (74, 158, 255, 255)  # accent     #4a9eff
+TR = (0, 0, 0, 0)  # transparent (rounded corners)
 
 W = H = 32
 
 
 # --- pixel canvas -------------------------------------------------------------
+
 
 def make_canvas() -> list[list[tuple[int, int, int, int]]]:
     return [[BG] * W for _ in range(H)]
@@ -78,21 +79,37 @@ def draw_dot(
                 set_px(canvas, cx + tx, cy + ty, color)
 
 
-def round_corners(
-    canvas: list[list[tuple[int, int, int, int]]], radius: int
-) -> None:
+def round_corners(canvas: list[list[tuple[int, int, int, int]]], radius: int) -> None:
     """Trim square corners to simulate a rounded-rect background."""
     for y in range(H):
         for x in range(W):
-            in_tl = x < radius and y < radius and (x - radius) ** 2 + (y - radius) ** 2 > radius**2
-            in_tr = x >= W - radius and y < radius and (x - (W - 1 - radius)) ** 2 + (y - radius) ** 2 > radius**2
-            in_bl = x < radius and y >= H - radius and (x - radius) ** 2 + (y - (H - 1 - radius)) ** 2 > radius**2
-            in_br = x >= W - radius and y >= H - radius and (x - (W - 1 - radius)) ** 2 + (y - (H - 1 - radius)) ** 2 > radius**2
+            in_tl = (
+                x < radius
+                and y < radius
+                and (x - radius) ** 2 + (y - radius) ** 2 > radius**2
+            )
+            in_tr = (
+                x >= W - radius
+                and y < radius
+                and (x - (W - 1 - radius)) ** 2 + (y - radius) ** 2 > radius**2
+            )
+            in_bl = (
+                x < radius
+                and y >= H - radius
+                and (x - radius) ** 2 + (y - (H - 1 - radius)) ** 2 > radius**2
+            )
+            in_br = (
+                x >= W - radius
+                and y >= H - radius
+                and (x - (W - 1 - radius)) ** 2 + (y - (H - 1 - radius)) ** 2
+                > radius**2
+            )
             if in_tl or in_tr or in_bl or in_br:
                 canvas[y][x] = TR
 
 
 # --- draw the Mentat "M" ------------------------------------------------------
+
 
 def draw_m(canvas: list[list[tuple[int, int, int, int]]]) -> None:
     """Neural-node M: two verticals + two diagonals + accent dots."""
@@ -113,6 +130,7 @@ def draw_m(canvas: list[list[tuple[int, int, int, int]]]) -> None:
 
 # --- PNG encoder (stdlib only) ------------------------------------------------
 
+
 def _chunk(tag: bytes, data: bytes) -> bytes:
     c = struct.pack(">I", len(data)) + tag + data
     return c + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
@@ -123,15 +141,14 @@ def canvas_to_png(canvas: list[list[tuple[int, int, int, int]]]) -> bytes:
     ihdr = _chunk(b"IHDR", struct.pack(">IIBBBBB", W, H, 8, 6, 0, 0, 0))
 
     # Scanlines: filter byte 0 + RGBA pixels
-    raw = b"".join(
-        b"\x00" + b"".join(bytes(px) for px in row) for row in canvas
-    )
+    raw = b"".join(b"\x00" + b"".join(bytes(px) for px in row) for row in canvas)
     idat = _chunk(b"IDAT", zlib.compress(raw, 9))
     iend = _chunk(b"IEND", b"")
     return sig + ihdr + idat + iend
 
 
 # --- ICO wrapper --------------------------------------------------------------
+
 
 def png_to_ico(png: bytes) -> bytes:
     """Wrap a single PNG image in a minimal ICO container."""
@@ -142,12 +159,12 @@ def png_to_ico(png: bytes) -> bytes:
     img_offset = 6 + 16  # header + one dir entry
     dir_entry = struct.pack(
         "<BBBBHHII",
-        W,          # width  (0 = 256 for W≥256; 32 is fine as-is)
-        H,          # height
-        0,          # colour count  (0 = no palette)
-        0,          # reserved
-        1,          # colour planes
-        32,         # bits per pixel
+        W,  # width  (0 = 256 for W≥256; 32 is fine as-is)
+        H,  # height
+        0,  # colour count  (0 = no palette)
+        0,  # reserved
+        1,  # colour planes
+        32,  # bits per pixel
         img_size,
         img_offset,
     )
@@ -155,6 +172,7 @@ def png_to_ico(png: bytes) -> bytes:
 
 
 # --- main ---------------------------------------------------------------------
+
 
 def main() -> None:
     canvas = make_canvas()
