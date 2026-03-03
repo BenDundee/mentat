@@ -3,7 +3,7 @@
  *
  * State shape:
  *   {
- *     conversations: [{ id, title, messages: [{role, content}] }],
+ *     conversations: [{ id, title, messages: [{role, content, think?: string}] }],
  *     activeConversationId: string | null
  *   }
  *
@@ -14,6 +14,8 @@
 const API_URL = "/api/chat";
 const STREAM_URL = "/api/chat/stream";
 const STORAGE_KEY = "mentat_state";
+
+let currentAbortController = null;
 
 // ── State ──────────────────────────────────────────────────────────────────
 
@@ -175,13 +177,13 @@ function renderMessages() {
 
   container.innerHTML = "";
   conv.messages.forEach((msg) => {
-    container.appendChild(createMessageEl(msg.role, msg.content));
+    container.appendChild(createMessageEl(msg.role, msg.content, msg.think));
   });
 
   container.scrollTop = container.scrollHeight;
 }
 
-function createMessageEl(role, content) {
+function createMessageEl(role, content, think = null) {
   const wrapper = document.createElement("div");
   wrapper.className = `message ${role}`;
 
@@ -196,6 +198,14 @@ function createMessageEl(role, content) {
   }
 
   wrapper.appendChild(bubble);
+
+  if (think) {
+    const thinkBlock = document.createElement("div");
+    thinkBlock.className = "think-block";
+    thinkBlock.innerHTML = renderMarkdown(think);
+    wrapper.appendChild(thinkBlock);
+  }
+
   return wrapper;
 }
 
@@ -287,12 +297,12 @@ function selectConversation(id) {
   setState((s) => ({ ...s, activeConversationId: id }));
 }
 
-function appendMessage(convId, role, content) {
+function appendMessage(convId, role, content, think = null) {
   setState((s) => ({
     ...s,
     conversations: s.conversations.map((c) => {
       if (c.id !== convId) return c;
-      const messages = [...c.messages, { role, content }];
+      const messages = [...c.messages, { role, content, think }];
       const title = c.title || titleFromMessage(c.messages[0]?.content || content);
       return { ...c, messages, title };
     }),
@@ -310,18 +320,22 @@ async function sendMessage(content) {
   // Optimistically add user message and show status bubble
   appendMessage(convId, "user", content);
   showStatusMessage("Connecting\u2026");
-  setSendDisabled(true);
+  setStreaming(true);
 
   const messages = activeConversation().messages.map((m) => ({
     role: m.role,
     content: m.content,
   }));
 
+  currentAbortController = new AbortController();
+  let aborted = false;
+
   try {
     const response = await fetch(STREAM_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messages, session_id: convId }),
+      signal: currentAbortController.signal,
     });
 
     if (!response.ok) {
@@ -332,6 +346,7 @@ async function sendMessage(content) {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
+    let thinkContent = null;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -341,17 +356,25 @@ async function sendMessage(content) {
       buffer = remainder;
       for (const event of parsed) {
         if (event.type === "status") updateStatusMessage(event.message);
+        if (event.type === "think") thinkContent = event.content;
         if (event.type === "reply") {
           removeStatusMessage();
-          appendMessage(convId, "assistant", event.content);
+          appendMessage(convId, "assistant", event.content, thinkContent);
         }
       }
     }
   } catch (err) {
-    removeStatusMessage();
-    appendMessage(convId, "assistant", `Error: ${err.message}`);
+    if (err.name === "AbortError") {
+      aborted = true;
+      removeStatusMessage();
+      removeLastMessage(convId);
+    } else {
+      removeStatusMessage();
+      appendMessage(convId, "assistant", `Error: ${err.message}`);
+    }
   } finally {
-    setSendDisabled(false);
+    currentAbortController = null;
+    setStreaming(false, aborted ? content : null);
     document.getElementById("message-input").focus();
   }
 }
@@ -394,6 +417,38 @@ function setSendDisabled(disabled) {
   document.getElementById("send-btn").disabled = disabled;
 }
 
+/**
+ * Toggle streaming mode: show stop button / hide send button, or vice versa.
+ * @param {boolean} active - true when streaming is in progress
+ * @param {string|null} restoreContent - if provided, restore this text to the input
+ */
+function setStreaming(active, restoreContent = null) {
+  const sendBtn = document.getElementById("send-btn");
+  const stopBtn = document.getElementById("stop-btn");
+  if (active) {
+    sendBtn.style.display = "none";
+    stopBtn.style.display = "flex";
+  } else {
+    stopBtn.style.display = "none";
+    sendBtn.style.display = "flex";
+    if (restoreContent !== null) {
+      const input = document.getElementById("message-input");
+      input.value = restoreContent;
+      autoResize(input);
+    }
+  }
+}
+
+function removeLastMessage(convId) {
+  setState((s) => ({
+    ...s,
+    conversations: s.conversations.map((c) => {
+      if (c.id !== convId) return c;
+      return { ...c, messages: c.messages.slice(0, -1) };
+    }),
+  }));
+}
+
 function autoResize(textarea) {
   textarea.style.height = "auto";
   textarea.style.height = Math.min(textarea.scrollHeight, 180) + "px";
@@ -407,14 +462,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const newChatBtn = document.getElementById("new-chat-btn");
   const attachBtn = document.getElementById("attach-btn");
   const fileInput = document.getElementById("file-input");
+  const stopBtn = document.getElementById("stop-btn");
 
   newChatBtn.addEventListener("click", newConversation);
 
+  stopBtn.addEventListener("click", () => {
+    if (currentAbortController) {
+      currentAbortController.abort();
+    }
+  });
+
   input.addEventListener("input", () => autoResize(input));
 
-  // Shift+Enter submits; plain Enter inserts a newline
+  // Enter submits; Shift+Enter inserts a newline
   input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       form.requestSubmit();
     }
@@ -441,6 +503,11 @@ document.addEventListener("DOMContentLoaded", () => {
     input.value = "";
     autoResize(input);
     sendMessage(content);
+  });
+
+  const thinkToggleCb = document.getElementById("think-toggle-cb");
+  thinkToggleCb.addEventListener("change", (e) => {
+    document.body.classList.toggle("show-think", e.target.checked);
   });
 
   render();

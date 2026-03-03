@@ -42,6 +42,30 @@ def _sanitize_filename(name: str) -> str:
     return re.sub(r"[^\w.\-]", "_", name)
 
 
+def _build_think_content(state: dict) -> str | None:  # type: ignore[type-arg]
+    """Build a markdown summary of coaching_brief and session_state for think blocks."""
+    parts: list[str] = []
+
+    cm = state.get("context_management_result")
+    if cm is not None:
+        parts.append(f"## Coaching Brief\n{cm.coaching_brief}")
+        parts.append(f"**Phase:** {cm.session_phase}  |  **Tone:** {cm.tone_guidance}")
+        if cm.key_information:
+            parts.append(f"**Key Information:**\n{cm.key_information}")
+
+    session = state.get("session_state")
+    if session is not None:
+        parts.append(
+            f"## Session State\n"
+            f"**Type:** {session.conversation_type}  |  "
+            f"**Phase:** {session.phase}  |  **Turn:** {session.turn_count}"
+        )
+        if session.scratchpad:
+            parts.append(f"**Scratchpad:**\n{session.scratchpad}")
+
+    return "\n\n".join(parts) if parts else None
+
+
 def _extract_text(raw_bytes: bytes, suffix: str) -> str:
     """Extract plain text from file bytes based on file extension.
 
@@ -273,6 +297,12 @@ async def handle_chat_stream(request: Request, body: ChatRequest) -> StreamingRe
                     )
             except Exception as exc:
                 logger.warning("Failed to store conversation turn: %s", exc)
+
+        if final_state is not None:
+            think_content = _build_think_content(final_state)
+            if think_content:
+                payload = json.dumps({"type": "think", "content": think_content})
+                yield f"data: {payload}\n\n"
 
         reply = (
             final_state.get("final_response") if final_state else None

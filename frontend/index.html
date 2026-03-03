@@ -23,6 +23,9 @@
     <main class="chat-panel">
       <header class="chat-header">
         <span id="chat-title">New Conversation</span>
+        <label class="think-toggle" title="Show internal reasoning">
+          <input type="checkbox" id="think-toggle-cb"> Show thinking
+        </label>
       </header>
 
       <div id="messages" class="messages"></div>
@@ -33,13 +36,14 @@
         <textarea
           id="message-input"
           class="message-input"
-          placeholder="Message your coach… (Shift+Enter to send)"
+          placeholder="Message your coach… (Shift+Enter for new line)"
           rows="1"
           autofocus
         ></textarea>
         <button type="submit" id="send-btn" class="btn-send" title="Send">
           &#9658;
         </button>
+        <button type="button" id="stop-btn" class="btn-stop" title="Stop" style="display:none">&#9632;</button>
       </form>
     </main>
   </div>
