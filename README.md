@@ -9,9 +9,7 @@
 
 The best executive coaches charge over $1,000 an hour. Mentat is a $10/month chatbot that does the same thing — not because it cuts corners, but because it's built around the same principles that make great coaching great: deep listening, long-term memory, and a relentless focus on the client's growth.
 
-Mentat looks like a familiar chatbot. Under the hood, it's a team of specialized AI agents working in concert to build context, ensure quality, and deliver personalized coaching that compounds over time.
-
-The fact that agents can improve conversation has been proven (see https://microsoft.ai/news/the-path-to-medical-superintelligence/, or Claude Code, for example). The future of better conversational AI is clearly in orchestration and collaboration. Mentat is designed around proven coaching techniques, leveraging an agentic back end to:
+Mentat looks like a familiar chatbot. Under the hood, it's a team of specialized AI agents working in concert to build context, ensure quality, and deliver personalized coaching that compounds over time. The fact that agents can improve conversation has been proven (see https://microsoft.ai/news/the-path-to-medical-superintelligence/, or Claude Code, for example). The future of better conversational AI is clearly in orchestration and collaboration. Mentat is designed around proven coaching techniques, leveraging an agentic back end to:
   - Build a personal relationship with its clients,
   - Understand short-, mid-, and long-term goals,
   - Identify patterns in behavior over time,
