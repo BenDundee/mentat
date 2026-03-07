@@ -2,6 +2,7 @@ provider: openrouter
 model: anthropic/claude-sonnet-4-6
 llm_params:
   temperature: 0.3
+  top_p: 1.0
   max_tokens: 1024
 extra_config:
   recent_message_count: 10

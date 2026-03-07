@@ -1,57 +1,20 @@
 """Tests for the Context Management Agent."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
+from helpers import make_cm_result, make_state
 from pydantic import ValidationError
 
 from mentat.core.models import (
-    ContextManagementResult,
     Intent,
     OrchestrationResult,
     RAGAgentResult,
     SearchAgentResult,
     SearchResult,
 )
-from mentat.graph.state import GraphState
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _make_state(**overrides) -> GraphState:
-    base: GraphState = {
-        "messages": [],
-        "user_message": "I'm struggling to delegate work to my team.",
-        "orchestration_result": OrchestrationResult(
-            intent=Intent.COACHING_SESSION,
-            confidence=0.9,
-            reasoning="User wants structured coaching guidance.",
-            suggested_agents=(),
-        ),
-        "search_results": None,
-        "rag_results": None,
-        "context_management_result": None,
-        "persona_context": None,
-        "plan_context": None,
-        "coaching_response": None,
-        "quality_rating": None,
-        "final_response": None,
-    }
-    return GraphState(**{**base, **overrides})
-
-
-def _make_cm_result(**overrides) -> ContextManagementResult:
-    defaults = {
-        "coaching_brief": "Acknowledge difficulty, then explore delegation blockers.",
-        "session_phase": "exploration",
-        "tone_guidance": "Warm and Socratic — ask before advising.",
-        "key_information": "User leads a team of 5 engineers.",
-        "conversation_summary": "User is working on leadership skills.",
-    }
-    return ContextManagementResult(**{**defaults, **overrides})
-
+_USER_MESSAGE = "I'm struggling to delegate work to my team."
 
 # ---------------------------------------------------------------------------
 # Model tests
@@ -60,14 +23,14 @@ def _make_cm_result(**overrides) -> ContextManagementResult:
 
 def test_context_management_result_frozen():
     """ContextManagementResult is frozen — mutation raises ValidationError."""
-    result = _make_cm_result()
+    result = make_cm_result()
     with pytest.raises((ValidationError, TypeError)):
         result.coaching_brief = "mutated"  # type: ignore[misc]
 
 
 def test_context_management_result_fields():
     """ContextManagementResult stores all required fields."""
-    result = _make_cm_result()
+    result = make_cm_result()
     assert result.session_phase == "exploration"
     assert result.tone_guidance == "Warm and Socratic — ask before advising."
     assert "delegation" in result.coaching_brief
@@ -80,46 +43,47 @@ def test_context_management_result_fields():
 # ---------------------------------------------------------------------------
 
 
-def _make_agent_instance():  # type: ignore[return]
-    """Create a ContextManagementAgent bypassing __init__ for unit tests."""
+def test_build_context_includes_user_message(make_agent):
+    """_build_context should include the user message."""
     from mentat.agents.context_management import ContextManagementAgent
 
-    with patch("mentat.agents.context_management.BaseAgent.__init__"):
-        agent = object.__new__(ContextManagementAgent)
-        agent._logger = MagicMock()
-        agent._recent_message_count = 10
-        agent.llm = MagicMock()
-        agent.prompt_template = MagicMock()
-    return agent
-
-
-def test_build_context_includes_user_message():
-    """_build_context should include the user message."""
-    agent = _make_agent_instance()
-    state = _make_state()
+    agent = make_agent(ContextManagementAgent, _recent_message_count=10)
+    state = make_state(user_message=_USER_MESSAGE)
     ctx = agent._build_context(state)
     assert "struggling to delegate" in ctx
 
 
-def test_build_context_includes_intent():
+def test_build_context_includes_intent(make_agent):
     """_build_context should include the orchestration intent."""
-    agent = _make_agent_instance()
-    state = _make_state()
+    from mentat.agents.context_management import ContextManagementAgent
+
+    orch = OrchestrationResult(
+        intent=Intent.COACHING_SESSION,
+        confidence=0.9,
+        reasoning="User wants structured coaching guidance.",
+        suggested_agents=(),
+    )
+    agent = make_agent(ContextManagementAgent, _recent_message_count=10)
+    state = make_state(orchestration_result=orch)
     ctx = agent._build_context(state)
     assert "coaching-session" in ctx
 
 
-def test_build_context_no_search_fallback():
+def test_build_context_no_search_fallback(make_agent):
     """_build_context should note absence of search results."""
-    agent = _make_agent_instance()
-    state = _make_state(search_results=None)
+    from mentat.agents.context_management import ContextManagementAgent
+
+    agent = make_agent(ContextManagementAgent, _recent_message_count=10)
+    state = make_state(search_results=None)
     ctx = agent._build_context(state)
     assert "Search Agent: no results" in ctx
 
 
-def test_build_context_includes_search_summary():
+def test_build_context_includes_search_summary(make_agent):
     """_build_context should include search summary when available."""
-    agent = _make_agent_instance()
+    from mentat.agents.context_management import ContextManagementAgent
+
+    agent = make_agent(ContextManagementAgent, _recent_message_count=10)
     search = SearchAgentResult(
         queries=("delegation strategies",),
         results=(
@@ -132,39 +96,44 @@ def test_build_context_includes_search_summary():
         ),
         summary="Effective delegation requires clear expectations and trust.",
     )
-    state = _make_state(search_results=search)
+    state = make_state(search_results=search)
     ctx = agent._build_context(state)
     assert "clear expectations and trust" in ctx
 
 
-def test_build_context_includes_rag_summary():
+def test_build_context_includes_rag_summary(make_agent):
     """_build_context should include RAG summary when available."""
-    agent = _make_agent_instance()
+    from mentat.agents.context_management import ContextManagementAgent
+
+    agent = make_agent(ContextManagementAgent, _recent_message_count=10)
     rag = RAGAgentResult(
         query="delegation team management",
         summary="User previously discussed wanting to empower their team.",
     )
-    state = _make_state(rag_results=rag)
+    state = make_state(rag_results=rag)
     ctx = agent._build_context(state)
     assert "empower their team" in ctx
 
 
-def test_build_context_no_rag_fallback():
+def test_build_context_no_rag_fallback(make_agent):
     """_build_context should note absence of RAG results."""
-    agent = _make_agent_instance()
-    state = _make_state(rag_results=None)
+    from mentat.agents.context_management import ContextManagementAgent
+
+    agent = make_agent(ContextManagementAgent, _recent_message_count=10)
+    state = make_state(rag_results=None)
     ctx = agent._build_context(state)
     assert "RAG Agent: no results" in ctx
 
 
-def test_build_context_truncates_messages():
+def test_build_context_truncates_messages(make_agent):
     """_build_context should include at most recent_message_count messages."""
     from langchain_core.messages import HumanMessage
 
-    agent = _make_agent_instance()
-    agent._recent_message_count = 2
+    from mentat.agents.context_management import ContextManagementAgent
+
+    agent = make_agent(ContextManagementAgent, _recent_message_count=2)
     messages = [HumanMessage(content=f"msg {i}") for i in range(10)]
-    state = _make_state(messages=messages)
+    state = make_state(messages=messages)
     ctx = agent._build_context(state)
     # Only the last 2 messages should appear
     assert "msg 8" in ctx
@@ -177,7 +146,7 @@ def test_build_context_truncates_messages():
 # ---------------------------------------------------------------------------
 
 
-def test_run_populates_context_management_result():
+def test_run_populates_context_management_result(make_agent):
     """run() should populate context_management_result in the returned state."""
     from mentat.agents.context_management import ContextManagementAgent, _ContextBrief
 
@@ -189,18 +158,16 @@ def test_run_populates_context_management_result():
         coaching_brief="Ask about specific delegation examples.",
     )
 
-    with patch("mentat.agents.context_management.BaseAgent.__init__"):
-        agent = object.__new__(ContextManagementAgent)
-        agent._logger = MagicMock()
-        agent._recent_message_count = 10
-        agent.llm = MagicMock()
-        agent.prompt_template = MagicMock()
+    agent = make_agent(
+        ContextManagementAgent,
+        _recent_message_count=10,
+        llm=MagicMock(),
+        prompt_template=MagicMock(),
+    )
+    agent._call_llm = MagicMock(return_value=fake_brief)
 
-        # Patch _call_llm to return fake_brief directly
-        agent._call_llm = MagicMock(return_value=fake_brief)
-
-        state = _make_state()
-        new_state = agent.run(state)
+    state = make_state()
+    new_state = agent.run(state)
 
     assert new_state["context_management_result"] is not None
     cm = new_state["context_management_result"]
@@ -209,7 +176,7 @@ def test_run_populates_context_management_result():
     assert cm.tone_guidance == "Socratic"
 
 
-def test_run_preserves_other_state_fields():
+def test_run_preserves_other_state_fields(make_agent):
     """run() should pass through other state fields unchanged."""
     from mentat.agents.context_management import ContextManagementAgent, _ContextBrief
 
@@ -221,21 +188,21 @@ def test_run_preserves_other_state_fields():
         coaching_brief="Set a concrete next step.",
     )
 
-    with patch("mentat.agents.context_management.BaseAgent.__init__"):
-        agent = object.__new__(ContextManagementAgent)
-        agent._logger = MagicMock()
-        agent._recent_message_count = 10
-        agent.llm = MagicMock()
-        agent.prompt_template = MagicMock()
-        agent._call_llm = MagicMock(return_value=fake_brief)
+    agent = make_agent(
+        ContextManagementAgent,
+        _recent_message_count=10,
+        llm=MagicMock(),
+        prompt_template=MagicMock(),
+    )
+    agent._call_llm = MagicMock(return_value=fake_brief)
 
-        orch = OrchestrationResult(
-            intent=Intent.COACHING_SESSION,
-            confidence=0.85,
-            reasoning="Wants action plan.",
-        )
-        state = _make_state(orchestration_result=orch, final_response="previous")
-        new_state = agent.run(state)
+    orch = OrchestrationResult(
+        intent=Intent.COACHING_SESSION,
+        confidence=0.85,
+        reasoning="Wants action plan.",
+    )
+    state = make_state(orchestration_result=orch, final_response="previous")
+    new_state = agent.run(state)
 
     assert new_state["orchestration_result"] is orch
     assert new_state["user_message"] == state["user_message"]
@@ -251,8 +218,8 @@ def test_format_response_uses_coaching_brief():
     """format_response should use coaching_brief when cm result is present."""
     from mentat.graph.workflow import format_response
 
-    cm = _make_cm_result(coaching_brief="Start with empathy, then ask open questions.")
-    state = _make_state(context_management_result=cm)
+    cm = make_cm_result(coaching_brief="Start with empathy, then ask open questions.")
+    state = make_state(context_management_result=cm)
     new_state = format_response(state)
 
     assert new_state["final_response"] == "Start with empathy, then ask open questions."
@@ -263,7 +230,13 @@ def test_format_response_fallback_without_cm_result():
     """format_response falls back to orchestration result when CM result is absent."""
     from mentat.graph.workflow import format_response
 
-    state = _make_state(context_management_result=None)
+    orch = OrchestrationResult(
+        intent=Intent.COACHING_SESSION,
+        confidence=0.9,
+        reasoning="User wants structured coaching guidance.",
+        suggested_agents=(),
+    )
+    state = make_state(orchestration_result=orch, context_management_result=None)
     new_state = format_response(state)
 
     assert new_state["final_response"] is not None

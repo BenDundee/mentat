@@ -36,6 +36,9 @@ def setup_logging() -> None:
     root.addHandler(file_handler)
     root.addHandler(console_handler)
 
+    # Silence noisy third-party debug output
+    logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
+
     _configured = True
 
 

@@ -7,6 +7,35 @@ from httpx import ASGITransport, AsyncClient
 
 from mentat.core.models import Intent, OrchestrationResult
 
+# ---------------------------------------------------------------------------
+# Agent factory fixture
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def make_agent():
+    """Factory for creating agents with all __init__ side effects bypassed.
+
+    Usage::
+
+        def test_something(make_agent):
+            agent = make_agent(CoachingAgent, _recent_message_count=10)
+    """
+
+    def _factory(cls, **attrs):  # type: ignore[return]
+        agent = object.__new__(cls)
+        agent._logger = MagicMock()
+        for k, v in attrs.items():
+            setattr(agent, k, v)
+        return agent
+
+    return _factory
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def mock_orchestration_result() -> OrchestrationResult:

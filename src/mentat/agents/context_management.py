@@ -64,22 +64,7 @@ class ContextManagementAgent(BaseAgent):
 
         self._logger.debug("Coaching brief generated (phase=%s)", result.session_phase)
 
-        return GraphState(
-            messages=state["messages"],
-            user_message=state["user_message"],
-            orchestration_result=state["orchestration_result"],
-            search_results=state["search_results"],
-            rag_results=state["rag_results"],
-            context_management_result=result,
-            persona_context=state["persona_context"],
-            plan_context=state["plan_context"],
-            coaching_response=state["coaching_response"],
-            quality_rating=state.get("quality_rating"),
-            quality_feedback=state.get("quality_feedback"),
-            coaching_attempts=state.get("coaching_attempts"),
-            final_response=state["final_response"],
-            session_state=state.get("session_state"),
-        )
+        return self._return_state(state, context_management_result=result)
 
     def _format_session_context(self, session: ConversationSession) -> str:
         """Format session state as a context block for the LLM.
@@ -114,18 +99,9 @@ class ContextManagementAgent(BaseAgent):
         rag = state.get("rag_results")
         messages = state.get("messages") or []
 
-        # Truncate message history to the most recent N messages
-        recent = messages[-self._recent_message_count :]
-        history_lines = []
-        for msg in recent:
-            if isinstance(msg, dict):
-                role = msg.get("role", "unknown")
-                content = msg.get("content", "")
-            else:
-                role = getattr(msg, "type", "unknown")
-                content = getattr(msg, "content", "")
-            history_lines.append(f"{role}: {content}")
-        history_text = "\n".join(history_lines) if history_lines else "(no history)"
+        history_text = self._format_message_history(
+            messages, self._recent_message_count
+        )
 
         session = state.get("session_state")
         parts = []

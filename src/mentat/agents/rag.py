@@ -9,6 +9,8 @@ query pipeline:
   5. One LLM synthesis call to produce the RAGAgentResult.
 """
 
+import asyncio
+
 from langchain_core.prompts import ChatPromptTemplate
 
 from mentat.agents.base import BaseAgent
@@ -64,8 +66,6 @@ class RAGAgent(BaseAgent):
         Returns:
             New GraphState with ``rag_results`` populated.
         """
-        import asyncio
-
         user_message = state["user_message"]
         self._logger.info("RAGAgent running for message: %.80s", user_message)
 
@@ -78,22 +78,7 @@ class RAGAgent(BaseAgent):
         finally:
             loop.close()
 
-        return GraphState(
-            messages=state["messages"],
-            user_message=state["user_message"],
-            orchestration_result=state["orchestration_result"],
-            search_results=state["search_results"],
-            rag_results=rag_result,
-            context_management_result=state["context_management_result"],
-            persona_context=state["persona_context"],
-            plan_context=state["plan_context"],
-            coaching_response=state["coaching_response"],
-            quality_rating=state.get("quality_rating"),
-            quality_feedback=state.get("quality_feedback"),
-            coaching_attempts=state.get("coaching_attempts"),
-            final_response=state["final_response"],
-            session_state=state.get("session_state"),
-        )
+        return self._return_state(state, rag_results=rag_result)
 
     async def _retrieve_and_synthesize(self, user_message: str) -> RAGAgentResult:
         """Async inner pipeline: embed → search → expand → synthesize."""
@@ -105,8 +90,6 @@ class RAGAgent(BaseAgent):
         embedding = self._embedding.embed(query)
 
         # Step 3: ANN vector search (parallel)
-        import asyncio
-
         chunk_hits, memory_hits = await asyncio.gather(
             self._neo4j.vector_search_chunks(embedding, k=self._n_chunks),
             self._neo4j.vector_search_memories(embedding, k=self._n_memories),

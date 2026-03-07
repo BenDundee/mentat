@@ -2,8 +2,9 @@
 
 from unittest.mock import MagicMock, patch
 
+from helpers import make_state
+
 from mentat.core.models import Intent, OrchestrationResult
-from mentat.graph.state import GraphState
 from mentat.graph.workflow import (
     _MAX_COACHING_ATTEMPTS,
     _route_after_orchestration,
@@ -22,25 +23,6 @@ def _make_mock_embedding() -> MagicMock:
     return MagicMock()
 
 
-def _make_state(**overrides) -> GraphState:
-    base: GraphState = {
-        "messages": [],
-        "user_message": "Hello",
-        "orchestration_result": None,
-        "search_results": None,
-        "rag_results": None,
-        "context_management_result": None,
-        "persona_context": None,
-        "plan_context": None,
-        "coaching_response": None,
-        "quality_rating": None,
-        "quality_feedback": None,
-        "coaching_attempts": None,
-        "final_response": None,
-    }
-    return GraphState(**{**base, **overrides})
-
-
 def test_format_response_with_result():
     """format_response should render intent and reasoning."""
     result = OrchestrationResult(
@@ -48,7 +30,7 @@ def test_format_response_with_result():
         confidence=0.95,
         reasoning="User is sharing how they are doing.",
     )
-    state = _make_state(orchestration_result=result)
+    state = make_state(orchestration_result=result)
     new_state = format_response(state)
 
     assert new_state["final_response"] is not None
@@ -58,7 +40,7 @@ def test_format_response_with_result():
 
 def test_format_response_without_result():
     """format_response should return a fallback message when result is None."""
-    state = _make_state()
+    state = make_state()
     new_state = format_response(state)
     assert new_state["final_response"] is not None
     assert len(new_state["final_response"]) > 0
@@ -141,7 +123,7 @@ def test_route_with_search():
         reasoning="Needs current info.",
         suggested_agents=("search",),
     )
-    state = _make_state(orchestration_result=result)
+    state = make_state(orchestration_result=result)
     assert _route_after_orchestration(state) == ["search"]
 
 
@@ -153,7 +135,7 @@ def test_route_with_rag():
         reasoning="Needs past context.",
         suggested_agents=("rag",),
     )
-    state = _make_state(orchestration_result=result)
+    state = make_state(orchestration_result=result)
     assert _route_after_orchestration(state) == ["rag"]
 
 
@@ -165,7 +147,7 @@ def test_route_with_both_agents_returns_parallel_targets():
         reasoning="Needs both current info and past context.",
         suggested_agents=("search", "rag"),
     )
-    state = _make_state(orchestration_result=result)
+    state = make_state(orchestration_result=result)
     assert _route_after_orchestration(state) == ["search", "rag"]
 
 
@@ -177,13 +159,13 @@ def test_route_without_agents():
         reasoning="Simple check-in.",
         suggested_agents=(),
     )
-    state = _make_state(orchestration_result=result)
+    state = make_state(orchestration_result=result)
     assert _route_after_orchestration(state) == ["context_management"]
 
 
 def test_route_none_result():
     """Returns ['context_management'] when orchestration_result is None."""
-    state = _make_state(orchestration_result=None)
+    state = make_state(orchestration_result=None)
     assert _route_after_orchestration(state) == ["context_management"]
 
 
@@ -194,25 +176,25 @@ def test_route_none_result():
 
 def test_route_after_quality_low_rating_routes_to_coaching():
     """Returns 'coaching' when rating ≤ 3 and attempts < max."""
-    state = _make_state(quality_rating=2, coaching_attempts=1)
+    state = make_state(quality_rating=2, coaching_attempts=1)
     assert _route_after_quality(state) == "coaching"
 
 
 def test_route_after_quality_high_rating_routes_to_format_response():
     """Returns 'format_response' when rating > 3."""
-    state = _make_state(quality_rating=4, coaching_attempts=1)
+    state = make_state(quality_rating=4, coaching_attempts=1)
     assert _route_after_quality(state) == "format_response"
 
 
 def test_route_after_quality_max_attempts_stops_loop():
     """Returns 'format_response' when max attempts reached, even with low rating."""
-    state = _make_state(quality_rating=1, coaching_attempts=_MAX_COACHING_ATTEMPTS)
+    state = make_state(quality_rating=1, coaching_attempts=_MAX_COACHING_ATTEMPTS)
     assert _route_after_quality(state) == "format_response"
 
 
 def test_route_after_quality_none_rating_routes_to_format_response():
     """Returns 'format_response' when quality_rating is None."""
-    state = _make_state(quality_rating=None, coaching_attempts=1)
+    state = make_state(quality_rating=None, coaching_attempts=1)
     assert _route_after_quality(state) == "format_response"
 
 
@@ -232,7 +214,7 @@ def test_format_response_passes_through_quality_fields():
         key_information="",
         conversation_summary="",
     )
-    state = _make_state(
+    state = make_state(
         coaching_response="Good coaching response.",
         context_management_result=cm,
         quality_rating=4,

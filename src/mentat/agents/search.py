@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import cast
 
 from langchain_community.tools import DuckDuckGoSearchResults
+from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel
 
 from mentat.agents.base import BaseAgent
@@ -32,16 +33,14 @@ class SearchAgent(BaseAgent):
 
     def __init__(self) -> None:
         super().__init__()
-        summary_prompt = self.config.extra_config.get("summary_system_prompt", "")
-        from langchain_core.prompts import ChatPromptTemplate
-
+        summary_prompt: str = self.config.extra_config["summary_system_prompt"]
         self.summary_prompt_template = ChatPromptTemplate.from_messages(
             [
                 ("system", summary_prompt),
                 ("human", "{context}"),
             ]
         )
-        max_results = int(self.config.extra_config.get("max_results_per_query", 5))
+        max_results = int(self.config.extra_config["max_results_per_query"])
         self._search_tool = DuckDuckGoSearchResults(max_results=max_results)
 
     def run(self, state: GraphState) -> GraphState:
@@ -69,22 +68,7 @@ class SearchAgent(BaseAgent):
             "Search complete: %d queries, %d results", len(queries), len(raw_results)
         )
 
-        return GraphState(
-            messages=state["messages"],
-            user_message=state["user_message"],
-            orchestration_result=state["orchestration_result"],
-            search_results=search_agent_result,
-            rag_results=state["rag_results"],
-            context_management_result=state["context_management_result"],
-            persona_context=state["persona_context"],
-            plan_context=state["plan_context"],
-            coaching_response=state["coaching_response"],
-            quality_rating=state.get("quality_rating"),
-            quality_feedback=state.get("quality_feedback"),
-            coaching_attempts=state.get("coaching_attempts"),
-            final_response=state["final_response"],
-            session_state=state.get("session_state"),
-        )
+        return self._return_state(state, search_results=search_agent_result)
 
     def _generate_queries(self, state: GraphState) -> list[str]:
         """Use LLM to generate focused search queries from the user's message.

@@ -6,6 +6,7 @@ import uuid
 from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
@@ -14,6 +15,7 @@ from mentat.api.schemas import ChatRequest, ChatResponse, DocumentUploadResponse
 from mentat.core.logging import get_logger
 from mentat.core.neo4j_service import MemoryNode
 from mentat.graph.state import GraphState
+from mentat.session.models import ConversationSession
 from mentat.session.service import SessionService
 
 logger = get_logger(__name__)
@@ -38,6 +40,46 @@ _ALLOWED_EXTENSIONS = {".pdf", ".txt", ".docx"}
 
 def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _load_session(session_id: str | None) -> ConversationSession | None:
+    """Load or create a session; returns None on failure."""
+    if not session_id:
+        return None
+    try:
+        return _session_service.load_or_create(session_id)
+    except Exception as exc:
+        logger.warning("Failed to load session %s: %s", session_id, exc)
+        return None
+
+
+async def _save_and_ingest(
+    session_id: str | None,
+    user_message: str,
+    final_state: GraphState,
+    ingest_agent: Any,
+) -> None:
+    """Persist updated session and ingest the conversation turn."""
+    updated_session = final_state.get("session_state")
+    if updated_session is not None:
+        try:
+            _session_service.save(updated_session)
+        except Exception as exc:
+            logger.warning("Failed to save session %s: %s", session_id, exc)
+
+    try:
+        final_response = final_state.get("final_response")
+        if ingest_agent is not None and session_id and final_response:
+            orch_result = final_state.get("orchestration_result")
+            intent_str = orch_result.intent.value if orch_result else "unknown"
+            await ingest_agent.ingest_turn(
+                session_id=session_id,
+                user_msg=user_message,
+                assistant_msg=final_response,
+                intent=intent_str,
+            )
+    except Exception as exc:
+        logger.warning("Failed to ingest conversation turn: %s", exc)
 
 
 def _sanitize_filename(name: str) -> str:
@@ -124,12 +166,7 @@ async def handle_chat(request: Request, body: ChatRequest) -> ChatResponse:
     ]
 
     # Load or create session state (best-effort — None degrades gracefully)
-    session_state = None
-    if body.session_id:
-        try:
-            session_state = _session_service.load_or_create(body.session_id)
-        except Exception as exc:
-            logger.warning("Failed to load session %s: %s", body.session_id, exc)
+    session_state = _load_session(body.session_id)
 
     initial_state: GraphState = {
         "messages": lc_messages,
@@ -154,29 +191,9 @@ async def handle_chat(request: Request, body: ChatRequest) -> ChatResponse:
         logger.exception("Graph execution failed: %s", exc)
         raise HTTPException(status_code=500, detail="Agent processing failed") from exc
 
-    # Persist the updated session (best-effort)
-    updated_session = final_state.get("session_state")
-    if updated_session is not None:
-        try:
-            _session_service.save(updated_session)
-        except Exception as exc:
-            logger.warning("Failed to save session %s: %s", body.session_id, exc)
-
-    # Store this conversation turn for future RAG retrieval (best-effort)
-    try:
-        ingest_agent = getattr(request.app.state, "ingest_agent", None)
-        final_response = final_state.get("final_response")
-        if ingest_agent is not None and body.session_id and final_response:
-            orch_result = final_state.get("orchestration_result")
-            intent_str = orch_result.intent.value if orch_result else "unknown"
-            await ingest_agent.ingest_turn(
-                session_id=body.session_id,
-                user_msg=user_message,
-                assistant_msg=final_response,
-                intent=intent_str,
-            )
-    except Exception as exc:
-        logger.warning("Failed to ingest conversation turn: %s", exc)
+    # Persist session and ingest conversation turn (best-effort)
+    ingest_agent = getattr(request.app.state, "ingest_agent", None)
+    await _save_and_ingest(body.session_id, user_message, final_state, ingest_agent)
 
     reply = final_state.get("final_response") or "Sorry, I could not generate a reply."
 
@@ -211,12 +228,7 @@ async def handle_chat_stream(request: Request, body: ChatRequest) -> StreamingRe
         {"role": msg.role.value, "content": msg.content} for msg in body.messages
     ]
 
-    session_state = None
-    if body.session_id:
-        try:
-            session_state = _session_service.load_or_create(body.session_id)
-        except Exception as exc:
-            logger.warning("Failed to load session %s: %s", body.session_id, exc)
+    session_state = _load_session(body.session_id)
 
     initial_state: GraphState = {
         "messages": lc_messages,
@@ -273,27 +285,12 @@ async def handle_chat_stream(request: Request, body: ChatRequest) -> StreamingRe
 
         # Post-stream: persist session and ingest conversation turn
         if final_state is not None:
-            updated_session = final_state.get("session_state")
-            if updated_session is not None:
-                try:
-                    _session_service.save(updated_session)
-                except Exception as exc:
-                    logger.warning(
-                        "Failed to save session %s: %s", body.session_id, exc
-                    )
-            try:
-                final_response = final_state.get("final_response")
-                if ingest_agent is not None and body.session_id and final_response:
-                    orch_result = final_state.get("orchestration_result")
-                    intent_str = orch_result.intent.value if orch_result else "unknown"
-                    await ingest_agent.ingest_turn(
-                        session_id=body.session_id,
-                        user_msg=user_message,
-                        assistant_msg=final_response,
-                        intent=intent_str,
-                    )
-            except Exception as exc:
-                logger.warning("Failed to ingest conversation turn: %s", exc)
+            await _save_and_ingest(
+                body.session_id,
+                user_message,
+                final_state,  # pyrefly: ignore[bad-argument-type]
+                ingest_agent,
+            )
 
         if final_state is not None:
             think_content = _build_think_content(final_state)

@@ -62,21 +62,8 @@ class QualityAgent(BaseAgent):
 
         feedback = assessment.feedback if assessment.rating <= 3 else None
 
-        return GraphState(
-            messages=state["messages"],
-            user_message=state["user_message"],
-            orchestration_result=state["orchestration_result"],
-            search_results=state["search_results"],
-            rag_results=state["rag_results"],
-            context_management_result=state["context_management_result"],
-            persona_context=state["persona_context"],
-            plan_context=state["plan_context"],
-            coaching_response=state["coaching_response"],
-            quality_rating=assessment.rating,
-            quality_feedback=feedback,
-            coaching_attempts=state.get("coaching_attempts"),
-            final_response=state["final_response"],
-            session_state=state.get("session_state"),
+        return self._return_state(
+            state, quality_rating=assessment.rating, quality_feedback=feedback
         )
 
     def _build_context(self, state: GraphState) -> str:
@@ -89,17 +76,9 @@ class QualityAgent(BaseAgent):
             Formatted string containing the coaching response and relevant context.
         """
         messages = state.get("messages") or []
-        recent = messages[-self._recent_message_count :]
-        history_lines = []
-        for msg in recent:
-            if isinstance(msg, dict):
-                role = msg.get("role", "unknown")
-                content = msg.get("content", "")
-            else:
-                role = getattr(msg, "type", "unknown")
-                content = getattr(msg, "content", "")
-            history_lines.append(f"{role}: {content}")
-        history_text = "\n".join(history_lines) if history_lines else "(no history)"
+        history_text = self._format_message_history(
+            messages, self._recent_message_count
+        )
 
         coaching_response = state.get("coaching_response") or "(no response generated)"
         cm = state.get("context_management_result")

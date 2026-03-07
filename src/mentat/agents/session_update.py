@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from mentat.agents.base import BaseAgent
 from mentat.graph.state import GraphState
 from mentat.session.models import ConversationSession, SessionUpdateResult
+from mentat.session.service import SessionService
 
 
 class _ExtractedData(BaseModel):
@@ -62,7 +63,7 @@ class SessionUpdateAgent(BaseAgent):
         session = state.get("session_state")
         if session is None:
             self._logger.warning("No session_state in state; skipping session update.")
-            return GraphState(**{k: state.get(k) for k in state})  # type: ignore[misc]
+            return self._return_state(state)
 
         self._logger.info(
             "SessionUpdateAgent running (session=%s phase=%s turn=%d)",
@@ -86,27 +87,10 @@ class SessionUpdateAgent(BaseAgent):
             reasoning=output.reasoning,
         )
 
-        from mentat.session.service import SessionService
-
         service = SessionService()
         updated_session = service.advance_phase(session, update_result)
 
-        return GraphState(
-            messages=state["messages"],
-            user_message=state["user_message"],
-            orchestration_result=state["orchestration_result"],
-            search_results=state["search_results"],
-            rag_results=state["rag_results"],
-            context_management_result=state["context_management_result"],
-            persona_context=state["persona_context"],
-            plan_context=state["plan_context"],
-            coaching_response=state["coaching_response"],
-            quality_rating=state.get("quality_rating"),
-            quality_feedback=state.get("quality_feedback"),
-            coaching_attempts=state.get("coaching_attempts"),
-            final_response=state.get("final_response"),
-            session_state=updated_session,
-        )
+        return self._return_state(state, session_state=updated_session)
 
     def _build_context(self, state: GraphState, session: ConversationSession) -> str:
         """Assemble context for the LLM.

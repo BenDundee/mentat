@@ -1,12 +1,12 @@
 """LLM provider registry and factory."""
 
-import os
 from dataclasses import dataclass
 from typing import Any
 
 from langchain_openai import ChatOpenAI
 
 from mentat.core.config import AgentConfig
+from mentat.core.settings import settings
 
 
 @dataclass(frozen=True)
@@ -47,12 +47,7 @@ def build_llm(config: AgentConfig) -> ChatOpenAI:
             f"Available: {list(PROVIDER_REGISTRY)}"
         )
 
-    api_key = os.environ.get(provider.env_key)
-    if not api_key:
-        raise EnvironmentError(
-            f"Environment variable '{provider.env_key}' is not set. "
-            f"Add it to .env or your environment."
-        )
+    api_key = settings.openrouter_api_key
 
     params: dict[str, Any] = {
         "model": config.model,

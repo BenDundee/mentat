@@ -1,5 +1,7 @@
 """Tests for the OutputTestingAgent."""
 
+from helpers import make_state
+
 from mentat.agents.output_testing import OutputTestingAgent
 from mentat.core.models import (
     Intent,
@@ -7,24 +9,6 @@ from mentat.core.models import (
     SearchAgentResult,
     SearchResult,
 )
-from mentat.graph.state import GraphState
-
-
-def _make_state(**overrides) -> GraphState:
-    base: GraphState = {
-        "messages": [],
-        "user_message": "What are the latest trends in executive coaching?",
-        "orchestration_result": None,
-        "search_results": None,
-        "rag_results": None,
-        "context_management_result": None,
-        "persona_context": None,
-        "plan_context": None,
-        "coaching_response": None,
-        "quality_rating": None,
-        "final_response": None,
-    }
-    return GraphState(**{**base, **overrides})
 
 
 def _make_orchestration_result(**overrides) -> OrchestrationResult:
@@ -52,21 +36,21 @@ class TestOutputTestingAgent:
 
     def test_run_returns_graph_state(self):
         """run() should return a GraphState."""
-        state = _make_state()
+        state = make_state()
         new_state = self.agent.run(state)
         assert isinstance(new_state, dict)
         assert "final_response" in new_state
 
     def test_includes_user_message(self):
         """Output should contain the user message."""
-        state = _make_state(user_message="How do I manage my team better?")
+        state = make_state(user_message="How do I manage my team better?")
         new_state = self.agent.run(state)
         assert "How do I manage my team better?" in new_state["final_response"]
 
     def test_includes_orchestration_result(self):
         """Output should render intent, confidence, and reasoning."""
         result = _make_orchestration_result()
-        state = _make_state(orchestration_result=result)
+        state = make_state(orchestration_result=result)
         new_state = self.agent.run(state)
         response = new_state["final_response"]
         assert "question" in response
@@ -76,14 +60,14 @@ class TestOutputTestingAgent:
     def test_includes_suggested_agents(self):
         """Output should list suggested agents."""
         result = _make_orchestration_result(suggested_agents=("search",))
-        state = _make_state(orchestration_result=result)
+        state = make_state(orchestration_result=result)
         new_state = self.agent.run(state)
         assert "search" in new_state["final_response"]
 
     def test_no_suggested_agents_shows_none(self):
         """Output should show none marker when suggested_agents is empty."""
         result = _make_orchestration_result(suggested_agents=())
-        state = _make_state(orchestration_result=result)
+        state = make_state(orchestration_result=result)
         new_state = self.agent.run(state)
         assert "_(none)_" in new_state["final_response"]
 
@@ -94,7 +78,7 @@ class TestOutputTestingAgent:
             results=(_make_search_result(),),
             summary="Coaching is growing fast.",
         )
-        state = _make_state(search_results=search)
+        state = make_state(search_results=search)
         new_state = self.agent.run(state)
         response = new_state["final_response"]
         assert "exec coaching trends" in response
@@ -104,7 +88,7 @@ class TestOutputTestingAgent:
 
     def test_omits_none_fields(self):
         """Output should not mention fields that are None."""
-        state = _make_state()
+        state = make_state()
         new_state = self.agent.run(state)
         response = new_state["final_response"]
         assert "RAG Results" not in response
@@ -115,19 +99,19 @@ class TestOutputTestingAgent:
         """Output should show the message history count."""
         from langchain_core.messages import HumanMessage
 
-        state = _make_state(messages=[HumanMessage(content="hello")])
+        state = make_state(messages=[HumanMessage(content="hello")])
         new_state = self.agent.run(state)
         assert "1 message(s)" in new_state["final_response"]
 
     def test_final_response_matches_message_content(self):
         """final_response and the AIMessage content should be identical."""
-        state = _make_state(orchestration_result=_make_orchestration_result())
+        state = make_state(orchestration_result=_make_orchestration_result())
         new_state = self.agent.run(state)
         assert new_state["messages"][-1].content == new_state["final_response"]
 
     def test_passthrough_fields_unchanged(self):
         """State fields not owned by this agent should pass through unchanged."""
-        state = _make_state(
+        state = make_state(
             rag_results="some rag context",
             quality_rating=4,
         )

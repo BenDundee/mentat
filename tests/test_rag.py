@@ -4,6 +4,7 @@ ChromaDB / VectorStoreService tests removed — replaced by test_neo4j_phase9.py
 """
 
 import pytest
+from helpers import make_state
 from pydantic import ValidationError
 
 from mentat.core.models import (
@@ -12,32 +13,7 @@ from mentat.core.models import (
     OrchestrationResult,
     RAGAgentResult,
 )
-from mentat.graph.state import GraphState
 from mentat.graph.workflow import _route_after_orchestration
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _make_state(**overrides) -> GraphState:
-    base: GraphState = {
-        "messages": [],
-        "user_message": "What did we discuss last time?",
-        "orchestration_result": None,
-        "search_results": None,
-        "rag_results": None,
-        "context_management_result": None,
-        "persona_context": None,
-        "plan_context": None,
-        "coaching_response": None,
-        "quality_rating": None,
-        "quality_feedback": None,
-        "coaching_attempts": None,
-        "final_response": None,
-        "session_state": None,
-    }
-    return GraphState(**{**base, **overrides})
 
 
 def _make_chunk(**overrides) -> DocumentChunk:
@@ -96,7 +72,7 @@ def test_route_to_rag_when_suggested():
         reasoning="User references past session.",
         suggested_agents=("rag",),
     )
-    state = _make_state(orchestration_result=orch)
+    state = make_state(orchestration_result=orch)
     assert _route_after_orchestration(state) == ["rag"]
 
 
@@ -108,11 +84,11 @@ def test_route_to_context_management_by_default():
         reasoning="Casual check-in.",
         suggested_agents=(),
     )
-    state = _make_state(orchestration_result=orch)
+    state = make_state(orchestration_result=orch)
     assert _route_after_orchestration(state) == ["context_management"]
 
 
 def test_route_to_context_management_when_no_orchestration():
     """_route_after_orchestration with no result returns ['context_management']."""
-    state = _make_state()
+    state = make_state()
     assert _route_after_orchestration(state) == ["context_management"]

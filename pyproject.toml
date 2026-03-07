@@ -50,6 +50,7 @@ ignore = []
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["tests"]
 markers = [
     "integration: marks tests as integration tests requiring real API keys (deselect with '-m not integration')",
 ]

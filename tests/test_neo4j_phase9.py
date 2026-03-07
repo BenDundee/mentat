@@ -14,6 +14,7 @@ Covers:
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from helpers import make_state
 
 from mentat.agents.consolidation import _parse_llm_response
 from mentat.agents.ingest import _split_text
@@ -26,31 +27,6 @@ from mentat.core.neo4j_service import (
     MemoryResult,
     SubgraphResult,
 )
-from mentat.graph.state import GraphState
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _make_state(**overrides) -> GraphState:
-    base: GraphState = {
-        "messages": [],
-        "user_message": "What did we discuss last time?",
-        "orchestration_result": None,
-        "search_results": None,
-        "rag_results": None,
-        "context_management_result": None,
-        "persona_context": None,
-        "plan_context": None,
-        "coaching_response": None,
-        "quality_rating": None,
-        "quality_feedback": None,
-        "coaching_attempts": None,
-        "final_response": None,
-        "session_state": None,
-    }
-    return GraphState(**{**base, **overrides})
 
 
 def _make_embedding() -> list[float]:
@@ -431,7 +407,7 @@ def test_rag_agent_run_populates_rag_results():
         mock_summary_prompt.__or__ = lambda self, other: mock_summary_chain
         agent._summary_prompt = mock_summary_prompt
 
-        state = _make_state()
+        state = make_state()
         new_state = agent.run(state)
 
     assert new_state["rag_results"] is not None
@@ -469,7 +445,7 @@ def test_rag_agent_run_empty_retrieval_fallback():
         agent.prompt_template.__or__ = lambda self, other: mock_chain
         agent._summary_prompt = MagicMock()
 
-        state = _make_state()
+        state = make_state()
         new_state = agent.run(state)
 
     rag = new_state["rag_results"]
@@ -830,7 +806,7 @@ def test_route_after_orchestration_rag():
         reasoning="References past session.",
         suggested_agents=("rag",),
     )
-    state = _make_state(orchestration_result=orch)
+    state = make_state(orchestration_result=orch)
     assert _route_after_orchestration(state) == ["rag"]
 
 
@@ -845,5 +821,5 @@ def test_route_after_orchestration_default():
         reasoning="Check-in.",
         suggested_agents=(),
     )
-    state = _make_state(orchestration_result=orch)
+    state = make_state(orchestration_result=orch)
     assert _route_after_orchestration(state) == ["context_management"]
