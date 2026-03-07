@@ -4,37 +4,13 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
+from helpers import make_state
 from pydantic import ValidationError
 
 from mentat.core.models import (
-    Intent,
-    OrchestrationResult,
     SearchAgentResult,
     SearchResult,
 )
-from mentat.graph.state import GraphState
-
-
-def _make_state(**overrides) -> GraphState:
-    base: GraphState = {
-        "messages": [],
-        "user_message": "What are the latest trends in executive coaching?",
-        "orchestration_result": OrchestrationResult(
-            intent=Intent.QUESTION,
-            confidence=0.9,
-            reasoning="User is asking a factual question.",
-            suggested_agents=("search",),
-        ),
-        "search_results": None,
-        "rag_results": None,
-        "context_management_result": None,
-        "persona_context": None,
-        "plan_context": None,
-        "coaching_response": None,
-        "quality_rating": None,
-        "final_response": None,
-    }
-    return GraphState(**{**base, **overrides})
 
 
 def _make_search_result(**overrides) -> SearchResult:
@@ -157,7 +133,7 @@ class TestSearchAgent:
         """SearchAgent.run() happy path: state should contain SearchAgentResult."""
         from mentat.agents.search import SearchAgent
 
-        state = _make_state()
+        state = make_state()
         search_result = _make_search_result()
 
         with (
@@ -200,7 +176,7 @@ class TestSearchAgent:
         """SearchAgent.run() with empty results: empty tuple and fallback summary."""
         from mentat.agents.search import SearchAgent
 
-        state = _make_state()
+        state = make_state()
 
         with (
             patch("mentat.agents.search.DuckDuckGoSearchResults"),
@@ -237,7 +213,7 @@ class TestSearchAgent:
         """_generate_queries should invoke the LLM chain and return query list."""
         from mentat.agents.search import SearchAgent, _QueryPlan
 
-        state = _make_state()
+        state = make_state()
 
         with (
             patch("mentat.agents.search.DuckDuckGoSearchResults"),
@@ -292,19 +268,9 @@ def test_search_agent_real_llm():
     from mentat.agents.search import SearchAgent
 
     agent = SearchAgent()
-    state: GraphState = {
-        "messages": [],
-        "user_message": "What are the top executive coaching trends in 2025?",
-        "orchestration_result": None,
-        "search_results": None,
-        "rag_results": None,
-        "context_management_result": None,
-        "persona_context": None,
-        "plan_context": None,
-        "coaching_response": None,
-        "quality_rating": None,
-        "final_response": None,
-    }
+    state = make_state(
+        user_message="What are the top executive coaching trends in 2025?"
+    )
     new_state = agent.run(state)
     result = new_state["search_results"]
     assert isinstance(result, SearchAgentResult)

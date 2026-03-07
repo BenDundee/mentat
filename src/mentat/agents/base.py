@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
+from typing import Any
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
@@ -41,6 +42,32 @@ class BaseAgent(ABC):
                 ("human", "{user_message}"),
             ]
         )
+
+    def _return_state(self, state: GraphState, **updates: Any) -> GraphState:
+        """Return a new GraphState merging current state with updates."""
+        return GraphState(**{**state, **updates})  # type: ignore[misc]
+
+    def _format_message_history(self, messages: list, recent_count: int) -> str:
+        """Format recent message history as a string for LLM context.
+
+        Args:
+            messages: Full message list from state.
+            recent_count: How many recent messages to include.
+
+        Returns:
+            Formatted string; ``"(no history)"`` when messages is empty.
+        """
+        recent = messages[-recent_count:]
+        history_lines = []
+        for msg in recent:
+            if isinstance(msg, dict):
+                role = msg.get("role", "unknown")
+                content = msg.get("content", "")
+            else:
+                role = getattr(msg, "type", "unknown")
+                content = getattr(msg, "content", "")
+            history_lines.append(f"{role}: {content}")
+        return "\n".join(history_lines) if history_lines else "(no history)"
 
     @staticmethod
     def _now() -> str:

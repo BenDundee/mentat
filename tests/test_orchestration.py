@@ -4,26 +4,10 @@ import os
 from unittest.mock import MagicMock, patch
 
 import pytest
+from helpers import make_state
 from pydantic import ValidationError
 
 from mentat.core.models import Intent, OrchestrationResult
-from mentat.graph.state import GraphState
-
-
-def _make_state(message: str = "I need help with my team") -> GraphState:
-    return GraphState(
-        messages=[],
-        user_message=message,
-        orchestration_result=None,
-        search_results=None,
-        rag_results=None,
-        context_management_result=None,
-        persona_context=None,
-        plan_context=None,
-        coaching_response=None,
-        quality_rating=None,
-        final_response=None,
-    )
 
 
 def test_orchestration_agent_run_mocked():
@@ -50,7 +34,7 @@ def test_orchestration_agent_run_mocked():
         # Make prompt_template | structured_llm return mock_chain
         agent.prompt_template.__or__ = MagicMock(return_value=mock_chain)
 
-        state = _make_state()
+        state = make_state()
         result_state = agent.run(state)
 
     result = result_state["orchestration_result"]
@@ -82,7 +66,9 @@ def test_orchestration_agent_real_llm():
     from mentat.agents.orchestration import OrchestrationAgent
 
     agent = OrchestrationAgent()
-    state = _make_state("I've been struggling with delegating work to my team.")
+    state = make_state(
+        user_message="I've been struggling with delegating work to my team."
+    )
     result_state = agent.run(state)
 
     result = result_state["orchestration_result"]

@@ -70,8 +70,15 @@ def format_response(state: GraphState) -> GraphState:
     if coaching_response is not None:
         response_text = coaching_response
     elif (cm_result := state.get("context_management_result")) is not None:
+        logger.warning(
+            "format_response: no coaching_response; falling back to coaching_brief."
+        )
         response_text = cm_result.coaching_brief
     else:
+        logger.warning(
+            "format_response: no coaching_response or cm_result; "
+            "falling back to orchestration result."
+        )
         orch = state.get("orchestration_result")
         if orch is None:
             response_text = "I'm sorry, I couldn't process your message."

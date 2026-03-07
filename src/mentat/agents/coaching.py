@@ -1,6 +1,5 @@
 """Coaching Agent — produces the actual coaching reply from the coaching brief."""
 
-import logging
 from typing import cast
 
 from mentat.agents.base import BaseAgent
@@ -53,21 +52,8 @@ class CoachingAgent(BaseAgent):
             len(coaching_response),
         )
 
-        return GraphState(
-            messages=state["messages"],
-            user_message=state["user_message"],
-            orchestration_result=state["orchestration_result"],
-            search_results=state["search_results"],
-            rag_results=state["rag_results"],
-            context_management_result=state["context_management_result"],
-            persona_context=state["persona_context"],
-            plan_context=state["plan_context"],
-            coaching_response=coaching_response,
-            quality_rating=state.get("quality_rating"),
-            quality_feedback=state.get("quality_feedback"),
-            coaching_attempts=attempts,
-            final_response=state["final_response"],
-            session_state=state.get("session_state"),
+        return self._return_state(
+            state, coaching_response=coaching_response, coaching_attempts=attempts
         )
 
     def _build_prompt_input(self, state: GraphState) -> str:
@@ -81,19 +67,9 @@ class CoachingAgent(BaseAgent):
         """
         cm = state.get("context_management_result")
         messages = state.get("messages") or []
-
-        # Truncate message history to the most recent N messages
-        recent = messages[-self._recent_message_count :]
-        history_lines = []
-        for msg in recent:
-            if isinstance(msg, dict):
-                role = msg.get("role", "unknown")
-                content = msg.get("content", "")
-            else:
-                role = getattr(msg, "type", "unknown")
-                content = getattr(msg, "content", "")
-            history_lines.append(f"{role}: {content}")
-        history_text = "\n".join(history_lines) if history_lines else "(no history)"
+        history_text = self._format_message_history(
+            messages, self._recent_message_count
+        )
 
         parts = [f"Client message: {state['user_message']}"]
 
@@ -124,7 +100,3 @@ class CoachingAgent(BaseAgent):
             )
 
         return "\n\n".join(parts)
-
-
-# Silence noisy sentence-transformers / tokenizer debug output
-logging.getLogger("sentence_transformers").setLevel(logging.WARNING)

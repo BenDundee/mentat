@@ -69,5 +69,4 @@ system_prompt: |
     "reasoning": "The user is revisiting goals discussed in a previous session.",
     "suggested_agents": ["rag"]
   }}
-prompt_defaults: {}
 extra_config: {}

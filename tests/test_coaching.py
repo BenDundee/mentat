@@ -1,75 +1,31 @@
 """Tests for the Coaching Agent."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
+
+from helpers import make_cm_result, make_state
 
 from mentat.core.models import (
-    ContextManagementResult,
     Intent,
     OrchestrationResult,
 )
-from mentat.graph.state import GraphState
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _make_state(**overrides) -> GraphState:
-    base: GraphState = {
-        "messages": [],
-        "user_message": "I'm struggling to delegate work to my team.",
-        "orchestration_result": OrchestrationResult(
-            intent=Intent.COACHING_SESSION,
-            confidence=0.9,
-            reasoning="User wants structured coaching guidance.",
-            suggested_agents=(),
-        ),
-        "search_results": None,
-        "rag_results": None,
-        "context_management_result": None,
-        "persona_context": None,
-        "plan_context": None,
-        "coaching_response": None,
-        "quality_rating": None,
-        "quality_feedback": None,
-        "coaching_attempts": None,
-        "final_response": None,
-    }
-    return GraphState(**{**base, **overrides})
-
-
-def _make_cm_result(**overrides) -> ContextManagementResult:
-    defaults = {
-        "coaching_brief": "Acknowledge difficulty, then explore delegation blockers.",
-        "session_phase": "exploration",
-        "tone_guidance": "Warm and Socratic — ask before advising.",
-        "key_information": "User leads a team of 5 engineers.",
-        "conversation_summary": "User is working on leadership skills.",
-    }
-    return ContextManagementResult(**{**defaults, **overrides})
-
-
-def _make_agent_instance():  # type: ignore[return]
-    """Create a CoachingAgent bypassing __init__ for unit tests."""
-    from mentat.agents.coaching import CoachingAgent
-
-    with patch("mentat.agents.coaching.BaseAgent.__init__"):
-        agent = object.__new__(CoachingAgent)
-        agent._logger = MagicMock()
-        agent._recent_message_count = 10
-        agent.llm = MagicMock()
-        agent.prompt_template = MagicMock()
-    return agent
-
+_USER_MESSAGE = "I'm struggling to delegate work to my team."
 
 # ---------------------------------------------------------------------------
 # CoachingAgent.run
 # ---------------------------------------------------------------------------
 
 
-def test_run_populates_coaching_response():
+def test_run_populates_coaching_response(make_agent):
     """run() should populate coaching_response in the returned state."""
-    agent = _make_agent_instance()
+    from mentat.agents.coaching import CoachingAgent
+
+    agent = make_agent(
+        CoachingAgent,
+        _recent_message_count=10,
+        llm=MagicMock(),
+        prompt_template=MagicMock(),
+    )
 
     fake_llm_response = MagicMock()
     fake_llm_response.content = "What makes delegation feel so difficult right now?"
@@ -78,8 +34,8 @@ def test_run_populates_coaching_response():
     chain_mock.invoke.return_value = fake_llm_response
     agent.prompt_template.__or__ = MagicMock(return_value=chain_mock)
 
-    cm = _make_cm_result()
-    state = _make_state(context_management_result=cm)
+    cm = make_cm_result()
+    state = make_state(user_message=_USER_MESSAGE, context_management_result=cm)
     new_state = agent.run(state)
 
     assert (
@@ -88,9 +44,16 @@ def test_run_populates_coaching_response():
     )
 
 
-def test_run_increments_coaching_attempts():
+def test_run_increments_coaching_attempts(make_agent):
     """run() should increment coaching_attempts on each invocation."""
-    agent = _make_agent_instance()
+    from mentat.agents.coaching import CoachingAgent
+
+    agent = make_agent(
+        CoachingAgent,
+        _recent_message_count=10,
+        llm=MagicMock(),
+        prompt_template=MagicMock(),
+    )
 
     fake_llm_response = MagicMock()
     fake_llm_response.content = "Coaching reply."
@@ -98,19 +61,26 @@ def test_run_increments_coaching_attempts():
     chain_mock.invoke.return_value = fake_llm_response
     agent.prompt_template.__or__ = MagicMock(return_value=chain_mock)
 
-    state = _make_state(coaching_attempts=None)
+    state = make_state(coaching_attempts=None)
     new_state = agent.run(state)
     assert new_state["coaching_attempts"] == 1
 
     # Simulate second attempt (e.g. after quality rewrite loop)
-    state2 = _make_state(coaching_attempts=1)
+    state2 = make_state(coaching_attempts=1)
     new_state2 = agent.run(state2)
     assert new_state2["coaching_attempts"] == 2
 
 
-def test_run_rewrite_includes_feedback_in_prompt():
+def test_run_rewrite_includes_feedback_in_prompt(make_agent):
     """run() should include quality_feedback in the prompt when set."""
-    agent = _make_agent_instance()
+    from mentat.agents.coaching import CoachingAgent
+
+    agent = make_agent(
+        CoachingAgent,
+        _recent_message_count=10,
+        llm=MagicMock(),
+        prompt_template=MagicMock(),
+    )
 
     fake_llm_response = MagicMock()
     fake_llm_response.content = "Improved coaching reply."
@@ -118,7 +88,7 @@ def test_run_rewrite_includes_feedback_in_prompt():
     chain_mock.invoke.return_value = fake_llm_response
     agent.prompt_template.__or__ = MagicMock(return_value=chain_mock)
 
-    state = _make_state(
+    state = make_state(
         coaching_response="Previous poor response.",
         quality_feedback="Be more specific; ask about a concrete example.",
         coaching_attempts=1,
@@ -133,9 +103,16 @@ def test_run_rewrite_includes_feedback_in_prompt():
     assert "Previous poor response." in prompt_input
 
 
-def test_run_preserves_other_state_fields():
+def test_run_preserves_other_state_fields(make_agent):
     """run() should pass through all other state fields unchanged."""
-    agent = _make_agent_instance()
+    from mentat.agents.coaching import CoachingAgent
+
+    agent = make_agent(
+        CoachingAgent,
+        _recent_message_count=10,
+        llm=MagicMock(),
+        prompt_template=MagicMock(),
+    )
 
     fake_llm_response = MagicMock()
     fake_llm_response.content = "Coaching reply."
@@ -148,8 +125,8 @@ def test_run_preserves_other_state_fields():
         confidence=0.85,
         reasoning="Wants guidance.",
     )
-    cm = _make_cm_result()
-    state = _make_state(
+    cm = make_cm_result()
+    state = make_state(
         orchestration_result=orch,
         context_management_result=cm,
         final_response="previous",
@@ -162,9 +139,16 @@ def test_run_preserves_other_state_fields():
     assert new_state["final_response"] == "previous"
 
 
-def test_run_handles_no_cm_result():
+def test_run_handles_no_cm_result(make_agent):
     """run() should log a warning and still set coaching_response with no cm_result."""
-    agent = _make_agent_instance()
+    from mentat.agents.coaching import CoachingAgent
+
+    agent = make_agent(
+        CoachingAgent,
+        _recent_message_count=10,
+        llm=MagicMock(),
+        prompt_template=MagicMock(),
+    )
 
     fake_llm_response = MagicMock()
     fake_llm_response.content = "Let me help you with that."
@@ -172,7 +156,7 @@ def test_run_handles_no_cm_result():
     chain_mock.invoke.return_value = fake_llm_response
     agent.prompt_template.__or__ = MagicMock(return_value=chain_mock)
 
-    state = _make_state(context_management_result=None)
+    state = make_state(context_management_result=None)
     new_state = agent.run(state)
 
     assert new_state["coaching_response"] == "Let me help you with that."
@@ -184,40 +168,47 @@ def test_run_handles_no_cm_result():
 # ---------------------------------------------------------------------------
 
 
-def test_build_prompt_input_includes_user_message():
+def test_build_prompt_input_includes_user_message(make_agent):
     """_build_prompt_input should include the user message."""
-    agent = _make_agent_instance()
-    state = _make_state()
+    from mentat.agents.coaching import CoachingAgent
+
+    agent = make_agent(CoachingAgent, _recent_message_count=10)
+    state = make_state(user_message=_USER_MESSAGE)
     prompt = agent._build_prompt_input(state)
     assert "struggling to delegate" in prompt
 
 
-def test_build_prompt_input_includes_coaching_brief():
+def test_build_prompt_input_includes_coaching_brief(make_agent):
     """_build_prompt_input should include the coaching brief when cm_result present."""
-    agent = _make_agent_instance()
-    cm = _make_cm_result(coaching_brief="Use the GROW model: start with Goal.")
-    state = _make_state(context_management_result=cm)
+    from mentat.agents.coaching import CoachingAgent
+
+    agent = make_agent(CoachingAgent, _recent_message_count=10)
+    cm = make_cm_result(coaching_brief="Use the GROW model: start with Goal.")
+    state = make_state(context_management_result=cm)
     prompt = agent._build_prompt_input(state)
     assert "GROW model" in prompt
 
 
-def test_build_prompt_input_includes_key_information():
+def test_build_prompt_input_includes_key_information(make_agent):
     """_build_prompt_input should include key information from the cm_result."""
-    agent = _make_agent_instance()
-    cm = _make_cm_result(key_information="User leads a team of 5 engineers.")
-    state = _make_state(context_management_result=cm)
+    from mentat.agents.coaching import CoachingAgent
+
+    agent = make_agent(CoachingAgent, _recent_message_count=10)
+    cm = make_cm_result(key_information="User leads a team of 5 engineers.")
+    state = make_state(context_management_result=cm)
     prompt = agent._build_prompt_input(state)
     assert "5 engineers" in prompt
 
 
-def test_build_prompt_input_excludes_old_messages():
+def test_build_prompt_input_excludes_old_messages(make_agent):
     """_build_prompt_input should truncate to recent_message_count messages."""
     from langchain_core.messages import HumanMessage
 
-    agent = _make_agent_instance()
-    agent._recent_message_count = 2
+    from mentat.agents.coaching import CoachingAgent
+
+    agent = make_agent(CoachingAgent, _recent_message_count=2)
     messages = [HumanMessage(content=f"msg {i}") for i in range(10)]
-    state = _make_state(messages=messages)
+    state = make_state(messages=messages)
     prompt = agent._build_prompt_input(state)
 
     assert "msg 8" in prompt
@@ -234,8 +225,8 @@ def test_format_response_prefers_coaching_response():
     """format_response should use coaching_response when it is set."""
     from mentat.graph.workflow import format_response
 
-    cm = _make_cm_result(coaching_brief="Use the GROW model.")
-    state = _make_state(
+    cm = make_cm_result(coaching_brief="Use the GROW model.")
+    state = make_state(
         context_management_result=cm,
         coaching_response="What does success look like for you in 90 days?",
     )
@@ -251,8 +242,8 @@ def test_format_response_falls_back_to_coaching_brief():
     """format_response falls back to coaching_brief when coaching_response is None."""
     from mentat.graph.workflow import format_response
 
-    cm = _make_cm_result(coaching_brief="Start with empathy, then ask open questions.")
-    state = _make_state(context_management_result=cm, coaching_response=None)
+    cm = make_cm_result(coaching_brief="Start with empathy, then ask open questions.")
+    state = make_state(context_management_result=cm, coaching_response=None)
     new_state = format_response(state)
 
     assert new_state["final_response"] == "Start with empathy, then ask open questions."
