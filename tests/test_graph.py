@@ -12,8 +12,13 @@ from mentat.graph.workflow import (
 )
 
 
-def _make_mock_vector_store() -> MagicMock:
-    """Return a minimal VectorStoreService mock."""
+def _make_mock_neo4j() -> MagicMock:
+    """Return a minimal Neo4jService mock."""
+    return MagicMock()
+
+
+def _make_mock_embedding() -> MagicMock:
+    """Return a minimal EmbeddingService mock."""
     return MagicMock()
 
 
@@ -75,7 +80,8 @@ def test_build_graph_has_expected_nodes():
     """build_graph() should include all pipeline nodes."""
     from mentat.graph.workflow import build_graph
 
-    mock_vs = _make_mock_vector_store()
+    mock_neo4j = _make_mock_neo4j()
+    mock_emb = _make_mock_embedding()
     with (
         patch("mentat.graph.workflow.OrchestrationAgent") as MockOrch,
         patch("mentat.graph.workflow.SearchAgent") as MockSearch,
@@ -90,7 +96,7 @@ def test_build_graph_has_expected_nodes():
         MockCM.return_value.run = MagicMock()
         MockCoach.return_value.run = MagicMock()
         MockQuality.return_value.run = MagicMock()
-        graph = build_graph(vector_store=mock_vs)
+        graph = build_graph(neo4j_service=mock_neo4j, embedding_service=mock_emb)
 
     node_names = list(graph.nodes.keys())
     assert "orchestration" in node_names
@@ -106,7 +112,8 @@ def test_compile_graph_succeeds():
     """compile_graph() should return a compiled graph without raising."""
     from mentat.graph.workflow import compile_graph
 
-    mock_vs = _make_mock_vector_store()
+    mock_neo4j = _make_mock_neo4j()
+    mock_emb = _make_mock_embedding()
     with (
         patch("mentat.graph.workflow.OrchestrationAgent") as MockOrch,
         patch("mentat.graph.workflow.SearchAgent") as MockSearch,
@@ -121,7 +128,7 @@ def test_compile_graph_succeeds():
         MockCM.return_value.run = MagicMock()
         MockCoach.return_value.run = MagicMock()
         MockQuality.return_value.run = MagicMock()
-        compiled = compile_graph(vector_store=mock_vs)
+        compiled = compile_graph(neo4j_service=mock_neo4j, embedding_service=mock_emb)
 
     assert compiled is not None
 

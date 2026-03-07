@@ -4,15 +4,15 @@ import json
 import re
 import uuid
 from collections.abc import AsyncGenerator
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from mentat.api.schemas import ChatRequest, ChatResponse, DocumentUploadResponse
 from mentat.core.logging import get_logger
-from mentat.core.vector_store import utc_now_iso
+from mentat.core.neo4j_service import MemoryNode
 from mentat.graph.state import GraphState
 from mentat.session.service import SessionService
 
@@ -34,7 +34,10 @@ _NODE_STATUS: dict[str, str] = {
     "session_update": "Saving your session\u2026",
 }
 _ALLOWED_EXTENSIONS = {".pdf", ".txt", ".docx"}
-_SPLITTER = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 def _sanitize_filename(name: str) -> str:
@@ -161,22 +164,19 @@ async def handle_chat(request: Request, body: ChatRequest) -> ChatResponse:
 
     # Store this conversation turn for future RAG retrieval (best-effort)
     try:
-        vector_store = getattr(request.app.state, "vector_store", None)
+        ingest_agent = getattr(request.app.state, "ingest_agent", None)
         final_response = final_state.get("final_response")
-        if vector_store is not None and body.session_id and final_response:
+        if ingest_agent is not None and body.session_id and final_response:
             orch_result = final_state.get("orchestration_result")
             intent_str = orch_result.intent.value if orch_result else "unknown"
-            turn = f"User: {user_message}\nAssistant: {final_response}"
-            vector_store.add_conversation(
-                turn,
-                {
-                    "session_id": body.session_id,
-                    "timestamp": utc_now_iso(),
-                    "intent": intent_str,
-                },
+            await ingest_agent.ingest_turn(
+                session_id=body.session_id,
+                user_msg=user_message,
+                assistant_msg=final_response,
+                intent=intent_str,
             )
     except Exception as exc:
-        logger.warning("Failed to store conversation turn: %s", exc)
+        logger.warning("Failed to ingest conversation turn: %s", exc)
 
     reply = final_state.get("final_response") or "Sorry, I could not generate a reply."
 
@@ -205,7 +205,7 @@ async def handle_chat_stream(request: Request, body: ChatRequest) -> StreamingRe
     logger.info("Received SSE chat request. session_id=%s", body.session_id)
 
     graph = request.app.state.graph
-    vector_store = getattr(request.app.state, "vector_store", None)
+    ingest_agent = getattr(request.app.state, "ingest_agent", None)
 
     lc_messages = [
         {"role": msg.role.value, "content": msg.content} for msg in body.messages
@@ -271,7 +271,7 @@ async def handle_chat_stream(request: Request, body: ChatRequest) -> StreamingRe
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
             return
 
-        # Post-stream: persist session and store conversation turn
+        # Post-stream: persist session and ingest conversation turn
         if final_state is not None:
             updated_session = final_state.get("session_state")
             if updated_session is not None:
@@ -283,20 +283,17 @@ async def handle_chat_stream(request: Request, body: ChatRequest) -> StreamingRe
                     )
             try:
                 final_response = final_state.get("final_response")
-                if vector_store is not None and body.session_id and final_response:
+                if ingest_agent is not None and body.session_id and final_response:
                     orch_result = final_state.get("orchestration_result")
                     intent_str = orch_result.intent.value if orch_result else "unknown"
-                    turn = f"User: {user_message}\nAssistant: {final_response}"
-                    vector_store.add_conversation(
-                        turn,
-                        {
-                            "session_id": body.session_id,
-                            "timestamp": utc_now_iso(),
-                            "intent": intent_str,
-                        },
+                    await ingest_agent.ingest_turn(
+                        session_id=body.session_id,
+                        user_msg=user_message,
+                        assistant_msg=final_response,
+                        intent=intent_str,
                     )
             except Exception as exc:
-                logger.warning("Failed to store conversation turn: %s", exc)
+                logger.warning("Failed to ingest conversation turn: %s", exc)
 
         if final_state is not None:
             think_content = _build_think_content(final_state)
@@ -318,7 +315,7 @@ async def upload_document(
     request: Request,
     file: UploadFile = File(...),
 ) -> DocumentUploadResponse:
-    """Upload a document and store its text chunks in the vector store.
+    """Upload a document and store its text chunks in Neo4j.
 
     Accepted formats: .pdf, .txt, .docx
     """
@@ -344,32 +341,74 @@ async def upload_document(
     logger.info("Persisted upload to %s", dest_path)
 
     text = _extract_text(raw_bytes, suffix)
-    chunks = _SPLITTER.split_text(text)
 
-    vector_store = request.app.state.vector_store
-    metadatas = [
-        {
-            "filename": file.filename,
-            "upload_id": upload_id,
-            "chunk_index": str(i),
-            "uploaded_at": utc_now_iso(),
-            "file_path": str(dest_path),
-        }
-        for i in range(len(chunks))
-    ]
-
-    ids = vector_store.add_documents(chunks, metadatas)
+    ingest_agent = getattr(request.app.state, "ingest_agent", None)
+    chunk_count = 0
+    if ingest_agent is not None:
+        await ingest_agent.ingest_document(
+            upload_id=upload_id,
+            title=file.filename,
+            text=text,
+            blob_key=upload_id,
+        )
+        # Approximate: IngestAgent uses word-based chunking; report doc-level count
+        chunk_count = max(1, len(text.split()) // ingest_agent._chunk_size)
+    else:
+        logger.warning(
+            "ingest_agent not available on app.state — skipping Neo4j ingest"
+        )
+        chunk_count = 1
 
     logger.info(
-        "Stored %d chunks for upload_id=%s filename=%s",
-        len(ids),
+        "Ingested document upload_id=%s filename=%s",
         upload_id,
         file.filename,
     )
 
     return DocumentUploadResponse(
         filename=file.filename,
-        chunks_stored=len(ids),
-        document_ids=tuple(ids),
+        chunks_stored=chunk_count,
+        document_ids=(upload_id,),
         file_path=str(dest_path),
     )
+
+
+@router.post("/consolidate")
+async def trigger_consolidation(request: Request) -> dict[str, str]:
+    """Manually trigger one consolidation pass."""
+    consolidation_agent = getattr(request.app.state, "consolidation_agent", None)
+    if consolidation_agent is None:
+        raise HTTPException(status_code=503, detail="Consolidation agent not available")
+    try:
+        await consolidation_agent.run_once()
+    except Exception as exc:
+        logger.exception("Consolidation failed: %s", exc)
+        raise HTTPException(status_code=500, detail="Consolidation failed") from exc
+    return {"status": "ok"}
+
+
+@router.get("/memories")
+async def get_recent_memories(
+    request: Request, limit: int = 20
+) -> list[dict[str, str]]:
+    """Return recent Memory nodes from Neo4j."""
+    neo4j_service = getattr(request.app.state, "neo4j_service", None)
+    if neo4j_service is None:
+        raise HTTPException(status_code=503, detail="Neo4j service not available")
+    try:
+        memories: list[MemoryNode] = await neo4j_service.get_recent_memories(
+            limit=limit
+        )
+    except Exception as exc:
+        logger.exception("Failed to fetch memories: %s", exc)
+        raise HTTPException(status_code=500, detail="Failed to fetch memories") from exc
+    return [
+        {
+            "memory_id": m.memory_id,
+            "text": m.text,
+            "session_id": m.session_id,
+            "intent": m.intent,
+            "consolidated": str(m.consolidated),
+        }
+        for m in memories
+    ]

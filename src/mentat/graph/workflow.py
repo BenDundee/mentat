@@ -11,8 +11,9 @@ from mentat.agents.quality import QualityAgent
 from mentat.agents.rag import RAGAgent
 from mentat.agents.search import SearchAgent
 from mentat.agents.session_update import SessionUpdateAgent
+from mentat.core.embedding_service import EmbeddingService
 from mentat.core.logging import get_logger
-from mentat.core.vector_store import VectorStoreService
+from mentat.core.neo4j_service import Neo4jService
 from mentat.graph.state import GraphState
 
 logger = get_logger(__name__)
@@ -104,17 +105,22 @@ def format_response(state: GraphState) -> GraphState:
     )
 
 
-def build_graph(vector_store: VectorStoreService, debug: bool = False) -> StateGraph:
+def build_graph(
+    neo4j_service: Neo4jService,
+    embedding_service: EmbeddingService,
+    debug: bool = False,
+) -> StateGraph:
     """Construct the LangGraph workflow.
 
     Args:
-        vector_store: Shared ChromaDB service for RAG retrieval.
+        neo4j_service:    Shared Neo4j service for RAG retrieval.
+        embedding_service: Cohere embedding service for RAGAgent.
         debug: When True, replace the format_response node with OutputTestingAgent,
                which dumps the full pipeline state to the chat window.
     """
     orchestration_agent = OrchestrationAgent()
     search_agent = SearchAgent()
-    rag_agent = RAGAgent(vector_store)
+    rag_agent = RAGAgent(neo4j_service, embedding_service)
     context_management_agent = ContextManagementAgent()
     coaching_agent = CoachingAgent()
     quality_agent = QualityAgent()
@@ -158,14 +164,23 @@ def build_graph(vector_store: VectorStoreService, debug: bool = False) -> StateG
     return graph
 
 
-def compile_graph(vector_store: VectorStoreService, debug: bool = False):  # type: ignore[return]
+def compile_graph(
+    neo4j_service: Neo4jService,
+    embedding_service: EmbeddingService,
+    debug: bool = False,
+):  # type: ignore[return]
     """Build and compile the LangGraph workflow.
 
     Args:
-        vector_store: Shared ChromaDB service for RAG retrieval.
+        neo4j_service:    Shared Neo4j service for RAG retrieval.
+        embedding_service: Cohere embedding service for RAGAgent.
         debug: Passed through to ``build_graph``; enables the debug state dump.
     """
-    graph = build_graph(vector_store=vector_store, debug=debug)
+    graph = build_graph(
+        neo4j_service=neo4j_service,
+        embedding_service=embedding_service,
+        debug=debug,
+    )
     compiled = graph.compile()
     logger.info("LangGraph workflow compiled successfully (debug=%s).", debug)
     return compiled
