@@ -1,5 +1,8 @@
 """Cohere embedding service — wraps langchain_cohere.CohereEmbeddings."""
 
+from pathlib import Path
+
+import yaml
 from langchain_cohere import CohereEmbeddings
 
 from mentat.core.logging import get_logger
@@ -7,35 +10,40 @@ from mentat.core.settings import settings
 
 logger = get_logger(__name__)
 
-_COHERE_MODEL = "embed-english-v3.0"
-_EMBEDDING_DIMS = 1024
+_CONFIG_PATH = Path("configs/embedding.yml")
+
+
+def _load_config() -> dict:
+    with _CONFIG_PATH.open() as fh:
+        return yaml.safe_load(fh)
 
 
 class EmbeddingService:
     """Thin wrapper around Cohere embeddings.
 
-    Provides a single :meth:`embed` method that returns a 1024-dimensional
-    vector for any input text.  The underlying model and API key are taken
-    from application settings so callers never need to handle credentials.
+    Model and dimensions are read from ``configs/embedding.yml``.
+    API key is taken from application settings.
     """
 
-    def __init__(self, model: str = _COHERE_MODEL) -> None:
-        logger.info("Initialising EmbeddingService (model=%s)", model)
-        self._model = model
+    def __init__(self) -> None:
+        cfg = _load_config()
+        self._model: str = cfg["model"]
+        self._dims: int = cfg["dims"]
+        logger.info("Initialising EmbeddingService (model=%s)", self._model)
         self._embeddings = CohereEmbeddings(  # pyrefly: ignore[missing-argument]
-            model=model,
+            model=self._model,
             cohere_api_key=settings.cohere_api_key,  # type: ignore[arg-type]
         )
         logger.info("EmbeddingService ready.")
 
     def embed(self, text: str) -> list[float]:
-        """Return a 1024-dimensional embedding vector for *text*.
+        """Return an embedding vector for *text*.
 
         Args:
             text: The text to embed.
 
         Returns:
-            List of 1024 floats (cosine-normalised by Cohere).
+            List of floats (cosine-normalised by Cohere).
         """
         return self._embeddings.embed_query(text)
 
@@ -58,4 +66,4 @@ class EmbeddingService:
     @property
     def dims(self) -> int:
         """Number of embedding dimensions."""
-        return _EMBEDDING_DIMS
+        return self._dims

@@ -8,10 +8,6 @@ system_prompt: |
   Convert the user's message into a concise semantic search query (5–15 words).
   Output ONLY the query string, no explanation.
 extra_config:
-  # Cohere embedding model (1024 dims)
-  embedding_model: embed-english-v3.0
-  embedding_dims: 1024
-
   # Vector search parameters
   n_chunks: 5    # top-k chunk results from ANN search
   n_memories: 5  # top-k memory results from ANN search
