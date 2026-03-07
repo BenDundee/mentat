@@ -5,7 +5,7 @@ current implementation and planned future agents.
 
 ---
 
-## Current Pipeline (Phase 4+)
+## Current Pipeline
 
 ```mermaid
 flowchart TD
@@ -19,12 +19,20 @@ flowchart TD
     rag --> cm
 
     cm --> coach[Coaching Agent]
-    coach --> fmt[format_response]
-    fmt --> END([Assistant Reply])
+    coach --> quality[Quality Agent]
+
+    quality -->|rating ≤ 3 and attempts < 3| coach
+    quality -->|approved| fmt[format_response]
+
+    fmt --> su[Session Update Agent]
+    su --> END([Assistant Reply])
 ```
 
 Search and RAG are dispatched in **parallel** when both are suggested — LangGraph
 fan-out merges their results before `context_management` runs.
+
+The Quality Agent may loop the Coaching Agent up to 3 times before forcing
+`format_response` regardless of score.
 
 ### Node Descriptions
 
@@ -32,10 +40,19 @@ fan-out merges their results before `context_management` runs.
 |------|-------|---------|
 | `orchestration` | `OrchestrationAgent` | Classifies user intent; decides which agents to invoke |
 | `search` | `SearchAgent` | Generates queries, fetches DuckDuckGo results, summarizes |
-| `rag` | `RAGAgent` | Retrieves relevant chunks from ChromaDB; summarizes |
+| `rag` | `RAGAgent` | Embeds query → ANN search over Neo4j (Chunks + Memories) → graph expand → LLM synthesis |
 | `context_management` | `ContextManagementAgent` | Ranks context, identifies session phase, produces coaching brief |
 | `coaching` | `CoachingAgent` | Constructs the actual coaching response using the brief |
+| `quality` | `QualityAgent` | Rates response 1–5 on five dimensions; triggers rewrite if score ≤ 3 |
 | `format_response` | `format_response` / `OutputTestingAgent` | Renders `coaching_response` as the assistant reply (falls back to `coaching_brief` then orchestration summary) |
+| `session_update` | `SessionUpdateAgent` | Persists session state (conversation type, phase, scratchpad, collected data) |
+
+### Background Services
+
+| Service | Purpose |
+|---------|---------|
+| `IngestAgent` | Chunks and embeds conversation turns and uploaded documents into Neo4j after each chat turn |
+| `ConsolidationAgent` | Runs every 30 minutes; synthesizes Memory nodes, builds entity co-occurrence edges, writes Insight nodes |
 
 ---
 
@@ -59,9 +76,11 @@ flowchart TD
     plan --> cm
 
     cm[Context Management Agent] --> coach[Coaching Agent]
-    coach -->|quality < threshold| quality
-    quality[Quality Agent] -->|rewrite| coach
-    quality -->|approved| END([Assistant Reply])
+    coach --> quality[Quality Agent]
+    quality -->|rewrite| coach
+    quality -->|approved| fmt[format_response]
+    fmt --> su[Session Update Agent]
+    su --> END([Assistant Reply])
 ```
 
 ### Planned Node Descriptions
@@ -70,7 +89,6 @@ flowchart TD
 |------|-------|---------|
 | `persona` | `PersonaAgent` | Maintains understanding of the user (goals, challenges, personality) |
 | `plan` | `PlanManagementAgent` | Tracks long-term coaching plan and progress towards goals |
-| `quality` | `QualityAgent` | Rates the response (1–5); triggers a rewrite if score ≤ 3 |
 
 ### Post-Session Agents (run after conversation ends)
 

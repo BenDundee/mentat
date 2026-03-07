@@ -26,7 +26,10 @@ Operational guide for running and maintaining Mentat. Keep this file current as 
 | Docker Desktop | latest | [docker.com](https://www.docker.com/products/docker-desktop) |
 | Git | any | `brew install git` |
 
-You also need an [OpenRouter](https://openrouter.ai) API key.
+You also need:
+- An [OpenRouter](https://openrouter.ai) API key
+- A [Neo4j AuraDB](https://neo4j.com/cloud/aura/) instance (free tier supported)
+- A [Cohere](https://cohere.com) API key (for embeddings)
 
 ---
 
@@ -39,7 +42,12 @@ cd mentat
 
 # 2. Create your .env file
 cp .env.example .env
-# Edit .env and set OPENROUTER_API_KEY=<your key>
+# Edit .env — required keys:
+#   OPENROUTER_API_KEY=<your key>
+#   NEO4J_URI=neo4j+s://<your-aura-instance>.databases.neo4j.io
+#   NEO4J_USERNAME=neo4j
+#   NEO4J_PASSWORD=<your password>
+#   COHERE_API_KEY=<your key>
 
 # 3. Install Python dependencies (creates .venv automatically)
 uv sync
@@ -137,7 +145,8 @@ docker compose up -d --build
 ### Wipe everything (including data)
 
 ```bash
-docker compose down -v   # WARNING: deletes all volumes (conversations, uploads, ChromaDB)
+docker compose down -v   # WARNING: deletes all local volumes (sessions, uploads)
+# Note: Neo4j data lives in AuraDB and is NOT affected by this command
 ```
 
 ---
@@ -191,17 +200,11 @@ docker compose exec mentat cat /app/data/sessions/<session-id>.json
 
 In dev mode, `./data/` on your host is mounted directly — just browse it normally.
 
-### Rebuild the ChromaDB vector store
+### Re-index after schema changes
 
-Required after changing the embedding model in `configs/rag.yml`:
-
-```bash
-# Local dev
-uv run python -m mentat.tools.rebuild_store
-
-# Docker
-docker compose exec mentat python -m mentat.tools.rebuild_store
-```
+The graph schema is managed directly in Neo4j AuraDB. If you need to recreate the HNSW vector
+indexes (e.g. after a data wipe), connect to your AuraDB instance and run the Cypher from
+`docs/long-term-memory.md` under **Vector Index Setup**.
 
 ### Update dependencies
 
@@ -231,10 +234,11 @@ grep OPENROUTER_API_KEY .env
 
 ### Server isn't reachable right after `docker compose up -d`
 
-The sentence-transformer embedding model is downloaded and loaded during startup, which takes 30–90 seconds the first time. The healthcheck has a `start_period: 90s` grace window, but if you curl immediately after `docker compose up -d`, you'll get "Connection refused" while the model is still loading. Wait a moment, then retry:
+The server connects to Neo4j AuraDB and verifies the connection on startup. If the Neo4j credentials
+are missing or wrong, the server will fail to start. Check the logs:
 
 ```bash
-docker compose logs -f mentat   # watch for "Mentat ready."
+docker compose logs -f mentat   # watch for "Mentat ready." or connection errors
 curl http://localhost:8000/api/health
 ```
 
@@ -249,13 +253,15 @@ Common causes:
 - Port 8000 already in use — stop the local dev server first, or change the port mapping in `docker-compose.yml`
 - Image built with an old Dockerfile — rebuild with `docker compose build --no-cache`
 
-### ChromaDB embedding model mismatch
+### Neo4j connection errors
 
 ```
-EmbeddingModelMismatchError: ...
+neo4j.exceptions.ServiceUnavailable: ...
 ```
 
-The embedding model in `configs/rag.yml` changed after data was written. Rebuild the store (see above). This deletes all stored conversation history and uploaded documents.
+Check that `NEO4J_URI`, `NEO4J_USERNAME`, and `NEO4J_PASSWORD` are set correctly in `.env`. The URI
+must use the `neo4j+s://` scheme for AuraDB TLS connections. Verify your AuraDB instance is running
+in the [Neo4j console](https://console.neo4j.io).
 
 ### Hot reload not triggering in dev mode
 
@@ -280,15 +286,19 @@ uv run pytest
 
 ## Environment Variables Reference
 
-All variables are optional except `OPENROUTER_API_KEY`. Copy `.env.example` to `.env` and edit as needed.
+Required variables are marked. Copy `.env.example` to `.env` and edit as needed.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `OPENROUTER_API_KEY` | *(required)* | API key for OpenRouter LLM access |
+| `NEO4J_URI` | *(required)* | AuraDB connection URI, e.g. `neo4j+s://<id>.databases.neo4j.io` |
+| `NEO4J_USERNAME` | `neo4j` | Neo4j username (AuraDB default is `neo4j`) |
+| `NEO4J_PASSWORD` | *(required)* | Neo4j password from the AuraDB console |
+| `COHERE_API_KEY` | *(required)* | Cohere API key for `embed-english-v3.0` embeddings |
 | `LOG_LEVEL` | `INFO` | Logging verbosity: `DEBUG`, `INFO`, `WARNING`, `ERROR` |
 | `MENTAT_DEBUG` | `false` | Activate the Output Testing Agent (dumps pipeline state to chat) |
 | `ENVIRONMENT` | `development` | `development` or `production` (informational for now) |
-| `DATA_DIR` | `data` | Root directory for sessions, uploads, and ChromaDB. Set to `/app/data` in Docker. |
+| `DATA_DIR` | `data` | Root directory for sessions and uploads. Set to `/app/data` in Docker. |
 | `HOST` | `0.0.0.0` | Server bind address |
 | `PORT` | `8000` | Server port (used for documentation; pass to uvicorn explicitly if changed) |
 

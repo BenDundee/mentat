@@ -86,18 +86,18 @@ The Coaching Agent is responsible for taking the context and constructing the ap
 be tailored to the User, personalized based on their past interactions. If a session is in progress, the Coaching Agent 
 should ensure that it's moving forward in a productive direction, towards the session goals as agreed with the User.
 
-### The Feedback Agent
-Once the Coaching Agent constructs a response, the Feedback Agent reviews the relevant context and grades the response 
-on a scale of 1-5. The Feedback Agent will consider the following dimensions in its rating:
+### The Quality Agent
+Once the Coaching Agent constructs a response, the Quality Agent reviews the relevant context and grades the response
+on a scale of 1-5. The Quality Agent will consider the following dimensions in its rating:
   - *Sanity Check.* Does it appear that there are hallucinations?
   - *Conversation Flow.* Does the response make sense in light of the conversation?
   - *Suitability for User.* Is the response suitable for the User, given what we know about them and their situation?
   - *Plan Adherence.* Is this driving the User towards their goals? Is this advancing the Coaching Plan?
-  - *Voice.* Is the response consistent with the Coach's voice and role? Is the Coach challenging the Client (User) 
+  - *Voice.* Is the response consistent with the Coach's voice and role? Is the Coach challenging the Client (User)
 enough? Is the Coach forcing the Client (User) to do the work themselves, or is the Coach doing the work?
 
-If the response is rated 3 or less, the Feedback Agent will pass specific feedback to the Coaching Agent. This feedback 
-loop continues until the Feedback Agent is happy.
+If the response is rated 3 or less, the Quality Agent will pass specific feedback to the Coaching Agent. This feedback
+loop continues until the Quality Agent is satisfied, or the Coaching Agent has made three attempts.
 
 ### The Client Management Agent
 After the conversation, the Client Management agent is responsible for:
@@ -111,17 +111,20 @@ should always include a recommendation for next steps, based on the Client's (Us
 
 ### Agent Memory
 There are three types of "memory" to which the Agents all have access:
-  - *Intra-turn memory.* This is the "context". The Context Management Agent will have the most complete understanding 
+  - *Intra-turn memory.* This is the "context". The Context Management Agent will have the most complete understanding
 of this.
-  - *Inter-turn memory.* The Agents will have access to a scratchpad that will allow them to add specific notes and 
-hints that persist between conversation turns. For example, if the User is seeking to initiate a coaching session, and 
-the coach decides that a particular framework will be used (GROW, for example, see `docs/coaching-philosophy.md`). The 
-Coach would add an outline of the expected coaching session, so that it may return to this in subsequent conversation 
-turns. This will ensure that the Coaching Agent can drive the conversation forward.
-  - *Long-term memory*. Past conversations and any documents uploaded by the User form the long-term memory. This is a 
-crucial part of the system, as the true value in executive coaching lies in the lateral nature of the relationship. By
-understanding a person, their goals, their strengths, and their weaknesses, the Coach may spot trends that expose 
-themselves over time.
+  - *Inter-turn memory.* The Agents have access to a session scratchpad that persists between conversation turns. For
+example, if the User initiates a coaching session and the Coach decides to apply a particular framework (GROW, for
+example — see `docs/coaching-philosophy.md`), it adds an outline of the expected session to the scratchpad so that
+subsequent turns can pick up where the previous one left off. The Session Update Agent is responsible for maintaining
+this scratchpad and the broader session state (conversation type, onboarding phase, collected data).
+  - *Long-term memory*. Past conversations and any documents uploaded by the User form the long-term memory, stored in
+**Neo4j AuraDB**. The memory layer uses a hybrid vector + graph architecture: raw content is chunked and embedded
+(Cohere `embed-english-v3.0`, 1024 dims) into `Chunk` nodes; significant exchanges are synthesized into higher-level
+`Memory` nodes; and a background **Consolidation Agent** runs every 30 minutes to build entity co-occurrence edges and
+write cross-session `Insight` nodes. The **RAG Agent** queries this graph using ANN vector search followed by graph
+traversal, then synthesizes a summary for the Context Management Agent. See `docs/long-term-memory.md` for the full
+data model and retrieval pipeline.
 
 ### Agent Configurability
 All specifics about agents should be stored separately in configuration files. Each agent should have the following 
