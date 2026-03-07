@@ -157,14 +157,17 @@ def test_build_graph_debug_mode():
     from contextlib import ExitStack
     from unittest.mock import MagicMock
 
-    mock_vs = MagicMock()
+    mock_neo4j = MagicMock()
+    mock_emb = MagicMock()
     with ExitStack() as stack:
         mocks = [stack.enter_context(p) for p in _patch_all_workflow_agents()]
         for m in mocks:
             m.return_value.run = MagicMock()
         from mentat.graph.workflow import build_graph
 
-        graph = build_graph(vector_store=mock_vs, debug=True)
+        graph = build_graph(
+            neo4j_service=mock_neo4j, embedding_service=mock_emb, debug=True
+        )
 
     assert "format_response" in graph.nodes
 
@@ -174,13 +177,16 @@ def test_build_graph_default_is_not_debug():
     from contextlib import ExitStack
     from unittest.mock import MagicMock
 
-    mock_vs = MagicMock()
+    mock_neo4j = MagicMock()
+    mock_emb = MagicMock()
     with ExitStack() as stack:
         mocks = [stack.enter_context(p) for p in _patch_all_workflow_agents()]
         for m in mocks:
             m.return_value.run = MagicMock()
         from mentat.graph.workflow import build_graph
 
-        graph = build_graph(vector_store=mock_vs, debug=False)
+        graph = build_graph(
+            neo4j_service=mock_neo4j, embedding_service=mock_emb, debug=False
+        )
 
     assert "format_response" in graph.nodes
