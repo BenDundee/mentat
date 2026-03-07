@@ -51,6 +51,11 @@ class EmbeddingService:
         return self._embeddings.embed_documents(texts)
 
     @property
+    def model(self) -> str:
+        """Embedding model identifier."""
+        return self._model
+
+    @property
     def dims(self) -> int:
         """Number of embedding dimensions."""
         return _EMBEDDING_DIMS

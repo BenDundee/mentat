@@ -121,6 +121,174 @@ def test_split_text_overlap():
 
 
 # ---------------------------------------------------------------------------
+# Neo4jService — embedding model fingerprint validation
+# ---------------------------------------------------------------------------
+
+
+def _make_neo4j_with_mock_driver(record_data: dict | None) -> object:
+    """Build a Neo4jService instance whose driver returns controlled data."""
+    from mentat.core.neo4j_service import Neo4jService
+
+    svc = object.__new__(Neo4jService)
+
+    # Build a mock result that returns the provided record (or None)
+    mock_result = AsyncMock()
+    if record_data is not None:
+        mock_record = MagicMock()
+        mock_record.__getitem__ = lambda self, key: record_data[key]
+        mock_result.single = AsyncMock(return_value=mock_record)
+    else:
+        mock_result.single = AsyncMock(return_value=None)
+
+    mock_session = AsyncMock()
+    mock_session.run = AsyncMock(return_value=mock_result)
+    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session.__aexit__ = AsyncMock(return_value=False)
+
+    mock_driver = MagicMock()
+    mock_driver.session = MagicMock(return_value=mock_session)
+    svc._driver = mock_driver
+    return svc
+
+
+@pytest.mark.anyio
+async def test_validate_stamps_fresh_database():
+    """validate_embedding_model stamps fingerprint when no EmbeddingConfig exists."""
+    from mentat.core.neo4j_service import Neo4jService
+
+    svc = object.__new__(Neo4jService)
+
+    write_calls: list = []
+
+    async def _run_side_effect(query, **kwargs):
+        result = AsyncMock()
+        if "MATCH (cfg:EmbeddingConfig)" in query:
+            result.single = AsyncMock(return_value=None)
+        else:
+            write_calls.append(kwargs)
+            result.single = AsyncMock(return_value=None)
+        return result
+
+    mock_session = AsyncMock()
+    mock_session.run = AsyncMock(side_effect=_run_side_effect)
+    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session.__aexit__ = AsyncMock(return_value=False)
+
+    mock_driver = MagicMock()
+    mock_driver.session = MagicMock(return_value=mock_session)
+    svc._driver = mock_driver
+
+    # Should not raise
+    await svc.validate_embedding_model("embed-english-v3.0", 1024)
+    # The write call should have been made
+    assert mock_session.run.call_count >= 2
+
+
+@pytest.mark.anyio
+async def test_validate_passes_on_matching_model():
+    """validate_embedding_model succeeds when stored model matches configured model."""
+    from mentat.core.neo4j_service import Neo4jService
+
+    svc = object.__new__(Neo4jService)
+
+    stored = {"model": "embed-english-v3.0", "dims": 1024}
+    mock_record = MagicMock()
+    mock_record.__getitem__ = lambda self, key: stored[key]
+
+    mock_result = AsyncMock()
+    mock_result.single = AsyncMock(return_value=mock_record)
+
+    mock_session = AsyncMock()
+    mock_session.run = AsyncMock(return_value=mock_result)
+    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session.__aexit__ = AsyncMock(return_value=False)
+
+    mock_driver = MagicMock()
+    mock_driver.session = MagicMock(return_value=mock_session)
+    svc._driver = mock_driver
+
+    # Should not raise
+    await svc.validate_embedding_model("embed-english-v3.0", 1024)
+
+
+@pytest.mark.anyio
+async def test_validate_raises_on_model_mismatch():
+    """validate_embedding_model raises EmbeddingModelMismatchError on model change."""
+    from mentat.core.neo4j_service import EmbeddingModelMismatchError, Neo4jService
+
+    svc = object.__new__(Neo4jService)
+
+    stored = {"model": "embed-english-v3.0", "dims": 1024}
+    mock_record = MagicMock()
+    mock_record.__getitem__ = lambda self, key: stored[key]
+
+    mock_result = AsyncMock()
+    mock_result.single = AsyncMock(return_value=mock_record)
+
+    mock_session = AsyncMock()
+    mock_session.run = AsyncMock(return_value=mock_result)
+    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session.__aexit__ = AsyncMock(return_value=False)
+
+    mock_driver = MagicMock()
+    mock_driver.session = MagicMock(return_value=mock_session)
+    svc._driver = mock_driver
+
+    with pytest.raises(EmbeddingModelMismatchError, match="embed-english-v3.0"):
+        await svc.validate_embedding_model("embed-multilingual-v3.0", 1024)
+
+
+@pytest.mark.anyio
+async def test_validate_raises_on_dims_mismatch():
+    """validate_embedding_model raises EmbeddingModelMismatchError on dims change."""
+    from mentat.core.neo4j_service import EmbeddingModelMismatchError, Neo4jService
+
+    svc = object.__new__(Neo4jService)
+
+    stored = {"model": "embed-english-v3.0", "dims": 1024}
+    mock_record = MagicMock()
+    mock_record.__getitem__ = lambda self, key: stored[key]
+
+    mock_result = AsyncMock()
+    mock_result.single = AsyncMock(return_value=mock_record)
+
+    mock_session = AsyncMock()
+    mock_session.run = AsyncMock(return_value=mock_result)
+    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session.__aexit__ = AsyncMock(return_value=False)
+
+    mock_driver = MagicMock()
+    mock_driver.session = MagicMock(return_value=mock_session)
+    svc._driver = mock_driver
+
+    with pytest.raises(EmbeddingModelMismatchError, match="dims=1024"):
+        await svc.validate_embedding_model("embed-english-v3.0", 512)
+
+
+# ---------------------------------------------------------------------------
+# EmbeddingService — model property
+# ---------------------------------------------------------------------------
+
+
+def test_embedding_service_model_property():
+    """EmbeddingService.model returns the configured model name."""
+    with patch("mentat.core.embedding_service.CohereEmbeddings"):
+        from mentat.core.embedding_service import EmbeddingService
+
+        svc = EmbeddingService(model="embed-english-v3.0")
+        assert svc.model == "embed-english-v3.0"
+
+
+def test_embedding_service_dims_property():
+    """EmbeddingService.dims returns 1024."""
+    with patch("mentat.core.embedding_service.CohereEmbeddings"):
+        from mentat.core.embedding_service import EmbeddingService
+
+        svc = EmbeddingService()
+        assert svc.dims == 1024
+
+
+# ---------------------------------------------------------------------------
 # JSON response parser (ConsolidationAgent helper)
 # ---------------------------------------------------------------------------
 

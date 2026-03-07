@@ -49,6 +49,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     embedding_service = EmbeddingService()
     neo4j_service = Neo4jService()
     await neo4j_service.create_indexes()
+    await neo4j_service.validate_embedding_model(
+        model=embedding_service.model,
+        dims=embedding_service.dims,
+    )
 
     ingest_agent = IngestAgent(
         neo4j_service=neo4j_service,

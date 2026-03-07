@@ -41,6 +41,17 @@ _VECTOR_DIMS = 1024
 _SIMILARITY = "cosine"
 
 
+class EmbeddingModelMismatchError(RuntimeError):
+    """Raised on startup when the configured embedding model differs from the
+    model recorded in the Neo4j graph.
+
+    Existing Chunk and Memory nodes were embedded with a different model, so
+    vector search results would be meaningless.  You must either:
+    - Revert to the previously-used embedding model, OR
+    - Clear all Chunk / Memory / Insight nodes and re-ingest from scratch.
+    """
+
+
 # ---------------------------------------------------------------------------
 # Data transfer objects (frozen dataclasses — no mutation)
 # ---------------------------------------------------------------------------
@@ -207,6 +218,64 @@ class Neo4jService:
                 sim=_SIMILARITY,
             )
         logger.info("Neo4j vector indexes ready.")
+
+    async def validate_embedding_model(self, model: str, dims: int) -> None:
+        """Ensure the configured embedding model matches what is stored in Neo4j.
+
+        On a fresh database (no ``EmbeddingConfig`` node) the fingerprint is
+        written now and startup continues normally.
+
+        On a database that already has data embedded with a *different* model,
+        :class:`EmbeddingModelMismatchError` is raised immediately to prevent
+        silently returning nonsensical ANN results.
+
+        Args:
+            model: Embedding model identifier (e.g. ``"embed-english-v3.0"``).
+            dims:  Number of embedding dimensions (e.g. ``1024``).
+
+        Raises:
+            EmbeddingModelMismatchError: Stored model differs from *model*.
+        """
+        async with self._driver.session() as db:
+            result = await db.run(
+                """
+                MATCH (cfg:EmbeddingConfig)
+                RETURN cfg.model AS model, cfg.dims AS dims
+                LIMIT 1
+                """
+            )
+            record = await result.single()
+
+        if record is None:
+            # Fresh database — stamp the fingerprint now
+            async with self._driver.session() as db:
+                await db.run(
+                    """
+                    MERGE (cfg:EmbeddingConfig)
+                    ON CREATE SET cfg.model = $model, cfg.dims = $dims
+                    """,
+                    model=model,
+                    dims=dims,
+                )
+            logger.info(
+                "Neo4j: stamped embedding fingerprint model=%s dims=%d", model, dims
+            )
+            return
+
+        stored_model: str = record["model"]
+        stored_dims: int = record["dims"]
+
+        if stored_model != model or stored_dims != dims:
+            raise EmbeddingModelMismatchError(
+                f"Neo4j was indexed with model='{stored_model}' dims={stored_dims}, "
+                f"but the current EmbeddingService uses model='{model}' dims={dims}. "
+                f"Either revert to the original model or clear all "
+                f"Chunk/Memory/Insight nodes and re-ingest from scratch."
+            )
+
+        logger.info(
+            "Neo4j: embedding fingerprint validated (model=%s dims=%d).", model, dims
+        )
 
     # ------------------------------------------------------------------
     # Write methods
