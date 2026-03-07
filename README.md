@@ -99,7 +99,7 @@ The Quality Agent evaluates responses on five dimensions: hallucination check, c
 |-------|-----------|
 | **Backend** | Python 3.13, FastAPI, LangGraph |
 | **LLM Orchestration** | LangChain, OpenRouter (Claude Sonnet / Haiku via Anthropic) |
-| **Vector Store** | ChromaDB + HuggingFace `all-MiniLM-L6-v2` embeddings |
+| **Memory / Vector Store** | Neo4j AuraDB (graph + HNSW vector index) + embeddings via OpenRouter |
 | **Data Validation** | Pydantic (frozen models throughout) |
 | **Frontend** | Vanilla HTML/CSS/JS — no build tooling |
 | **Package Management** | `uv` |
@@ -116,6 +116,7 @@ The Quality Agent evaluates responses on five dimensions: hallucination check, c
 - Python 3.13+
 - [`uv`](https://astral.sh/uv) — `curl -LsSf https://astral.sh/uv/install.sh | sh`
 - An [OpenRouter](https://openrouter.ai) API key
+- A [Neo4j AuraDB](https://neo4j.com/cloud/platform/aura-graph-database/) instance (free tier works)
 - Docker Desktop *(optional, for containerized deployment)*
 
 ### Quick Start
@@ -181,11 +182,14 @@ mentat/
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OPENROUTER_API_KEY` | *(required)* | API key for OpenRouter LLM access |
+| `OPENROUTER_API_KEY` | *(required)* | API key for OpenRouter LLM access (and embeddings) |
+| `NEO4J_URI` | *(required)* | Neo4j AuraDB connection URI (`neo4j+s://...`) |
+| `NEO4J_USERNAME` | `neo4j` | Neo4j database username |
+| `NEO4J_PASSWORD` | *(required)* | Neo4j database password |
 | `LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING`, or `ERROR` |
 | `MENTAT_DEBUG` | `false` | Dumps full pipeline state to the chat window |
 | `ENVIRONMENT` | `development` | `development` or `production` |
-| `DATA_DIR` | `data` | Root directory for sessions, uploads, and ChromaDB |
+| `DATA_DIR` | `data` | Root directory for sessions and uploads |
 | `HOST` | `0.0.0.0` | Server bind address |
 | `PORT` | `8000` | Server port |
 
