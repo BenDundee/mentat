@@ -37,7 +37,6 @@ from mentat.core.settings import settings
 logger = get_logger(__name__)
 
 # HNSW vector index configuration
-_VECTOR_DIMS = 1024
 _SIMILARITY = "cosine"
 
 
@@ -186,11 +185,14 @@ class Neo4jService:
     # Schema / index setup
     # ------------------------------------------------------------------
 
-    async def create_indexes(self) -> None:
+    async def create_indexes(self, dims: int) -> None:
         """Create HNSW vector indexes idempotently.
 
         Safe to call on every startup — Neo4j ignores the command if an
         index with the given name already exists.
+
+        Args:
+            dims: Embedding vector dimensions (read from configs/embedding.yml).
         """
         async with self._driver.session() as session:
             await session.run(
@@ -202,7 +204,7 @@ class Neo4jService:
                     `vector.similarity_function`: $sim
                 }}
                 """,
-                dims=_VECTOR_DIMS,
+                dims=dims,
                 sim=_SIMILARITY,
             )
             await session.run(
@@ -214,7 +216,7 @@ class Neo4jService:
                     `vector.similarity_function`: $sim
                 }}
                 """,
-                dims=_VECTOR_DIMS,
+                dims=dims,
                 sim=_SIMILARITY,
             )
         logger.info("Neo4j vector indexes ready.")

@@ -1,9 +1,9 @@
-"""Cohere embedding service — wraps langchain_cohere.CohereEmbeddings."""
+"""OpenRouter embedding service — wraps langchain_openai.OpenAIEmbeddings."""
 
 from pathlib import Path
 
 import yaml
-from langchain_cohere import CohereEmbeddings
+from langchain_openai import OpenAIEmbeddings
 
 from mentat.core.logging import get_logger
 from mentat.core.settings import settings
@@ -11,6 +11,7 @@ from mentat.core.settings import settings
 logger = get_logger(__name__)
 
 _CONFIG_PATH = Path("configs/embedding.yml")
+_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 
 def _load_config() -> dict:
@@ -19,10 +20,10 @@ def _load_config() -> dict:
 
 
 class EmbeddingService:
-    """Thin wrapper around Cohere embeddings.
+    """Thin wrapper around OpenRouter embeddings.
 
     Model and dimensions are read from ``configs/embedding.yml``.
-    API key is taken from application settings.
+    Uses the existing ``OPENROUTER_API_KEY`` — no separate API key required.
     """
 
     def __init__(self) -> None:
@@ -30,9 +31,10 @@ class EmbeddingService:
         self._model: str = cfg["model"]
         self._dims: int = cfg["dims"]
         logger.info("Initialising EmbeddingService (model=%s)", self._model)
-        self._embeddings = CohereEmbeddings(  # pyrefly: ignore[missing-argument]
+        self._embeddings = OpenAIEmbeddings(
             model=self._model,
-            cohere_api_key=settings.cohere_api_key,  # type: ignore[arg-type]
+            openai_api_key=settings.openrouter_api_key,  # type: ignore[arg-type]
+            openai_api_base=_OPENROUTER_BASE_URL,  # pyrefly: ignore[unexpected-keyword]
         )
         logger.info("EmbeddingService ready.")
 
@@ -43,7 +45,7 @@ class EmbeddingService:
             text: The text to embed.
 
         Returns:
-            List of floats (cosine-normalised by Cohere).
+            List of floats (cosine-normalised).
         """
         return self._embeddings.embed_query(text)
 

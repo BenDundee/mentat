@@ -272,20 +272,20 @@ async def test_validate_raises_on_dims_mismatch():
 
 def test_embedding_service_model_property():
     """EmbeddingService.model returns the value from configs/embedding.yml."""
-    with patch("mentat.core.embedding_service.CohereEmbeddings"):
+    with patch("mentat.core.embedding_service.OpenAIEmbeddings"):
         from mentat.core.embedding_service import EmbeddingService
 
         svc = EmbeddingService()
-        assert svc.model == "embed-english-v3.0"
+        assert svc.model == "openai/text-embedding-3-small"
 
 
 def test_embedding_service_dims_property():
     """EmbeddingService.dims returns the value from configs/embedding.yml."""
-    with patch("mentat.core.embedding_service.CohereEmbeddings"):
+    with patch("mentat.core.embedding_service.OpenAIEmbeddings"):
         from mentat.core.embedding_service import EmbeddingService
 
         svc = EmbeddingService()
-        assert svc.dims == 1024
+        assert svc.dims == 1536
 
 
 # ---------------------------------------------------------------------------
